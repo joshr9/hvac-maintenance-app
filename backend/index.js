@@ -13,6 +13,9 @@ app.use('/api/hvac-units', hvacRoutes)
 const propertyRoutes = require('./routes/properties')
 app.use('/api/properties', propertyRoutes)
 
+const maintenanceRoutes = require('./routes/maintenanceLogs')
+app.use('/api/maintenance', maintenanceRoutes)
+
 // Root Route
 app.get("/", (req, res) => {
   res.send("HVAC Maintenance API is running ✅");

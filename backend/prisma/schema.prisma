@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  role          Role
+  maintenanceLogs MaintenanceLog[]
+  createdAt     DateTime       @default(now())
+}
+
+enum Role {
+  TECHNICIAN
+  ADMIN
+}
+
+model Property {
+  id        Int        @id @default(autoincrement())
+  name      String
+  address   String
+  units     HvacUnit[]
+  qrCode    String?    // optional: could be linked to a unique ID
+}
+
+model HvacUnit {
+  id              Int             @id @default(autoincrement())
+  serialNumber    String          @unique
+  model           String
+  installDate     DateTime
+  property        Property        @relation(fields: [propertyId], references: [id])
+  propertyId      Int
+  maintenanceLogs MaintenanceLog[]
+}
+
+model MaintenanceLog {
+  id           Int       @id @default(autoincrement())
+  hvacUnit     HvacUnit  @relation(fields: [hvacUnitId], references: [id])
+  hvacUnitId   Int
+  technician   User      @relation(fields: [technicianId], references: [id])
+  technicianId Int
+  maintenanceType MaintenanceType
+  status       MaintenanceStatus @default(SCHEDULED)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum MaintenanceType {
+  INSPECTION
+  FILTER_CHANGE
+  FULL_SERVICE
+  REPAIR
+  OTHER
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}

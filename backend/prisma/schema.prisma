@@ -22,20 +22,34 @@ enum Role {
 }
 
 model Property {
-  id        Int        @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  address   String
-  units     HvacUnit[]
-  qrCode    String?    // optional: could be linked to a unique ID
+  address   String   @unique
+  qrCode    String?  // optional: could be linked to a unique ID
+  suites    Suite[]
+}
+
+model Suite {
+  id         Int         @id @default(autoincrement())
+  name       String
+  tenant     Boolean     @default(false)
+  property   Property    @relation(fields: [propertyId], references: [id])
+  propertyId Int
+  hvacUnits  HvacUnit[]
+
+  @@unique([name, propertyId])
 }
 
 model HvacUnit {
   id              Int             @id @default(autoincrement())
+  label           String?
   serialNumber    String          @unique
   model           String
   installDate     DateTime
-  property        Property        @relation(fields: [propertyId], references: [id])
-  propertyId      Int
+  filterSize      String?
+  notes           String?
+  suite           Suite?          @relation(fields: [suiteId], references: [id])
+  suiteId         Int?            // ← make optional for now
   maintenanceLogs MaintenanceLog[]
 }
 

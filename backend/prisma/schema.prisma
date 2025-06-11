@@ -64,6 +64,16 @@ model MaintenanceLog {
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  photos       MaintenancePhoto[] // adding ability for multiple photos
+}
+
+
+model MaintenancePhoto {
+  id               Int             @id @default(autoincrement())
+  url              String
+  maintenanceLog   MaintenanceLog  @relation(fields: [maintenanceLogId], references: [id])
+  maintenanceLogId Int
+  uploadedAt       DateTime        @default(now())
 }
 
 enum MaintenanceType {

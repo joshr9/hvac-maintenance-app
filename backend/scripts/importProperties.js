@@ -81,11 +81,25 @@ async function main() {
       continue;
     }
 
-    // Skip if missing HVAC data
-    if (!labelCell || !model || !serial) continue;
+    // Only skip if model or serial is missing
+    if (!model || !serial) continue;
     const cleanedSerial = serial.trim().toUpperCase();
     const cleanedModel = model.trim().toUpperCase();
     if (!cleanedSerial || cleanedSerial === 'N/A') continue;
+
+    // Generate fallback label if labelCell is blank
+    let hvacLabel = labelCell;
+    if (!hvacLabel) {
+      if (cleanedSerial && cleanedSerial !== 'N/A') {
+        hvacLabel = cleanedSerial;
+      } else if (cleanedModel && cleanedModel !== 'N/A') {
+        hvacLabel = cleanedModel;
+      } else if (filterSize && filterSize !== 'N/A') {
+        hvacLabel = filterSize;
+      } else {
+        hvacLabel = `Unit for Suite ${suiteName}`;
+      }
+    }
 
     let installDate = new Date('2000-01-01T00:00:00Z');
     if (!isNaN(year) && year >= 1900 && year <= 2100) {
@@ -100,7 +114,7 @@ async function main() {
 
     // Create HVAC Unit
     const hvacUnitData = {
-      label: labelCell,
+      label: hvacLabel,
       serialNumber: cleanedSerial,
       model: cleanedModel,
       installDate: installDate,
@@ -114,6 +128,25 @@ async function main() {
     } catch (err) {
       console.error(`Failed to insert HVAC unit: ${cleanedSerial}`, err);
     }
+  }
+
+  // Ensure every property has at least one suite
+  let mainSuitesAdded = 0;
+  const allProperties = await prisma.property.findMany({ include: { suites: true } });
+  for (const prop of allProperties) {
+    if (!prop.suites || prop.suites.length === 0) {
+      await prisma.suite.create({
+        data: {
+          name: 'Main',
+          tenant: false,
+          propertyId: prop.id
+        }
+      });
+      mainSuitesAdded += 1;
+    }
+  }
+  if (mainSuitesAdded > 0) {
+    console.log(`Added ${mainSuitesAdded} main suites for properties with no suites.`);
   }
 
   await prisma.$disconnect();

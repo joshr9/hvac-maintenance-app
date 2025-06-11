@@ -4,13 +4,20 @@ const prisma = new PrismaClient()
 exports.getAllProperties = async (req, res) => {
   try {
     const properties = await prisma.property.findMany({
-      include: { hvacUnits: true },
-    })
-    res.json(properties)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+      include: {
+        suites: {
+          include: {
+            hvacUnits: true,
+          },
+        },
+      },
+    });
+    res.json(properties);
+  } catch (error) {
+    console.error("Error fetching properties:", error);
+    res.status(500).json({ error: error.message });
   }
-}
+};
 
 exports.getPropertyById = async (req, res) => {
   const id = parseInt(req.params.id)

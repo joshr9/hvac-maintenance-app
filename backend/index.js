@@ -1,10 +1,17 @@
+require('dotenv').config();
+
 const express = require("express");
 const cors = require("cors");
+const path = require("path"); // for photos
+
 
 // Middleware
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// uploading photos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 const hvacRoutes = require('./routes/hvacUnits')

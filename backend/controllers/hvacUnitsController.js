@@ -34,11 +34,29 @@ exports.createUnit = async (req, res) => {
 
 exports.updateUnit = async (req, res) => {
   const id = parseInt(req.params.id)
-  const { serialNumber, model, installDate, propertyId } = req.body
+  const {
+    label,
+    serialNumber,
+    model,
+    installDate,
+    filterSize,
+    notes,
+    suiteId,
+    // propertyId, // only include if your schema uses this directly
+  } = req.body
   try {
     const updated = await prisma.hvacUnit.update({
       where: { id },
-      data: { serialNumber, model, installDate: new Date(installDate), propertyId },
+      data: {
+        ...(label !== undefined && { label }),
+        ...(serialNumber !== undefined && { serialNumber }),
+        ...(model !== undefined && { model }),
+        ...(installDate !== undefined && { installDate: new Date(installDate) }),
+        ...(filterSize !== undefined && { filterSize }),
+        ...(notes !== undefined && { notes }),
+        ...(suiteId !== undefined && { suiteId }),
+        // ...(propertyId !== undefined && { propertyId }), // include if needed
+      },
     })
     res.json(updated)
   } catch (err) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash } from 'lucide-react';
+import { Trash, Wrench } from 'lucide-react';
 
 function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
   const [editRows, setEditRows] = useState([]);
@@ -54,7 +54,7 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
             i === idx ? { ...row, _status: "saved", _error: "" } : row
           )
         );
-        if (onUnitUpdate) onUnitUpdate(updatedUnit); // <-- Propagate change to parent
+        if (onUnitUpdate) onUnitUpdate(updatedUnit);
         setTimeout(() => {
           setEditRows((rows) =>
             rows.map((row, i) =>
@@ -85,7 +85,6 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
       const res = await fetch(`/api/hvac-units/${unitId}`, { method: "DELETE" });
       if (res.ok) {
         setEditRows(rows => rows.filter(row => row.id !== unitId));
-        // Optionally, you can call onUnitUpdate if you want to notify parent
       } else {
         alert("Error deleting unit.");
       }
@@ -96,20 +95,23 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
 
   return (
     <div className="mt-6">
-      <div className="mb-2 text-sm font-semibold text-gray-700">
-        Edit HVAC Units for this Suite
+      <div className="mb-4 flex items-center gap-2">
+        <div className="p-1 rounded" style={{backgroundColor: '#e8eafc'}}>
+          <Wrench className="w-4 h-4" style={{color: '#2a3a91'}} />
+        </div>
+        <span className="text-sm font-semibold text-gray-700">Edit HVAC Units for this Suite</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-xl bg-white shadow text-sm">
+        <table className="min-w-full border border-gray-200 rounded-xl bg-white shadow-sm text-sm">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="p-3 font-semibold text-gray-700">Label/Name</th>
-              <th className="p-3 font-semibold text-gray-700">Serial #</th>
-              <th className="p-3 font-semibold text-gray-700">Model</th>
-              <th className="p-3 font-semibold text-gray-700">Install Date</th>
-              <th className="p-3 font-semibold text-gray-700">Filter Size</th>
-              <th className="p-3 font-semibold text-gray-700">Notes</th>
-              <th className="p-3 font-semibold text-gray-700"></th>
+            <tr style={{backgroundColor: '#f8fafc'}}>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Label/Name</th>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Serial #</th>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Model</th>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Install Date</th>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Filter Size</th>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Notes</th>
+              <th className="p-3 text-left font-semibold text-gray-700 border-b">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -123,14 +125,18 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
               >
                 <td className="p-2 border-b">
                   <input
-                    className="w-full border border-gray-200 rounded px-2 py-1"
+                    className="w-full border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:border-transparent text-sm"
+                    style={{'--tw-ring-color': '#2a3a91'}}
+                    onFocus={(e) => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
                     value={row.label || ""}
                     onChange={(e) => handleChange(idx, "label", e.target.value)}
                   />
                 </td>
                 <td className="p-2 border-b">
                   <input
-                    className="w-full border border-gray-200 rounded px-2 py-1"
+                    className="w-full border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:border-transparent text-sm"
+                    style={{'--tw-ring-color': '#2a3a91'}}
+                    onFocus={(e) => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
                     value={row.serialNumber}
                     onChange={(e) =>
                       handleChange(idx, "serialNumber", e.target.value)
@@ -139,7 +145,9 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
                 </td>
                 <td className="p-2 border-b">
                   <input
-                    className="w-full border border-gray-200 rounded px-2 py-1"
+                    className="w-full border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:border-transparent text-sm"
+                    style={{'--tw-ring-color': '#2a3a91'}}
+                    onFocus={(e) => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
                     value={row.model}
                     onChange={(e) => handleChange(idx, "model", e.target.value)}
                   />
@@ -147,7 +155,9 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
                 <td className="p-2 border-b">
                   <input
                     type="date"
-                    className="w-full border border-gray-200 rounded px-2 py-1"
+                    className="w-full border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:border-transparent text-sm"
+                    style={{'--tw-ring-color': '#2a3a91'}}
+                    onFocus={(e) => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
                     value={row.installDate}
                     onChange={(e) =>
                       handleChange(idx, "installDate", e.target.value)
@@ -156,7 +166,9 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
                 </td>
                 <td className="p-2 border-b">
                   <input
-                    className="w-full border border-gray-200 rounded px-2 py-1"
+                    className="w-full border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:border-transparent text-sm"
+                    style={{'--tw-ring-color': '#2a3a91'}}
+                    onFocus={(e) => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
                     value={row.filterSize}
                     onChange={(e) =>
                       handleChange(idx, "filterSize", e.target.value)
@@ -165,7 +177,9 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
                 </td>
                 <td className="p-2 border-b">
                   <input
-                    className="w-full border border-gray-200 rounded px-2 py-1"
+                    className="w-full border border-gray-200 rounded px-2 py-1 focus:ring-1 focus:border-transparent text-sm"
+                    style={{'--tw-ring-color': '#2a3a91'}}
+                    onFocus={(e) => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
                     value={row.notes}
                     onChange={(e) => handleChange(idx, "notes", e.target.value)}
                   />
@@ -173,7 +187,8 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
                 <td className="p-2 border-b">
                   <div className="flex gap-2 items-center justify-center">
                     <button
-                      className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition"
+                      className="px-3 py-1 rounded text-white text-xs font-semibold hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-opacity-50 transition"
+                      style={{backgroundColor: '#2a3a91', '--tw-ring-color': '#2a3a91'}}
                       disabled={row._status === "saving"}
                       onClick={(e) => {
                         e.preventDefault();
@@ -187,7 +202,7 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
                         : "Save"}
                     </button>
                     <button
-                      className="p-2 rounded bg-red-500 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300 transition"
+                      className="p-1 rounded bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 transition"
                       onClick={(e) => {
                         e.preventDefault();
                         handleDelete(row.id);

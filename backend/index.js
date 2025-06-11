@@ -14,6 +14,9 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
+const maintenancePhotosRoutes = require('./routes/maintenancePhotos');
+app.use('/api/maintenance', maintenancePhotosRoutes);
+
 const hvacRoutes = require('./routes/hvacUnits')
 app.use('/api/hvac-units', hvacRoutes)
 

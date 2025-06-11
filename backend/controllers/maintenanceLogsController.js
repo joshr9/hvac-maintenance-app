@@ -7,6 +7,7 @@ exports.getAllLogs = async (req, res) => {
       include: {
         hvacUnit: true,
         technician: true,
+        photos: true,
       },
     })
     res.json(logs)
@@ -22,7 +23,8 @@ exports.getLogById = async (req, res) => {
       where: { id },
       include: {
         hvacUnit: true,
-        user: true,
+        technician: true,
+        photos: true,
       },
     })
     res.json(log)
@@ -38,7 +40,11 @@ exports.getLogsBySuite = async (req, res) => {
       where: {
         hvacUnit: { suiteId: Number(suiteId) }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        hvacUnit: true,   // <--- ADD THIS
+        photos: true,
+      }
     });
     res.json(logs);
   } catch (err) {

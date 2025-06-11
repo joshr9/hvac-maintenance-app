@@ -3,27 +3,32 @@ const multer = require('multer');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-
-const upload = multer({ dest: path.join(__dirname, '../uploads') });
 const router = express.Router();
 
-router.post('/:logId/photos', upload.array('photos', 10), async (req, res) => {
-  const logId = parseInt(req.params.logId, 10);
-
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: "No photos uploaded" });
+// Set up multer storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${req.params.logId}-${Date.now()}-${file.originalname}`);
   }
+});
+const upload = multer({ storage });
 
+// POST /api/maintenance/:logId/photos
+router.post('/:logId/photos', upload.single('photo'), async (req, res) => {
   try {
-    const photos = await Promise.all(req.files.map(file =>
-      prisma.maintenancePhoto.create({
-        data: {
-          url: `/uploads/${file.filename}`,
-          maintenanceLogId: logId
-        }
-      })
-    ));
-    res.json({ photos });
+    const logId = parseInt(req.params.logId, 10);
+    if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+    const url = `/uploads/${req.file.filename}`;
+    const photo = await prisma.maintenancePhoto.create({
+      data: {
+        url,
+        maintenanceLogId: logId
+      }
+    });
+    res.status(201).json(photo);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -6,7 +6,7 @@ exports.getAllLogs = async (req, res) => {
     const logs = await prisma.maintenanceLog.findMany({
       include: {
         hvacUnit: true,
-        user: true,
+        technician: true,
       },
     })
     res.json(logs)
@@ -30,6 +30,21 @@ exports.getLogById = async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 }
+
+exports.getLogsBySuite = async (req, res) => {
+  const { suiteId } = req.params;
+  try {
+    const logs = await prisma.maintenanceLog.findMany({
+      where: {
+        hvacUnit: { suiteId: Number(suiteId) }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.createLog = async (req, res) => {
   const { hvacUnitId, technicianId, notes, maintenanceType, status, createdAt } = req.body;
@@ -81,3 +96,4 @@ exports.deleteLog = async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 }
+

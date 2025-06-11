@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Building, Home, ArrowLeft, Plus, CheckCircle, Wrench, Calendar, FileText, MapPin } from 'lucide-react';
+import { Search, Building, Home, ArrowLeft, Plus, CheckCircle, Wrench, Calendar, FileText, MapPin, Trash } from 'lucide-react';
 import EditableHVACTable from './EditableHVACTable';
 
 const MAINTENANCE_TYPES = [
@@ -22,6 +22,18 @@ const MaintenanceForm = () => {
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [formError, setFormError] = useState('');
   // Add HVAC modal state
+  const [maintenanceLogs, setMaintenanceLogs] = useState([]);
+  // Fetch maintenance logs for selected suite
+  useEffect(() => {
+    if (!selectedSuite) {
+      setMaintenanceLogs([]);
+      return;
+    }
+    fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
+      .then(res => res.json())
+      .then(data => setMaintenanceLogs(Array.isArray(data) ? data : []))
+      .catch(() => setMaintenanceLogs([]));
+  }, [selectedSuite]);
   const [showAddHVAC, setShowAddHVAC] = useState(false);
   const [newUnit, setNewUnit] = useState({
     name: "",
@@ -94,10 +106,12 @@ const handleSuiteSelect = (suite) => {
         body: JSON.stringify(payload),
       });
       if (response.ok) {
+        const newLog = await response.json();
         setSubmitStatus('Maintenance record saved successfully!');
         setMaintenanceNote('');
         setMaintenanceType('');
         setSelectedUnit('');
+        setMaintenanceLogs(logs => [newLog, ...logs]);
       } else {
         const err = await response.json();
         setSubmitStatus(err?.error || 'Error saving maintenance record.');
@@ -137,6 +151,16 @@ const handleSuiteSelect = (suite) => {
     } catch {
       setAddHVACStatus("Network error.");
     }
+  };
+
+  // Handler to update an HVAC unit in the selected suite
+  const handleHVACUnitUpdate = (updatedUnit) => {
+    setSelectedSuite(suite => ({
+      ...suite,
+      hvacUnits: suite.hvacUnits.map(unit =>
+        unit.id === updatedUnit.id ? { ...unit, ...updatedUnit } : unit
+      ),
+    }));
   };
 
   return (
@@ -362,7 +386,10 @@ const handleSuiteSelect = (suite) => {
                   )}
                   {/* Editable HVAC Units Table */}
                   {selectedSuite.hvacUnits && selectedSuite.hvacUnits.length > 0 && (
-                    <EditableHVACTable hvacUnits={selectedSuite.hvacUnits} />
+                    <EditableHVACTable 
+                      hvacUnits={selectedSuite.hvacUnits} 
+                      onUnitUpdate={handleHVACUnitUpdate}
+                    />
                   )}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -406,7 +433,7 @@ const handleSuiteSelect = (suite) => {
                 </div>
               </form>
             </div>
-            {/* Maintenance History Placeholder */}
+            {/* Maintenance History Section */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="bg-gray-100 p-2 rounded-lg">
@@ -414,11 +441,32 @@ const handleSuiteSelect = (suite) => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Maintenance History</h3>
               </div>
-              <div className="text-center py-12">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-2">No maintenance history available</p>
-                <p className="text-sm text-gray-400">Previous maintenance records will appear here</p>
-              </div>
+              {maintenanceLogs.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-2">No maintenance history available</p>
+                  <p className="text-sm text-gray-400">Previous maintenance records will appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y border rounded-lg overflow-hidden">
+                  {maintenanceLogs.map(log => (
+                    <div key={log.id} className="flex items-start gap-4 p-4 bg-white hover:bg-blue-50 transition">
+                      <Wrench className="w-5 h-5 mt-1 text-blue-700" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-semibold text-gray-900">{log.maintenanceType}</span>
+                          <span className="text-gray-400">|
+                            {log.createdAt ? new Date(log.createdAt).toLocaleDateString() : ''}
+                          </span>
+                        </div>
+                        <div className="text-gray-700 text-sm mt-1 whitespace-pre-line">
+                          {log.notes}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -440,8 +488,8 @@ const handleSuiteSelect = (suite) => {
               <input
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 placeholder="Label/Name"
-                value={newUnit.name}
-                onChange={e => setNewUnit(n => ({ ...n, name: e.target.value }))}
+                value={newUnit.label}
+                onChange={e => setNewUnit(n => ({ ...n, label: e.target.value }))}
                 required
               />
               <input

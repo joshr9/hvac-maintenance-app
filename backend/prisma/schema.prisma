@@ -65,6 +65,11 @@ model MaintenanceLog {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   photos       MaintenancePhoto[] // adding ability for multiple photos
+
+  // Add optional fields for detailed checklist data
+  checklistData Json?     // Store the full checklist as JSON
+  serviceTechnician String? // Technician name from checklist
+  specialNotes String?    // Special notes from checklist
 }
 
 
@@ -82,6 +87,7 @@ enum MaintenanceType {
   FULL_SERVICE
   REPAIR
   OTHER
+  FULL_INSPECTION_CHECKLIST
 }
 
 enum MaintenanceStatus {

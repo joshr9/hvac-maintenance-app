@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const controller = require('../controllers/maintenanceLogsController')
+router.get('/report', controller.downloadReport)
 
 router.get('/', controller.getAllLogs)
 router.get('/:id', controller.getLogById)

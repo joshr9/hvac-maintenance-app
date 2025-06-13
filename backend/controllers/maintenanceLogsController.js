@@ -1,5 +1,8 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
+const { Parser } = require('json2csv'); 
+
+
 
 exports.getAllLogs = async (req, res) => {
   try {
@@ -52,25 +55,48 @@ exports.getLogsBySuite = async (req, res) => {
   }
 };
 
+// Update your existing createLog function to handle checklist data:
+
 exports.createLog = async (req, res) => {
-  const { hvacUnitId, technicianId, notes, maintenanceType, status, createdAt } = req.body;
+  const { 
+    hvacUnitId, 
+    technicianId, 
+    notes, 
+    maintenanceType, 
+    status, 
+    createdAt,
+    // Add new checklist fields
+    checklistData,
+    serviceTechnician,
+    specialNotes
+  } = req.body;
+  
   try {
     const newLog = await prisma.maintenanceLog.create({
       data: {
         hvacUnitId,
         technicianId,
         notes,
-        maintenanceType, // should be INSPECTION, etc.
+        maintenanceType,
         status,
-        createdAt: new Date(createdAt), // or just createdAt if your schema expects string
+        createdAt: new Date(createdAt),
+        // Add optional checklist fields
+        ...(checklistData && { checklistData }),
+        ...(serviceTechnician && { serviceTechnician }),
+        ...(specialNotes && { specialNotes })
+      },
+      include: {
+        hvacUnit: true,
+        technician: true,
+        photos: true
       }
     });
     res.json(newLog);
   } catch (error) {
-    console.error('Error creating log:', error); // <--- POST THIS ERROR HERE
+    console.error('Error creating log:', error);
     res.status(500).json({ error: error.message });
   }
-}
+};
 
 exports.updateLog = async (req, res) => {
   const id = parseInt(req.params.id)
@@ -103,3 +129,36 @@ exports.deleteLog = async (req, res) => {
   }
 }
 
+exports.downloadReport = async (req, res) => {
+  const suiteId = Number(req.query.suiteId);
+  if (!suiteId) {
+    return res.status(400).json({ error: 'suiteId is required' });
+  }
+  try {
+    const logs = await prisma.maintenanceLog.findMany({
+      where: { hvacUnit: { suiteId } },
+      include: { hvacUnit: true, technician: true, photos: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const data = logs.map(log => ({
+      ID: log.id,
+      'Unit Label': log.hvacUnit?.name || '',
+      'Technician': log.technician?.name || '',
+      'Maintenance Type': log.maintenanceType,
+      Notes: log.notes,
+      Date: log.createdAt ? new Date(log.createdAt).toLocaleDateString() : '',
+      'Photos': log.photos?.map(p => `http://localhost:3000${p.url}`).join('; ') || ''
+    }));
+
+    const fields = ['ID', 'Unit Label', 'Technician', 'Maintenance Type', 'Notes', 'Date', 'Photos'];
+    const parser = new Parser({ fields });
+    const csv = parser.parse(data);
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('maintenance-history.csv');
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

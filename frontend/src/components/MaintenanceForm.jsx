@@ -9,6 +9,7 @@ import MaintenanceRecordForm from './MaintenanceRecordForm';
 import AddHVACModal from './AddHVACModal';
 import MaintenanceModeToggle from './MaintenanceModeToggle';
 import MaintenanceChecklist from './MaintenanceChecklist';
+import MaintenanceCalendar from './MaintenanceCalendar';
 
 const MAINTENANCE_TYPES = [
   { value: 'INSPECTION', label: 'Inspection' },
@@ -366,6 +367,11 @@ const MaintenanceForm = () => {
                   <MaintenanceHistory
                     maintenanceLogs={maintenanceLogs}
                     selectedUnit={selectedUnit}
+                  />
+                  {/* Add the Calendar Section here */}
+                  <MaintenanceCalendar
+                    selectedSuite={selectedSuite}
+                    maintenanceLogs={maintenanceLogs}
                   />
                 </>
              ) : (

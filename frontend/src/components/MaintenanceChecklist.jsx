@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle, AlertTriangle, Camera, X } from 'lucide-react';
 
 const MaintenanceChecklist = ({ 
   selectedSuite,
@@ -67,6 +67,15 @@ const MaintenanceChecklist = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  
+  // Photo management state
+  const [sectionPhotos, setSectionPhotos] = useState({
+    fans: [],
+    coolingSeason: [],
+    heatingSeason: [],
+    general: []
+  });
+  const [photoUploadStatus, setPhotoUploadStatus] = useState('');
 
   const handleCheckboxChange = (section, field, value) => {
     setChecklistData(prev => ({
@@ -86,6 +95,51 @@ const MaintenanceChecklist = ({
         [field]: value
       }
     }));
+  };
+
+  // Photo management functions
+  const handleSectionPhotoAdd = (section, files) => {
+    const newPhotos = Array.from(files).map(file => ({
+      file,
+      url: URL.createObjectURL(file),
+      id: Math.random().toString(36).substr(2, 9)
+    }));
+    
+    setSectionPhotos(prev => ({
+      ...prev,
+      [section]: [...prev[section], ...newPhotos]
+    }));
+  };
+
+  const handlePhotoRemove = (section, photoId) => {
+    setSectionPhotos(prev => ({
+      ...prev,
+      [section]: prev[section].filter(photo => photo.id !== photoId)
+    }));
+  };
+
+  const uploadSectionPhotos = async (logId) => {
+    setPhotoUploadStatus("Uploading photos...");
+    
+    try {
+      const allPhotos = [...sectionPhotos.fans, ...sectionPhotos.coolingSeason, ...sectionPhotos.heatingSeason, ...sectionPhotos.general];
+      
+      for (let photo of allPhotos) {
+        const formData = new FormData();
+        formData.append('photo', photo.file);
+        
+        await fetch(`/api/maintenance/${logId}/photos`, {
+          method: "POST",
+          body: formData,
+        });
+      }
+      
+      setPhotoUploadStatus(`${allPhotos.length} photos uploaded successfully!`);
+      setTimeout(() => setPhotoUploadStatus(""), 2000);
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      setPhotoUploadStatus("Error uploading photos");
+    }
   };
 
   const handleTopLevelChange = (field, value) => {
@@ -159,6 +213,14 @@ const MaintenanceChecklist = ({
 
       const savedLog = await logResponse.json();
       
+      // Upload photos if any were added
+      const totalPhotos = sectionPhotos.fans.length + sectionPhotos.coolingSeason.length + 
+                         sectionPhotos.heatingSeason.length + sectionPhotos.general.length;
+      
+      if (totalPhotos > 0) {
+        await uploadSectionPhotos(savedLog.id);
+      }
+      
       setSubmitStatus('Full inspection checklist saved successfully!');
       
       // Call parent callback if provided
@@ -211,6 +273,14 @@ const MaintenanceChecklist = ({
         filterList: '',
         problemsFound: ''
       });
+      
+      // Reset photos
+      setSectionPhotos({
+        fans: [],
+        coolingSeason: [],
+        heatingSeason: [],
+        general: []
+      });
 
     } catch (error) {
       console.error('Error saving checklist:', error);
@@ -224,6 +294,75 @@ const MaintenanceChecklist = ({
   };
 
   const currentUnit = selectedSuite?.hvacUnits?.find(u => u.id == selectedUnit);
+
+  // Photo Section Component
+  const PhotoSection = ({ 
+    sectionKey, 
+    sectionTitle, 
+    photos, 
+    onPhotoAdd, 
+    onPhotoRemove 
+  }) => {
+    const handleFileChange = (e) => {
+      if (e.target.files.length > 0) {
+        onPhotoAdd(sectionKey, e.target.files);
+        e.target.value = ''; // Reset input
+      }
+    };
+
+    return (
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h5 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Camera className="w-4 h-4" />
+            {sectionTitle} Photos
+          </h5>
+          
+          <label className="cursor-pointer inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg text-white hover:opacity-90 transition-colors"
+                 style={{backgroundColor: '#2a3a91'}}>
+            <Camera className="w-3 h-3" />
+            Add Photo
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              capture="environment" // Use rear camera on mobile
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+        </div>
+
+        {photos.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {photos.map((photo) => (
+              <div key={photo.id} className="relative group">
+                <img
+                  src={photo.url}
+                  alt={`${sectionTitle} photo`}
+                  className="w-full h-20 object-cover rounded border"
+                />
+                <button
+                  onClick={() => onPhotoRemove(sectionKey, photo.id)}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  type="button"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {photos.length === 0 && (
+          <div className="text-center py-4 text-gray-500">
+            <Camera className="w-6 h-6 mx-auto mb-1 opacity-50" />
+            <p className="text-xs">Tap "Add Photo" for visual proof</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
@@ -437,7 +576,35 @@ const MaintenanceChecklist = ({
                 </div>
               </div>
             </div>
+
+            {/* Photo Section for Fans */}
+            <PhotoSection
+              sectionKey="fans"
+              sectionTitle="Fans"
+              photos={sectionPhotos.fans}
+              onPhotoAdd={handleSectionPhotoAdd}
+              onPhotoRemove={handlePhotoRemove}
+            />
           </div>
+
+          {/* General Photos Section */}
+          <div className="mb-6">
+            <PhotoSection
+              sectionKey="general"
+              sectionTitle="General Inspection"
+              photos={sectionPhotos.general}
+              onPhotoAdd={handleSectionPhotoAdd}
+              onPhotoRemove={handlePhotoRemove}
+            />
+          </div>
+
+          {/* Photo Upload Status */}
+          {photoUploadStatus && (
+            <div className="flex items-center gap-3 p-4 border rounded-lg mb-4" style={{backgroundColor: '#f0f9ff', borderColor: '#2a3a91'}}>
+              <Camera className="w-5 h-5 flex-shrink-0" style={{color: '#2a3a91'}} />
+              <div className="font-medium" style={{color: '#2a3a91'}}>{photoUploadStatus}</div>
+            </div>
+          )}
 
           {/* COOLING SEASON Section */}
           <div className="mb-8">
@@ -513,6 +680,15 @@ const MaintenanceChecklist = ({
                 </label>
               ))}
             </div>
+
+            {/* Photo Section for Cooling Season */}
+            <PhotoSection
+              sectionKey="coolingSeason"
+              sectionTitle="Cooling Season"
+              photos={sectionPhotos.coolingSeason}
+              onPhotoAdd={handleSectionPhotoAdd}
+              onPhotoRemove={handlePhotoRemove}
+            />
           </div>
 
           {/* HEATING SEASON Section */}
@@ -544,6 +720,15 @@ const MaintenanceChecklist = ({
                 </label>
               ))}
             </div>
+
+            {/* Photo Section for Heating Season */}
+            <PhotoSection
+              sectionKey="heatingSeason"
+              sectionTitle="Heating Season"
+              photos={sectionPhotos.heatingSeason}
+              onPhotoAdd={handleSectionPhotoAdd}
+              onPhotoRemove={handlePhotoRemove}
+            />
           </div>
 
           {/* Filter List and Problems */}

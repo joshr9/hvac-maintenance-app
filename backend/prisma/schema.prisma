@@ -37,6 +37,8 @@ model Suite {
   propertyId Int
   hvacUnits  HvacUnit[]
 
+  scheduledMaintenance ScheduledMaintenance[] 
+
   @@unique([name, propertyId])
 }
 
@@ -51,6 +53,9 @@ model HvacUnit {
   suite           Suite?          @relation(fields: [suiteId], references: [id])
   suiteId         Int?            // ← make optional for now
   maintenanceLogs MaintenanceLog[]
+
+  scheduledMaintenance ScheduledMaintenance[] 
+
 }
 
 model MaintenanceLog {
@@ -70,6 +75,8 @@ model MaintenanceLog {
   checklistData Json?     // Store the full checklist as JSON
   serviceTechnician String? // Technician name from checklist
   specialNotes String?    // Special notes from checklist
+
+  scheduledMaintenance ScheduledMaintenance? 
 }
 
 
@@ -79,6 +86,44 @@ model MaintenancePhoto {
   maintenanceLog   MaintenanceLog  @relation(fields: [maintenanceLogId], references: [id])
   maintenanceLogId Int
   uploadedAt       DateTime        @default(now())
+}
+
+model ScheduledMaintenance {
+  id                 Int      @id @default(autoincrement())
+  date               DateTime
+  time               String   // Store as HH:MM format
+  maintenanceType    MaintenanceType
+  assignedTechnician String
+  priority           Priority @default(MEDIUM)
+  notes              String?
+  reminderDays       Int      @default(1)
+  status             ScheduleStatus @default(SCHEDULED)
+  
+  // Relations
+  suite              Suite    @relation(fields: [suiteId], references: [id])
+  suiteId            Int
+  hvacUnit           HvacUnit? @relation(fields: [hvacUnitId], references: [id])
+  hvacUnitId         Int?
+  
+  // When completed, link to the actual maintenance log
+  completedLog       MaintenanceLog? @relation(fields: [completedLogId], references: [id])
+  completedLogId     Int?            @unique
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+enum Priority {
+  LOW
+  MEDIUM  
+  HIGH
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
 
 enum MaintenanceType {

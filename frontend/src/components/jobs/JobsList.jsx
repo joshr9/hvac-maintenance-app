@@ -1,4 +1,4 @@
-// components/jobs/JobsList.jsx - Complete File with Create Button
+// components/jobs/JobsList.jsx - Corrected Complete File
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 
@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import JobStats from './JobStats';
 import JobFilters from './JobFilters';
 import JobGrid from './JobGrid';
-import JobDetailModal from './JobDetailModal';
+import JobDetailView from './JobDetailView';  // Using JobDetailView for full-page edit functionality
 import CreateJobModal from './CreateJobModal';
 
 const JobsList = ({ onNavigate, onOpenModal, initialSearchQuery = '' }) => {
@@ -88,6 +88,17 @@ const JobsList = ({ onNavigate, onOpenModal, initialSearchQuery = '' }) => {
     setShowJobDetail(true);
   };
 
+  // Job update handler - updates both jobs list and selected job
+  const handleJobUpdate = (updatedJob) => {
+    setJobs(prevJobs => prevJobs.map(job => job.id === updatedJob.id ? updatedJob : job));
+    setSelectedJob(updatedJob); // Keep selected job in sync
+  };
+
+  const handleCloseJobDetail = () => {
+    setShowJobDetail(false);
+    setSelectedJob(null);
+  };
+
   const handleStatusUpdate = async (jobId, newStatus) => {
     try {
       const response = await fetch(`/api/jobs/${jobId}`, {
@@ -102,7 +113,11 @@ const JobsList = ({ onNavigate, onOpenModal, initialSearchQuery = '' }) => {
 
       if (response.ok) {
         const updatedJob = await response.json();
-        setJobs(jobs.map(job => job.id === jobId ? updatedJob : job));
+        setJobs(prevJobs => prevJobs.map(job => job.id === jobId ? updatedJob : job));
+        // If this job is currently selected, update it too
+        if (selectedJob && selectedJob.id === jobId) {
+          setSelectedJob(updatedJob);
+        }
       }
     } catch (error) {
       console.error('Error updating job status:', error);
@@ -126,6 +141,17 @@ const JobsList = ({ onNavigate, onOpenModal, initialSearchQuery = '' }) => {
   });
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || propertyFilter !== 'all';
+
+  // If showing job detail view, render that as a full page replacement
+  if (showJobDetail && selectedJob) {
+    return (
+      <JobDetailView 
+        job={selectedJob}
+        onClose={handleCloseJobDetail}
+        onUpdate={handleJobUpdate}
+      />
+    );
+  }
 
   // Loading state
   if (loading) {
@@ -171,65 +197,7 @@ const JobsList = ({ onNavigate, onOpenModal, initialSearchQuery = '' }) => {
         </div>
 
         {/* Stats Component */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Total Jobs</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {typeof stats.totalJobs === 'number' ? stats.totalJobs.toLocaleString() : (stats.totalJobs || 0)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #2a3a91 0%, #3b4ae6 100%)'}}>
-                  <div className="w-6 h-6 text-white">💼</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Active Jobs</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {typeof stats.scheduledJobs === 'number' ? stats.scheduledJobs.toLocaleString() : (stats.scheduledJobs || 0)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'}}>
-                  <div className="w-6 h-6 text-white">⏰</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">In Progress</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {typeof stats.inProgressJobs === 'number' ? stats.inProgressJobs.toLocaleString() : (stats.inProgressJobs || 0)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)'}}>
-                  <div className="w-6 h-6 text-white">✅</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">Completed This Week</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {typeof stats.completedThisWeek === 'number' ? stats.completedThisWeek.toLocaleString() : (stats.completedThisWeek || 0)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl" style={{background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)'}}>
-                  <div className="w-6 h-6 text-white">✅</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+         <JobStats stats={stats} />
 
         {/* Filters Component */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 mb-6">
@@ -261,17 +229,7 @@ const JobsList = ({ onNavigate, onOpenModal, initialSearchQuery = '' }) => {
           hasFilters={hasActiveFilters}
         />
 
-        {/* Modals */}
-        {showJobDetail && selectedJob && (
-          <JobDetailModal 
-            job={selectedJob}
-            onClose={() => {
-              setShowJobDetail(false);
-              setSelectedJob(null);
-            }}
-          />
-        )}
-
+        {/* Create Job Modal */}
         <CreateJobModal
           isOpen={showCreateJobModal}
           onClose={() => setShowCreateJobModal(false)}

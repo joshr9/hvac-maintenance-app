@@ -1,12 +1,12 @@
 // components/jobs/JobStats.jsx
 import React from 'react';
-import { Briefcase, Clock, CheckCircle, TrendingUp } from 'lucide-react';
+import { Briefcase, Clock, Activity, Award } from 'lucide-react';
 
 const StatCard = ({ title, value, icon: Icon, color, change, prefix = '', suffix = '' }) => (
   <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
     <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+      <div className="flex-1 min-w-0 pr-4"> {/* Add flex-1 min-w-0 for text, pr-4 for spacing */}
+        <p className="text-sm font-medium text-gray-600 mb-1 leading-tight">{title}</p> {/* Add leading-tight */}
         <p className="text-2xl font-bold text-gray-900">
           {prefix}{typeof value === 'number' ? value.toLocaleString() : value}{suffix}
         </p>
@@ -17,7 +17,7 @@ const StatCard = ({ title, value, icon: Icon, color, change, prefix = '', suffix
           </div>
         )}
       </div>
-      <div className={`p-3 rounded-xl ${color}`}>
+      <div className={`p-3 rounded-xl ${color} flex-shrink-0`}> {/* Add flex-shrink-0 */}
         <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
@@ -42,14 +42,14 @@ const JobStats = ({ stats = {} }) => {
       <StatCard
         title="In Progress"
         value={stats.inProgressJobs || 0}
-        icon={CheckCircle}
+        icon={Activity}
         color="bg-green-600"
       />
       <StatCard
-        title="Completed This Week"
+        title="Completed"
         value={stats.completedThisWeek || 0}
-        icon={CheckCircle}
-        color="bg-purple-600"
+        icon={Award}
+        color="bg-yellow-600"
       />
     </div>
   );

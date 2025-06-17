@@ -11,7 +11,11 @@ exports.getScheduledMaintenance = async (req, res) => {
       where: { suiteId: parseInt(suiteId) },
       include: {
         hvacUnit: true,
-        suite: true,
+        suite: {
+          include: {
+            property: true
+          }
+        },
         completedLog: true
       },
       orderBy: { date: 'asc' }
@@ -20,6 +24,29 @@ exports.getScheduledMaintenance = async (req, res) => {
     res.json(scheduled);
   } catch (error) {
     console.error('Error fetching scheduled maintenance:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get ALL scheduled maintenance across all properties (NEW ENDPOINT)
+exports.getAllScheduledMaintenance = async (req, res) => {
+  try {
+    const scheduled = await prisma.scheduledMaintenance.findMany({
+      include: {
+        hvacUnit: true,
+        suite: {
+          include: {
+            property: true
+          }
+        },
+        completedLog: true
+      },
+      orderBy: { date: 'asc' }
+    });
+    
+    res.json(scheduled);
+  } catch (error) {
+    console.error('Error fetching all scheduled maintenance:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -38,6 +65,13 @@ exports.createScheduledMaintenance = async (req, res) => {
     hvacUnitId
   } = req.body;
 
+  // Validation
+  if (!date || !time || !maintenanceType || !assignedTechnician || !suiteId) {
+    return res.status(400).json({ 
+      error: 'Missing required fields: date, time, maintenanceType, assignedTechnician, suiteId' 
+    });
+  }
+
   try {
     const scheduled = await prisma.scheduledMaintenance.create({
       data: {
@@ -49,11 +83,16 @@ exports.createScheduledMaintenance = async (req, res) => {
         notes,
         reminderDays,
         suiteId: parseInt(suiteId),
-        hvacUnitId: hvacUnitId ? parseInt(hvacUnitId) : null
+        hvacUnitId: hvacUnitId ? parseInt(hvacUnitId) : null,
+        status: 'SCHEDULED' // Ensure status is set
       },
       include: {
         hvacUnit: true,
-        suite: true
+        suite: {
+          include: {
+            property: true
+          }
+        }
       }
     });
 
@@ -80,7 +119,11 @@ exports.updateScheduledMaintenance = async (req, res) => {
       },
       include: {
         hvacUnit: true,
-        suite: true,
+        suite: {
+          include: {
+            property: true
+          }
+        },
         completedLog: true
       }
     });
@@ -106,7 +149,11 @@ exports.completeScheduledMaintenance = async (req, res) => {
       },
       include: {
         hvacUnit: true,
-        suite: true,
+        suite: {
+          include: {
+            property: true
+          }
+        },
         completedLog: true
       }
     });

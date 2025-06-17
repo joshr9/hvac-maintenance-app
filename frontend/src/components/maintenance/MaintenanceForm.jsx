@@ -1,23 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import MaintenanceHistory from './MaintenanceHistory';
-import ManageHVACUnitsSection from './ManageHVACUnitsSection';
-import { Search, Building, Home, ArrowLeft, Plus, CheckCircle, Wrench, Calendar, FileText, MapPin, Trash } from 'lucide-react';
-import EditableHVACTable from './EditableHVACTable';
-import PropertySearchStep from './PropertySearchStep';
-import SuiteSelectionStep from './SuiteSelectionStep';
+import MaintenanceHeader from './MaintenanceHeader';
+import MaintenanceSteps from './MaintenanceSteps';
+import PropertyBreadcrumb from './PropertyBreadcrumb';
+import MaintenanceActions from './MaintenanceActions';
+import PropertySearchStep from '../properties/PropertySearchStep';
+import SuiteSelectionStep from '../properties/SuiteSelectionStep';
 import MaintenanceRecordForm from './MaintenanceRecordForm';
-import AddHVACModal from './AddHVACModal';
-import MaintenanceModeToggle from './MaintenanceModeToggle';
 import MaintenanceChecklist from './MaintenanceChecklist';
-import MaintenanceCalendar from './MaintenanceCalendar';
-
-const MAINTENANCE_TYPES = [
-  { value: 'INSPECTION', label: 'Inspection' },
-  { value: 'FILTER_CHANGE', label: 'Filter Change' },
-  { value: 'FULL_SERVICE', label: 'Full Service' },
-  { value: 'REPAIR', label: 'Repair' },
-  { value: 'OTHER', label: 'Other' },
-];
+import MaintenanceHistory from './MaintenanceHistory';
+import ManageHVACUnitsSection from '../hvac/ManageHVACUnitsSection';
+import AddHVACModal from '../hvac/AddHVACModal';
+import MaintenanceModeToggle from './MaintenanceModeToggle';
+import Card from '../common/Card';
+import { ArrowLeft } from 'lucide-react';
 
 const MaintenanceForm = () => {
   const [properties, setProperties] = useState([]);
@@ -241,88 +236,70 @@ const MaintenanceForm = () => {
     }));
   };
 
+  const handleChecklistComplete = (savedLog) => {
+    // Add the new log to the maintenance history
+    setMaintenanceLogs(logs => [savedLog, ...logs]);
+    
+    // Refresh the full maintenance logs from backend to ensure consistency
+    if (selectedSuite) {
+      fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
+        .then(res => res.json())
+        .then(data => {
+          const logsWithPhotos = Array.isArray(data)
+            ? data.map(log => ({
+                ...log,
+                photos: Array.isArray(log.photos) ? log.photos : [],
+              }))
+            : [];
+          setMaintenanceLogs(logsWithPhotos);
+        })
+        .catch(() => setMaintenanceLogs([]));
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-6"> {/* Smaller padding on mobile */}
-          <div className="flex items-center justify-center gap-3">
-            <img 
-              src="/DeanCallan.png" 
-              alt="Dean Callan Logo" 
-              className="w-20 h-20 object-contain"
-            />
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900">HVAC Maintenance Tracker</h1>
-              <p className="text-gray-600">Manage property maintenance records</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)'}}>
+      <MaintenanceHeader />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Property Search Step */}
+        <MaintenanceSteps 
+          selectedProperty={selectedProperty}
+          selectedSuite={selectedSuite}
+        />
+
         {!selectedProperty ? (
           <PropertySearchStep
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             filteredProperties={filteredProperties}
             handlePropertySelect={handlePropertySelect}
+            properties={properties}
+            setProperties={setProperties}
           />
-
-        /* Suite Selection Step */
         ) : !selectedSuite ? (
-          <SuiteSelectionStep
-            selectedProperty={selectedProperty}
-            setSelectedProperty={setSelectedProperty}
-            handleSuiteSelect={handleSuiteSelect}
-          />
-
-        /* Maintenance Form Step */
+          <Card variant="glass" padding="md" className="max-w-4xl mx-auto">
+            <SuiteSelectionStep
+              selectedProperty={selectedProperty}
+              setSelectedProperty={setSelectedProperty}
+              handleSuiteSelect={handleSuiteSelect}
+            />
+          </Card>
         ) : (
           <div className="max-w-4xl mx-auto space-y-6">
-            {/* Breadcrumb Header */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex justify-between items-start">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg" style={{backgroundColor: '#e8eafc'}}>
-                    <Home className="w-6 h-6" style={{color: '#2a3a91'}} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedProperty.name}</h2>
-                    <p className="text-gray-600 flex items-center gap-1 mt-1">
-                      <MapPin className="w-4 h-4" />
-                      {selectedProperty.address}
-                    </p>
-                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium" style={{backgroundColor: '#e8eafc', color: '#2a3a91'}}>
-                      <Home className="w-4 h-4" />
-                      {selectedSuite.name || selectedSuite.unitNumber || `Suite ${selectedSuite.id}`}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setSelectedSuite(null)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Suites
-                  </button>
-                  <button 
-                    onClick={() => setSelectedProperty(null)}
-                    className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Change Property
-                  </button>
-                </div>
-              </div>
-            </div>
+            <PropertyBreadcrumb 
+              selectedProperty={selectedProperty}
+              selectedSuite={selectedSuite}
+              onBackToSuites={() => setSelectedSuite(null)}
+              onChangeProperty={() => setSelectedProperty(null)}
+            />
 
-            <>
+            <Card variant="glass" padding="sm">
               <MaintenanceModeToggle mode={mode} setMode={setMode} />
+            </Card>
 
-              {mode === 'quick' ? (
-                <>
+            {mode === 'quick' ? (
+              <>
+                <Card variant="glass" padding="md">
                   <MaintenanceRecordForm
                     selectedSuite={selectedSuite}
                     selectedUnit={selectedUnit}
@@ -341,70 +318,39 @@ const MaintenanceForm = () => {
                     handleSubmit={handleSubmit}
                     setShowAddHVAC={setShowAddHVAC}
                   />
+                </Card>
 
-                  {/* HVAC Units Management */}
-                  {selectedSuite.hvacUnits && selectedSuite.hvacUnits.length > 0 && (
+                {selectedSuite.hvacUnits && selectedSuite.hvacUnits.length > 0 && (
+                  <Card variant="glass" padding="md">
                     <ManageHVACUnitsSection
                       hvacUnits={selectedSuite.hvacUnits}
                       onUnitUpdate={handleHVACUnitUpdate}
                     />
-                  )}
+                  </Card>
+                )}
 
-                  {/* Download Report Button */}
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={downloadReport}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-white font-semibold rounded-lg shadow hover:opacity-90 transition-colors"
-                      style={{ backgroundColor: '#2a3a91' }}
-                    >
-                      <FileText className="w-5 h-5" />
-                      Download Report
-                    </button>
-                  </div>
+                <MaintenanceActions onDownloadReport={downloadReport} />
 
-                  {/* Maintenance History Section */}
+                <Card variant="glass" padding="md">
                   <MaintenanceHistory
                     maintenanceLogs={maintenanceLogs}
                     selectedUnit={selectedUnit}
                   />
-                  {/* Add the Calendar Section here */}
-                  <MaintenanceCalendar
-                    selectedSuite={selectedSuite}
-                    maintenanceLogs={maintenanceLogs}
-                  />
-                </>
-             ) : (
-              <MaintenanceChecklist 
-                selectedSuite={selectedSuite}
-                selectedUnit={selectedUnit}
-                setSelectedUnit={setSelectedUnit}
-                setShowAddHVAC={setShowAddHVAC}
-                submitStatus={submitStatus}
-                setSubmitStatus={setSubmitStatus}
-                onChecklistComplete={(savedLog) => {
-                  // Add the new log to the maintenance history
-                  setMaintenanceLogs(logs => [savedLog, ...logs]);
-                  
-                  // Refresh the full maintenance logs from backend to ensure consistency
-                  if (selectedSuite) {
-                    fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
-                      .then(res => res.json())
-                      .then(data => {
-                        const logsWithPhotos = Array.isArray(data)
-                          ? data.map(log => ({
-                              ...log,
-                              photos: Array.isArray(log.photos) ? log.photos : [],
-                            }))
-                          : [];
-                        setMaintenanceLogs(logsWithPhotos);
-                      })
-                      .catch(() => setMaintenanceLogs([]));
-                  }
-                }}
-              />
+                </Card>
+              </>
+            ) : (
+              <Card variant="glass" padding="md">
+                <MaintenanceChecklist 
+                  selectedSuite={selectedSuite}
+                  selectedUnit={selectedUnit}
+                  setSelectedUnit={setSelectedUnit}
+                  setShowAddHVAC={setShowAddHVAC}
+                  submitStatus={submitStatus}
+                  setSubmitStatus={setSubmitStatus}
+                  onChecklistComplete={handleChecklistComplete}
+                />
+              </Card>
             )}
-            </>
           </div>
         )}
       </div>

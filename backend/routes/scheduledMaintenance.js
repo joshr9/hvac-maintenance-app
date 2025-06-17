@@ -3,11 +3,16 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/scheduledMaintenanceController');
 
-// Get scheduled maintenance for a suite
-router.get('/suite/:suiteId', controller.getScheduledMaintenance);
+
+
+// Get ALL scheduled maintenance (must be before other routes to avoid conflict)
+router.get('/all', controller.getAllScheduledMaintenance);
 
 // Get upcoming maintenance (next 7 days)
 router.get('/upcoming', controller.getUpcomingMaintenance);
+
+// Get scheduled maintenance for a suite
+router.get('/suite/:suiteId', controller.getScheduledMaintenance);
 
 // Create new scheduled maintenance
 router.post('/', controller.createScheduledMaintenance);

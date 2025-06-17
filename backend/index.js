@@ -4,7 +4,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path"); // for photos
 
-
 // Middleware
 const app = express();
 app.use(cors());
@@ -28,6 +27,16 @@ app.use('/api/maintenance', maintenanceRoutes)
 
 const scheduledMaintenanceRoutes = require('./routes/scheduledMaintenance');
 app.use('/api/scheduled-maintenance', scheduledMaintenanceRoutes);
+
+const jobsRoutes = require('./routes/jobs');
+app.use('/api/jobs', jobsRoutes);
+
+const servicesRoutes = require('./routes/services');
+app.use('/api/services', servicesRoutes);
+
+// Jobs routes - FIXED: Import once and mount properly
+const jobsRouter = require('./routes/jobs');
+app.use('/api/jobs', jobsRouter); // ← ADD THIS LINE
 
 // Root Route
 app.get("/", (req, res) => {

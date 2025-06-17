@@ -7,13 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// EXISTING MODELS (Updated with new relations)
+
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique
-  role          Role
+  id              Int              @id @default(autoincrement())
+  name            String
+  email           String           @unique
+  role            Role
   maintenanceLogs MaintenanceLog[]
-  createdAt     DateTime       @default(now())
+  createdAt       DateTime         @default(now())
 }
 
 enum Role {
@@ -22,100 +24,318 @@ enum Role {
 }
 
 model Property {
-  id        Int      @id @default(autoincrement())
-  name      String
-  address   String   @unique
-  qrCode    String?  // optional: could be linked to a unique ID
-  suites    Suite[]
+  id           Int           @id @default(autoincrement())
+  name         String
+  address      String        @unique
+  qrCode       String? // optional: could be linked to a unique ID
+  suites       Suite[]
+  jobs         Job[] // NEW: Add jobs relation
+  jobTemplates JobTemplate[] // ADD: Missing relation for JobTemplate
 }
 
 model Suite {
-  id         Int         @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   name       String
-  tenant     Boolean     @default(false)
-  property   Property    @relation(fields: [propertyId], references: [id])
+  tenant     Boolean    @default(false)
+  property   Property   @relation(fields: [propertyId], references: [id])
   propertyId Int
   hvacUnits  HvacUnit[]
+  jobs       Job[] // NEW: Add jobs relation
 
-  scheduledMaintenance ScheduledMaintenance[] 
+  scheduledMaintenance ScheduledMaintenance[]
 
   @@unique([name, propertyId])
 }
 
 model HvacUnit {
-  id              Int             @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   label           String?
-  serialNumber    String          @unique
+  serialNumber    String           @unique
   model           String
   installDate     DateTime
   filterSize      String?
   notes           String?
-  suite           Suite?          @relation(fields: [suiteId], references: [id])
-  suiteId         Int?            // ← make optional for now
+  suite           Suite?           @relation(fields: [suiteId], references: [id])
+  suiteId         Int? // ← make optional for now
   maintenanceLogs MaintenanceLog[]
+  jobs            Job[] // NEW: Add jobs relation
 
-  scheduledMaintenance ScheduledMaintenance[] 
-
+  scheduledMaintenance ScheduledMaintenance[]
 }
 
 model MaintenanceLog {
-  id           Int       @id @default(autoincrement())
-  hvacUnit     HvacUnit  @relation(fields: [hvacUnitId], references: [id])
-  hvacUnitId   Int
-  technician   User      @relation(fields: [technicianId], references: [id])
-  technicianId Int
+  id              Int                @id @default(autoincrement())
+  hvacUnit        HvacUnit           @relation(fields: [hvacUnitId], references: [id])
+  hvacUnitId      Int
+  technician      User               @relation(fields: [technicianId], references: [id])
+  technicianId    Int
   maintenanceType MaintenanceType
-  status       MaintenanceStatus @default(SCHEDULED)
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  photos       MaintenancePhoto[] // adding ability for multiple photos
+  status          MaintenanceStatus  @default(SCHEDULED)
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  photos          MaintenancePhoto[] // adding ability for multiple photos
 
   // Add optional fields for detailed checklist data
-  checklistData Json?     // Store the full checklist as JSON
+  checklistData     Json? // Store the full checklist as JSON
   serviceTechnician String? // Technician name from checklist
-  specialNotes String?    // Special notes from checklist
+  specialNotes      String? // Special notes from checklist
 
-  scheduledMaintenance ScheduledMaintenance? 
+  scheduledMaintenance ScheduledMaintenance?
 }
 
-
 model MaintenancePhoto {
-  id               Int             @id @default(autoincrement())
+  id               Int            @id @default(autoincrement())
   url              String
-  maintenanceLog   MaintenanceLog  @relation(fields: [maintenanceLogId], references: [id])
+  maintenanceLog   MaintenanceLog @relation(fields: [maintenanceLogId], references: [id])
   maintenanceLogId Int
-  uploadedAt       DateTime        @default(now())
+  uploadedAt       DateTime       @default(now())
 }
 
 model ScheduledMaintenance {
-  id                 Int      @id @default(autoincrement())
+  id                 Int             @id @default(autoincrement())
   date               DateTime
-  time               String   // Store as HH:MM format
+  time               String // Store as HH:MM format
   maintenanceType    MaintenanceType
   assignedTechnician String
-  priority           Priority @default(MEDIUM)
+  priority           Priority        @default(MEDIUM)
   notes              String?
-  reminderDays       Int      @default(1)
-  status             ScheduleStatus @default(SCHEDULED)
-  
+  reminderDays       Int             @default(1)
+  status             ScheduleStatus  @default(SCHEDULED)
+
   // Relations
-  suite              Suite    @relation(fields: [suiteId], references: [id])
-  suiteId            Int
-  hvacUnit           HvacUnit? @relation(fields: [hvacUnitId], references: [id])
-  hvacUnitId         Int?
-  
+  suite      Suite     @relation(fields: [suiteId], references: [id])
+  suiteId    Int
+  hvacUnit   HvacUnit? @relation(fields: [hvacUnitId], references: [id])
+  hvacUnitId Int?
+
   // When completed, link to the actual maintenance log
-  completedLog       MaintenanceLog? @relation(fields: [completedLogId], references: [id])
-  completedLogId     Int?            @unique
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  completedLog   MaintenanceLog? @relation(fields: [completedLogId], references: [id])
+  completedLogId Int?            @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
+
+// NEW JOBS SYSTEM MODELS
+
+// Main Jobs table - the comprehensive work order system
+model Job {
+  id          Int     @id @default(autoincrement())
+  jobNumber   String  @unique // Auto-generated: DC-2025-001
+  title       String
+  description String?
+
+  // Scheduling
+  scheduledDate     DateTime?
+  scheduledTime     String? // "09:00" format
+  estimatedDuration Int? // minutes
+
+  // Assignment
+  assignedTechnician String?
+  technicianId       Int? // Future: reference to User model
+
+  // Location
+  propertyId Int
+  property   Property  @relation(fields: [propertyId], references: [id])
+  suiteId    Int?
+  suite      Suite?    @relation(fields: [suiteId], references: [id])
+  hvacUnitId Int?
+  hvacUnit   HvacUnit? @relation(fields: [hvacUnitId], references: [id])
+
+  // Work Details
+  workType        String // Your comprehensive work types (SNOW_CHECKS, etc.)
+  maintenanceType MaintenanceType? // Maps to existing enum for compatibility
+  priority        JobPriority      @default(MEDIUM)
+
+  // Status Workflow
+  status JobStatus @default(SCHEDULED)
+
+  // Financial
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  actualCost    Decimal? @db.Decimal(10, 2)
+  laborHours    Decimal? @db.Decimal(5, 2)
+  laborRate     Decimal? @db.Decimal(8, 2)
+
+  // Financial tracking (enhanced)
+  totalCost    Decimal? @db.Decimal(10, 2) // Total cost of all line items
+  totalPrice   Decimal? @db.Decimal(10, 2) // Total price of all line items
+  profitMargin Decimal? @db.Decimal(5, 2) // Calculated profit percentage
+
+  // Service-related
+  primaryService String? // Main service category for this job
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  // Notes
+  customerNotes   String?
+  technicianNotes String?
+  internalNotes   String?
+
+  // Relations
+  lineItems   JobLineItem[] // ADD: Missing relation for JobLineItem
+  materials   JobMaterial[]
+  timeEntries JobTimeEntry[]
+  photos      JobPhoto[]
+
+  @@map("jobs")
+}
+
+// Materials/Parts used in jobs
+model JobMaterial {
+  id    Int @id @default(autoincrement())
+  jobId Int
+  job   Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  itemName  String
+  quantity  Decimal  @db.Decimal(10, 2)
+  unitCost  Decimal? @db.Decimal(8, 2)
+  totalCost Decimal? @db.Decimal(10, 2)
+  supplier  String?
+  notes     String?
+
+  createdAt DateTime @default(now())
+
+  @@map("job_materials")
+}
+
+// Time tracking for jobs
+model JobTimeEntry {
+  id    Int @id @default(autoincrement())
+  jobId Int
+  job   Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  technicianName String
+  startTime      DateTime
+  endTime        DateTime?
+  breakMinutes   Int       @default(0)
+  totalMinutes   Int? // calculated field
+  hourlyRate     Decimal?  @db.Decimal(8, 2)
+  notes          String?
+
+  createdAt DateTime @default(now())
+
+  @@map("job_time_entries")
+}
+
+// Enhanced photo system for jobs
+model JobPhoto {
+  id    Int @id @default(autoincrement())
+  jobId Int
+  job   Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  url         String
+  photoType   PhotoType @default(GENERAL)
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@map("job_photos")
+}
+
+// Services Catalog - Dean Callan's 85+ services
+model Service {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  category    String // Service, Product, etc.
+  unitPrice   Decimal? @db.Decimal(10, 2)
+  unitCost    Decimal? @db.Decimal(10, 2)
+
+  // Service attributes from CSV
+  bookable        Boolean  @default(false)
+  durationMinutes Int?
+  quantityEnabled Boolean  @default(true)
+  minimumQuantity Decimal? @db.Decimal(10, 2)
+  maximumQuantity Decimal? @db.Decimal(10, 2)
+  taxable         Boolean  @default(true)
+  active          Boolean  @default(true)
+
+  // Relations
+  lineItems        JobLineItem[]
+  templateServices JobTemplateService[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("services")
+}
+
+// Line Items - Services added to jobs
+model JobLineItem {
+  id    Int @id @default(autoincrement())
+  jobId Int
+  job   Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  serviceId Int?
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  // Snapshot data in case service changes
+  serviceName String
+  description String?
+  quantity    Decimal   @db.Decimal(10, 2) @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  unitCost    Decimal? @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  totalCost   Decimal? @db.Decimal(10, 2)
+
+  notes     String?
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@map("job_line_items")
+}
+
+// Job Templates - Pre-configured service packages
+model JobTemplate {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+
+  // Optional property association
+  propertyId Int?
+  property   Property? @relation(fields: [propertyId], references: [id])
+
+  // Template metadata
+  estimatedDuration Int? // minutes
+  estimatedCost     Decimal? @db.Decimal(10, 2)
+  estimatedPrice    Decimal? @db.Decimal(10, 2)
+
+  // Relations
+  services JobTemplateService[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("job_templates")
+}
+
+// Services in templates with quantities
+model JobTemplateService {
+  id         Int         @id @default(autoincrement())
+  templateId Int
+  template   JobTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  serviceId Int
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  quantity  Decimal  @db.Decimal(10, 2) @default(1)
+  notes     String?
+  sortOrder Int     @default(0)
+
+  @@map("job_template_services")
+}
+
+// EXISTING ENUMS (Keep these)
 
 enum Priority {
   LOW
-  MEDIUM  
+  MEDIUM
   HIGH
 }
 
@@ -140,4 +360,48 @@ enum MaintenanceStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+// NEW ENUMS FOR JOBS SYSTEM
+
+// Job Status Enum
+enum JobStatus {
+  SCHEDULED
+  DISPATCHED
+  IN_PROGRESS
+  COMPLETED
+  INVOICED
+  CLOSED
+  CANCELLED
+}
+
+// Job Priority Enum (separate from existing Priority to avoid conflicts)
+enum JobPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Photo types for better organization
+enum PhotoType {
+  BEFORE
+  DURING
+  AFTER
+  PROBLEM
+  SOLUTION
+  GENERAL
+}
+
+// Service Categories enum (optional, for organization)
+enum ServiceCategory {
+  HVAC
+  CLEANING
+  LANDSCAPING
+  SNOW_REMOVAL
+  ELECTRICAL
+  PLUMBING
+  INSPECTIONS
+  MAINTENANCE
+  OTHER
 }

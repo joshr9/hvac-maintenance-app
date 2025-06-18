@@ -4,7 +4,7 @@ import Homepage from './components/dashboard/Homepage';
 import MaintenanceForm from './components/maintenance/MaintenanceForm';
 import JobsList from './components/jobs/JobsList';
 import ServiceCatalog from "./components/services/ServiceCatalog";
-import PropertyScheduler from './components/calendar/PropertyScheduler';
+import IntegratedCalendar from './components/calendar/IntegratedCalendar';
 import CreateJobModal from './components/jobs/CreateJobModal';
 
 function App() {
@@ -76,13 +76,8 @@ function App() {
           />
         );
       
-      case 'schedule':
-        return (
-          <PropertyScheduler 
-            onNavigate={handleNavigate} 
-            onOpenModal={handleOpenModal} 
-          />
-        );
+     case 'schedule':
+      return <IntegratedCalendar />;
       
       case 'invoices':
         return (

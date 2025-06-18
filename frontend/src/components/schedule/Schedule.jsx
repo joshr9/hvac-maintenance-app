@@ -1,10 +1,8 @@
 import React from 'react';
-import PropertyScheduler from '../calendar/PropertyScheduler';
+import IntegratedCalendar from '../calendar/IntegratedCalendar';
 
 const Schedule = ({ onNavigate, onOpenModal }) => {
-  return (
-    <PropertyScheduler onNavigate={onNavigate} onOpenModal={onOpenModal} />
-  );
+  return <IntegratedCalendar />;
 };
 
 export default Schedule;

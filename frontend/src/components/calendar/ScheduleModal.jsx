@@ -1,79 +1,101 @@
-// components/calendar/ScheduleModal.jsx (Enhanced for React Big Calendar)
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, MapPin } from 'lucide-react';
-import CustomDropdown from '../common/CustomDropdown';
-import moment from 'moment';
+// components/calendar/ScheduleModal.jsx - COMPLETE WITH EDIT MODE
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  X, 
+  Calendar, 
+  Clock, 
+  User, 
+  MapPin, 
+  Building,
+  AlertTriangle,
+  CheckCircle,
+  Briefcase,
+  Sparkles,
+  Save
+} from 'lucide-react';
 
-const ScheduleModal = ({ 
-  isOpen, 
-  onClose, 
+// Import your form components
+import { FormField, FormGrid, Dropdown } from '../common/FormComponents';
+
+const ScheduleModal = ({
+  isOpen,
+  onClose,
   onScheduleComplete,
+  scheduleType = 'job',
   allProperties = [],
-  // New props for calendar integration
   initialDate = null,
   initialTime = null,
-  initialTeamMember = null,
-  scheduleType = 'job' // 'job', 'request', 'task', 'event'
+  suggestedAssignment = null,
+  zones = [],
+  teamMembers = [],
+  job = null,
+  editMode = false
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState('');
+  const [selectedSuite, setSelectedSuite] = useState('');
   const [scheduleData, setScheduleData] = useState({
     title: '',
     description: '',
-    date: '',
-    time: '',
-    estimatedDuration: 60,
-    assignedTechnician: '',
+    scheduledDate: initialDate || '',
+    scheduledTime: initialTime || '',
+    estimatedDuration: 120,
+    assignedTechnician: suggestedAssignment?.technician || '',
     priority: 'MEDIUM',
     workType: 'HVAC_INSPECTION',
     propertyId: '',
     suiteId: '',
-    hvacUnitId: '',
-    showAvailability: true
+    hvacUnitId: ''
   });
 
-  const [selectedProperty, setSelectedProperty] = useState('');
-  const [selectedSuite, setSelectedSuite] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-
-  // Initialize form with calendar data
+  // Load suggested assignment when modal opens
   useEffect(() => {
-    if (isOpen) {
-      const initialData = {
-        title: '',
-        description: '',
-        date: initialDate ? moment(initialDate).format('YYYY-MM-DD') : '',
-        time: initialTime || '',
-        estimatedDuration: 60,
-        assignedTechnician: initialTeamMember || '',
-        priority: 'MEDIUM',
-        workType: 'HVAC_INSPECTION',
-        propertyId: '',
-        suiteId: '',
-        hvacUnitId: '',
-        showAvailability: true
-      };
-      setScheduleData(initialData);
-      setSelectedProperty('');
-      setSelectedSuite('');
-      setCurrentStep(1);
+    if (suggestedAssignment) {
+      setScheduleData(prev => ({
+        ...prev,
+        assignedTechnician: suggestedAssignment.technician
+      }));
     }
-  }, [isOpen, initialDate, initialTime, initialTeamMember]);
+  }, [suggestedAssignment]);
 
-  if (!isOpen) return null;
+  // ✅ EDIT MODE: Load existing job data
+  useEffect(() => {
+    if (isOpen && job && (scheduleType === 'edit_job' || editMode)) {
+      console.log('📝 Loading job for edit:', job);
+      setScheduleData({
+        title: job.title || '',
+        description: job.description || '',
+        scheduledDate: job.scheduledDate || initialDate || '',
+        scheduledTime: job.scheduledTime || initialTime || '',
+        estimatedDuration: job.estimatedDuration || 120,
+        assignedTechnician: job.assignedTechnician || suggestedAssignment?.technician || '',
+        priority: job.priority || 'MEDIUM',
+        workType: job.workType || 'HVAC_INSPECTION',
+        propertyId: job.propertyId?.toString() || '',
+        suiteId: job.suiteId?.toString() || '',
+        hvacUnitId: job.hvacUnitId?.toString() || ''
+      });
+      
+      // Set property and suite dropdowns
+      if (job.propertyId) {
+        setSelectedProperty(job.propertyId.toString());
+      }
+      if (job.suiteId) {
+        setSelectedSuite(job.suiteId.toString());
+      }
+    }
+  }, [isOpen, job, scheduleType, editMode, initialDate, initialTime, suggestedAssignment]);
 
+  // Form options
   const workTypeOptions = [
-    { value: 'HVAC_INSPECTION', label: 'HVAC Inspection', category: 'HVAC' },
-    { value: 'HVAC_FILTER_CHANGE', label: 'Filter Change', category: 'HVAC' },
-    { value: 'HVAC_FULL_SERVICE', label: 'Full Service', category: 'HVAC' },
-    { value: 'HVAC_REPAIR', label: 'HVAC Repair', category: 'HVAC' },
-    { value: 'PLUMBING_INSPECTION', label: 'Plumbing Inspection', category: 'Plumbing' },
-    { value: 'PLUMBING_REPAIR', label: 'Plumbing Repair', category: 'Plumbing' },
-    { value: 'ELECTRICAL_INSPECTION', label: 'Electrical Inspection', category: 'Electrical' },
-    { value: 'ELECTRICAL_REPAIR', label: 'Electrical Repair', category: 'Electrical' },
-    { value: 'LANDSCAPING', label: 'Landscaping', category: 'Exterior' },
-    { value: 'SNOW_REMOVAL', label: 'Snow Removal', category: 'Exterior' },
-    { value: 'CLEANING', label: 'Cleaning Service', category: 'Maintenance' },
-    { value: 'OTHER', label: 'Other', category: 'General' }
+    { value: 'HVAC_INSPECTION', label: 'HVAC Inspection' },
+    { value: 'HVAC_MAINTENANCE', label: 'HVAC Maintenance' },
+    { value: 'HVAC_REPAIR', label: 'HVAC Repair' },
+    { value: 'FILTER_REPLACEMENT', label: 'Filter Replacement' },
+    { value: 'PREVENTIVE_MAINTENANCE', label: 'Preventive Maintenance' },
+    { value: 'EMERGENCY_REPAIR', label: 'Emergency Repair' },
+    { value: 'SYSTEM_INSTALLATION', label: 'System Installation' },
+    { value: 'OTHER', label: 'Other' }
   ];
 
   const priorityOptions = [
@@ -93,17 +115,15 @@ const ScheduleModal = ({
     { value: 480, label: '8 hours (Full day)' }
   ];
 
-  // Mock team members (replace with actual data)
-  const teamMemberOptions = [
-    { value: 'Mike Rodriguez', label: 'Mike Rodriguez', description: 'Lead Technician' },
-    { value: 'Sarah Johnson', label: 'Sarah Johnson', description: 'HVAC Specialist' },
-    { value: 'David Chen', label: 'David Chen', description: 'Maintenance Tech' },
-    { value: 'Lisa Williams', label: 'Lisa Williams', description: 'Technician' }
-  ];
+  const teamMemberOptions = teamMembers.map(member => ({
+    value: member.name,
+    label: `${member.name} - ${member.role || 'Technician'}`
+  }));
 
+  // Property and suite handling
   const propertyOptions = allProperties.map(property => ({
-    value: property.id,
-    label: property.name
+    value: property.id.toString(),
+    label: property.name || property.address
   }));
 
   const selectedPropertyData = selectedProperty ? 
@@ -122,9 +142,10 @@ const ScheduleModal = ({
     label: unit.label || unit.serialNumber || `Unit ${unit.id}`
   })) || [];
 
+  // ✅ ENHANCED: Handle both CREATE and UPDATE
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!scheduleData.title || !scheduleData.date || !scheduleData.assignedTechnician) {
+    if (!scheduleData.title || !scheduleData.scheduledDate || !scheduleData.assignedTechnician) {
       alert('Please fill in all required fields');
       return;
     }
@@ -132,260 +153,333 @@ const ScheduleModal = ({
     setIsSubmitting(true);
 
     try {
-      const payload = {
-        ...scheduleData,
-        propertyId: selectedProperty ? parseInt(selectedProperty) : null,
-        suiteId: selectedSuite ? parseInt(selectedSuite) : null,
-        type: scheduleType
-      };
+      const isEditMode = scheduleType === 'edit_job' || editMode;
+      
+      if (isEditMode && job) {
+        // UPDATE existing job
+        console.log('📝 Updating job:', job.id, scheduleData);
+        
+        const updateData = {
+          ...scheduleData,
+          propertyId: selectedProperty ? parseInt(selectedProperty) : null,
+          suiteId: selectedSuite ? parseInt(selectedSuite) : null,
+        };
 
-      const response = await fetch('/api/scheduled-maintenance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+        const response = await fetch(`/api/jobs/${job.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to schedule work');
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to update job: ${errorText}`);
+        }
+
+        const updatedJob = await response.json();
+        console.log('✅ Job updated successfully:', updatedJob);
+        
+        await onScheduleComplete(updatedJob);
+      } else {
+        // CREATE new job
+        const jobData = {
+          ...scheduleData,
+          propertyId: selectedProperty ? parseInt(selectedProperty) : null,
+          suiteId: selectedSuite ? parseInt(selectedSuite) : null,
+          type: scheduleType
+        };
+
+        await onScheduleComplete(jobData);
       }
-
-      onScheduleComplete();
+      
+      // Reset form only for new jobs
+      if (!isEditMode) {
+        setScheduleData({
+          title: '',
+          description: '',
+          scheduledDate: '',
+          scheduledTime: '',
+          estimatedDuration: 120,
+          assignedTechnician: '',
+          priority: 'MEDIUM',
+          workType: 'HVAC_INSPECTION',
+          propertyId: '',
+          suiteId: '',
+          hvacUnitId: ''
+        });
+        setSelectedProperty('');
+        setSelectedSuite('');
+      }
+      
     } catch (error) {
-      console.error('Error scheduling work:', error);
-      alert('Error scheduling work. Please try again.');
+      console.error('Error saving job:', error);
+      alert(`Error ${scheduleType === 'edit_job' || editMode ? 'updating' : 'creating'} job. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getModalTitle = () => {
+  // ✅ ENHANCED: Handle edit mode in type config
+  const getTypeConfig = () => {
     switch (scheduleType) {
-      case 'request': return 'Create New Request';
-      case 'task': return 'Create New Task';
-      case 'event': return 'Create New Event';
-      default: return 'Schedule New Job';
+      case 'edit_job':
+        return {
+          title: '✏️ Edit Job',
+          icon: Briefcase,
+          color: 'from-green-500 to-green-600',
+          description: 'Update job details and scheduling'
+        };
+      case 'job':
+        return {
+          title: 'Schedule New Job',
+          icon: Briefcase,
+          color: 'from-blue-500 to-blue-600',
+          description: 'Create a new maintenance job'
+        };
+      case 'request':
+        return {
+          title: 'Schedule New Request',
+          icon: AlertTriangle,
+          color: 'from-orange-500 to-orange-600',
+          description: 'Schedule an assessment request'
+        };
+      case 'task':
+        return {
+          title: 'Schedule New Task',
+          icon: CheckCircle,
+          color: 'from-purple-500 to-purple-600',
+          description: 'Schedule a non-billable task'
+        };
+      default:
+        return {
+          title: 'Schedule Event',
+          icon: Calendar,
+          color: 'from-green-500 to-green-600',
+          description: 'Schedule a calendar event'
+        };
     }
   };
 
-  const getSubmitButtonText = () => {
-    switch (scheduleType) {
-      case 'request': return 'Create Request';
-      case 'task': return 'Create Task';
-      case 'event': return 'Create Event';
-      default: return 'Schedule Job';
-    }
-  };
+  const typeConfig = getTypeConfig();
+  const Icon = typeConfig.icon;
+  const isEditMode = scheduleType === 'edit_job' || editMode;
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-100">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Calendar className="w-5 h-5 text-blue-600" />
+        <div className="relative p-6 border-b border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-xl bg-gradient-to-br ${typeConfig.color} shadow-lg`}>
+              <Icon className="w-6 h-6 text-white" />
             </div>
-            <h4 className="text-xl font-semibold text-gray-900">{getModalTitle()}</h4>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-gray-900">{typeConfig.title}</h3>
+              <p className="text-gray-600 mt-1">{typeConfig.description}</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100"
+            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* Smart Assignment Alert */}
+          {suggestedAssignment && !isEditMode && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+                <div>
+                  <div className="font-medium text-blue-900">Smart Assignment Suggestion</div>
+                  <div className="text-sm text-blue-700">
+                    Based on location and availability: <strong>{suggestedAssignment.technician}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Basic Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                {scheduleType === 'event' ? 'Event Title' : 'Job Title'} *
-              </label>
-              <input
-                type="text"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={scheduleData.title}
-                onChange={e => setScheduleData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder={scheduleType === 'event' ? 'Team meeting, training session...' : 'HVAC Maintenance - Monthly Service'}
-                required
-              />
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <Briefcase className="w-5 h-5" />
+              Basic Information
             </div>
+            
+            <FormGrid columns={2}>
+              <FormField label="Title" required>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  value={scheduleData.title}
+                  onChange={e => setScheduleData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter job title"
+                  required
+                />
+              </FormField>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Work Type</label>
-              <CustomDropdown
-                value={scheduleData.workType}
-                onChange={(value) => setScheduleData(prev => ({ ...prev, workType: value }))}
-                options={workTypeOptions}
-                placeholder="Select work type..."
-                groupBy="category"
-                showSearch={true}
-                searchPlaceholder="Search work types..."
+              <FormField label="Work Type" required>
+                <Dropdown
+                  value={scheduleData.workType}
+                  onChange={(value) => setScheduleData(prev => ({ ...prev, workType: value }))}
+                  options={workTypeOptions}
+                  placeholder="Select work type..."
+                />
+              </FormField>
+            </FormGrid>
+
+            <FormField label="Description">
+              <textarea
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                rows={3}
+                value={scheduleData.description}
+                onChange={e => setScheduleData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter job description"
               />
-            </div>
+            </FormField>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-            <textarea
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows="3"
-              value={scheduleData.description}
-              onChange={e => setScheduleData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Detailed description of work to be performed..."
-            />
-          </div>
-
-          {/* Date, Time, and Duration */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Date *</label>
-              <input
-                type="date"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={scheduleData.date}
-                onChange={e => setScheduleData(prev => ({ ...prev, date: e.target.value }))}
-                min={new Date().toISOString().split('T')[0]}
-                required
-              />
+          {/* Location */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <MapPin className="w-5 h-5" />
+              Location
             </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Time *</label>
-              <input
-                type="time"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={scheduleData.time}
-                onChange={e => setScheduleData(prev => ({ ...prev, time: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Duration</label>
-              <CustomDropdown
-                value={scheduleData.estimatedDuration}
-                onChange={(value) => setScheduleData(prev => ({ ...prev, estimatedDuration: parseInt(value) }))}
-                options={durationOptions}
-                placeholder="Select duration..."
-              />
-            </div>
-          </div>
-
-          {/* Assignment and Priority */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Assigned Technician *</label>
-              <CustomDropdown
-                value={scheduleData.assignedTechnician}
-                onChange={(value) => setScheduleData(prev => ({ ...prev, assignedTechnician: value }))}
-                options={teamMemberOptions}
-                placeholder="Select team member..."
-                showSearch={true}
-                searchPlaceholder="Search team members..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
-              <CustomDropdown
-                value={scheduleData.priority}
-                onChange={(value) => setScheduleData(prev => ({ ...prev, priority: value }))}
-                options={priorityOptions}
-                placeholder="Select priority..."
-              />
-            </div>
-          </div>
-
-          {/* Property Selection */}
-          {scheduleType !== 'event' && (
-            <>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Property *</label>
-                <CustomDropdown
+            
+            <FormGrid columns={3}>
+              <FormField label="Property" required>
+                <Dropdown
                   value={selectedProperty}
                   onChange={(value) => {
                     setSelectedProperty(value);
                     setSelectedSuite('');
-                    setScheduleData(prev => ({ ...prev, hvacUnitId: '' }));
+                    setScheduleData(prev => ({ ...prev, propertyId: value, suiteId: '', hvacUnitId: '' }));
                   }}
                   options={propertyOptions}
                   placeholder="Select property..."
-                  showSearch={true}
-                  searchPlaceholder="Search properties..."
                 />
-              </div>
+              </FormField>
 
-              {/* Suite Selection */}
-              {selectedProperty && suiteOptions.length > 0 && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Suite/Unit (Optional)</label>
-                  <CustomDropdown
-                    value={selectedSuite}
-                    onChange={setSelectedSuite}
-                    options={[
-                      { value: '', label: 'Property-wide (all suites)' },
-                      ...suiteOptions
-                    ]}
-                    placeholder="Select suite or leave as property-wide..."
-                    showSearch={suiteOptions.length > 5}
-                    searchPlaceholder="Search suites..."
-                  />
-                </div>
-              )}
+              <FormField label="Suite">
+                <Dropdown
+                  value={selectedSuite}
+                  onChange={(value) => {
+                    setSelectedSuite(value);
+                    setScheduleData(prev => ({ ...prev, suiteId: value, hvacUnitId: '' }));
+                  }}
+                  options={suiteOptions}
+                  placeholder="Select suite..."
+                  disabled={!selectedProperty}
+                />
+              </FormField>
 
-              {/* HVAC Unit Selection */}
-              {selectedSuite && hvacUnitOptions.length > 0 && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">HVAC Unit (Optional)</label>
-                  <CustomDropdown
-                    value={scheduleData.hvacUnitId}
-                    onChange={(value) => setScheduleData(prev => ({ ...prev, hvacUnitId: value }))}
-                    options={[
-                      { value: '', label: 'All HVAC units' },
-                      ...hvacUnitOptions
-                    ]}
-                    placeholder="Select HVAC unit..."
-                  />
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Show Availability Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <h4 className="font-medium text-gray-900">Show Availability</h4>
-              <p className="text-sm text-gray-600">Use team filters to customize shown availability</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={scheduleData.showAvailability}
-                onChange={e => setScheduleData(prev => ({ ...prev, showAvailability: e.target.checked }))}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
+              <FormField label="HVAC Unit">
+                <Dropdown
+                  value={scheduleData.hvacUnitId}
+                  onChange={(value) => setScheduleData(prev => ({ ...prev, hvacUnitId: value }))}
+                  options={hvacUnitOptions}
+                  placeholder="Select unit..."
+                  disabled={!selectedSuite}
+                />
+              </FormField>
+            </FormGrid>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+          {/* Scheduling */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <Calendar className="w-5 h-5" />
+              Schedule & Assignment
+            </div>
+            
+            <FormGrid columns={2}>
+              <FormField label="Date" required>
+                <input
+                  type="date"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  value={scheduleData.scheduledDate}
+                  onChange={e => setScheduleData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                  required
+                />
+              </FormField>
+
+              <FormField label="Time" required>
+                <input
+                  type="time"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  value={scheduleData.scheduledTime}
+                  onChange={e => setScheduleData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                  required
+                />
+              </FormField>
+            </FormGrid>
+
+            <FormGrid columns={2}>
+              <FormField label="Duration">
+                <Dropdown
+                  value={scheduleData.estimatedDuration}
+                  onChange={(value) => setScheduleData(prev => ({ ...prev, estimatedDuration: parseInt(value) }))}
+                  options={durationOptions}
+                  placeholder="Select duration..."
+                />
+              </FormField>
+
+              <FormField label="Priority">
+                <Dropdown
+                  value={scheduleData.priority}
+                  onChange={(value) => setScheduleData(prev => ({ ...prev, priority: value }))}
+                  options={priorityOptions}
+                  placeholder="Select priority..."
+                />
+              </FormField>
+            </FormGrid>
+
+            <FormField label="Assigned Technician" required>
+              <Dropdown
+                value={scheduleData.assignedTechnician}
+                onChange={(value) => setScheduleData(prev => ({ ...prev, assignedTechnician: value }))}
+                options={teamMemberOptions}
+                placeholder="Select team member..."
+              />
+            </FormField>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-6 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
             >
               Cancel
             </button>
+            
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={`
+                px-8 py-3 bg-gradient-to-r ${typeConfig.color} text-white rounded-lg font-medium
+                hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2
+              `}
             >
-              {isSubmitting ? 'Scheduling...' : getSubmitButtonText()}
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  {isEditMode ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  {isEditMode ? 'Update Job' : 
+                   `Create ${scheduleType === 'job' ? 'Job' : scheduleType === 'request' ? 'Request' : scheduleType === 'task' ? 'Task' : 'Event'}`}
+                </>
+              )}
             </button>
           </div>
         </form>

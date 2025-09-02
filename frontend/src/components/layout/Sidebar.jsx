@@ -1,3 +1,4 @@
+// components/layout/Sidebar.jsx - Enhanced version of your existing sidebar
 import React, { useState } from 'react';
 import { 
   Home, 
@@ -39,28 +40,62 @@ const Sidebar = ({
           label: 'Dashboard', 
           icon: Home, 
           onClick: () => onNavigate('dashboard'),
-          badge: null
+          badge: null,
+          description: 'Overview and analytics'
         },
         { 
           id: 'jobs', 
           label: 'Jobs', 
           icon: Briefcase, 
           onClick: () => onNavigate('jobs'),
-          badge: '12' // Example: active jobs count
+          badge: '8', // Your actual badge
+          description: 'Manage work orders'
         },
         { 
           id: 'schedule', 
           label: 'Schedule', 
           icon: Calendar, 
           onClick: () => onNavigate('schedule'),
-          badge: null
+          badge: null,
+          description: 'View and manage schedule'
         },
         { 
           id: 'properties', 
           label: 'Properties', 
           icon: Building, 
           onClick: () => onNavigate('properties'),
-          badge: null
+          badge: null,
+          description: 'Manage properties & locations'
+        },
+        { 
+        id: 'timeHistory', 
+        label: 'My Time', 
+        icon: Clock, 
+        onClick: () => onNavigate('timeHistory'),
+        badge: 'NEW',
+        description: 'Time entries & history'
+      }
+      ]
+    },
+    {
+      title: "Services & Tools",
+      items: [
+        { 
+          id: 'services', 
+          label: 'Service Catalog', 
+          icon: Tag,
+          onClick: () => onNavigate('services'),
+          badge: null,
+          description: 'Manage services'
+        },
+        { 
+          id: 'quick-maintenance', 
+          label: 'Quick Entry', 
+          icon: Plus, 
+          onClick: () => onOpenModal('maintenance'),
+          badge: null,
+          isAction: true,
+          description: 'Add maintenance record'
         }
       ]
     },
@@ -68,19 +103,13 @@ const Sidebar = ({
       title: "Business Operations",
       items: [
         { 
-      id: 'services', 
-      label: 'Services', 
-      icon: Tag,  // Add this import: import { Tag } from 'lucide-react';
-      onClick: () => onNavigate('services'),
-      badge: null
-        },
-        { 
           id: 'invoices', 
-          label: 'Invoices', 
-          icon: FileText, 
+          label: 'Invoicing', 
+          icon: Receipt, 
           onClick: () => onNavigate('invoices'),
-          badge: '3', // Example: pending invoices
-          comingSoon: true
+          badge: null,
+          comingSoon: true,
+          description: 'Manage billing'
         },
         { 
           id: 'quotes', 
@@ -88,7 +117,8 @@ const Sidebar = ({
           icon: DollarSign, 
           onClick: () => onNavigate('quotes'),
           badge: null,
-          comingSoon: true
+          comingSoon: true,
+          description: 'Generate estimates'
         },
         { 
           id: 'timesheets', 
@@ -96,139 +126,122 @@ const Sidebar = ({
           icon: Clock, 
           onClick: () => onNavigate('timesheets'),
           badge: null,
-          comingSoon: true
+          comingSoon: true,
+          description: 'Track time'
         },
-        { 
-          id: 'expenses', 
-          label: 'Expenses', 
-          icon: Receipt, 
-          onClick: () => onNavigate('expenses'),
-          badge: null,
-          comingSoon: true
-        }
-      ]
-    },
-    {
-      title: "Quick Actions",
-      items: [
-        { 
-          id: 'quick-maintenance', 
-          label: 'Quick Maintenance', 
-          icon: Wrench, 
-          onClick: () => onOpenModal('maintenance'),
-          badge: null,
-          isAction: true
-        },
-        { 
-          id: 'schedule-work', 
-          label: 'Schedule Work', 
-          icon: Plus, 
-          onClick: () => onOpenModal('schedule'),
-          badge: null,
-          isAction: true
-        },
-        { 
-          id: 'property-search', 
-          label: 'Property Search', 
-          icon: Search, 
-          onClick: () => onOpenModal('propertySearch'),
-          badge: null,
-          isAction: true
-        }
-      ]
-    },
-    {
-      title: "Administration",
-      items: [
         { 
           id: 'reports', 
           label: 'Reports', 
           icon: BarChart3, 
           onClick: () => onNavigate('reports'),
-          badge: null
-        },
-        { 
-          id: 'team', 
-          label: 'Team', 
-          icon: Users, 
-          onClick: () => onNavigate('team'),
           badge: null,
-          comingSoon: true
-        },
-        { 
-          id: 'settings', 
-          label: 'Settings', 
-          icon: Settings, 
-          onClick: () => onNavigate('settings'),
-          badge: null
+          comingSoon: true,
+          description: 'Analytics and insights'
         }
       ]
     }
   ];
 
+  // Enhanced NavItem with hover tooltips
   const NavItem = ({ item, isActive }) => {
+    const [isHovered, setIsHovered] = useState(false);
     const Icon = item.icon;
-    const isHovered = hoveredItem === item.id;
-    
+
     return (
-      <li>
+      <li className="relative">
         <button
           onClick={item.onClick}
-          onMouseEnter={() => setHoveredItem(item.id)}
-          onMouseLeave={() => setHoveredItem(null)}
           disabled={item.comingSoon}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           className={`
-            w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200 group relative
+            w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-300 relative group
             ${isActive 
-              ? 'bg-blue-600 text-white shadow-lg transform scale-[1.02]' 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transform scale-[1.02]' 
               : item.comingSoon 
                 ? 'text-gray-400 cursor-not-allowed' 
                 : item.isAction
-                  ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
             }
             ${isHovered && !item.comingSoon && !isActive ? 'transform translate-x-1' : ''}
           `}
         >
           <Icon 
             className={`
-              w-5 h-5 transition-transform duration-200
+              w-5 h-5 transition-all duration-300 flex-shrink-0 mx-auto
               ${isActive ? 'text-white' : item.isAction ? 'text-blue-600' : 'text-gray-500'}
-              ${isHovered && !item.comingSoon ? 'scale-110' : ''}
+              ${isHovered && !isActive ? 'scale-110' : ''}
             `} 
           />
           
-          <span className="font-medium flex-1">
-            {item.label}
-          </span>
-          
-          {/* Badge */}
-          {item.badge && (
-            <span className={`
-              inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold min-w-[20px] h-5
-              ${isActive 
-                ? 'bg-white text-blue-600' 
-                : item.isAction
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-red-100 text-red-700'
-              }
-            `}>
+          {/* Show label and details when expanded */}
+          {isOpen && (
+            <>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{item.label}</div>
+                <div className={`text-xs truncate ${
+                  isActive ? 'text-blue-100' : 'text-gray-500'
+                }`}>
+                  {item.description}
+                </div>
+              </div>
+              
+              {/* Badge */}
+              {item.badge && (
+                <span className={`
+                  inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold min-w-[20px] h-5
+                  ${isActive 
+                    ? 'bg-white text-blue-600' 
+                    : item.isAction
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-red-100 text-red-700'
+                  }
+                `}>
+                  {item.badge}
+                </span>
+              )}
+              
+              {/* Coming Soon Label */}
+              {item.comingSoon && (
+                <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                  Soon
+                </span>
+              )}
+            </>
+          )}
+
+          {/* Collapsed state badge */}
+          {!isOpen && item.badge && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
               {item.badge}
             </span>
           )}
-          
-          {/* Coming Soon Label */}
-          {item.comingSoon && (
-            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
-              Soon
-            </span>
-          )}
-          
-          {/* Hover Effect */}
+
+          {/* Hover effect overlay */}
           {isHovered && !item.comingSoon && !isActive && (
             <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-transparent rounded-lg opacity-50 pointer-events-none" />
           )}
         </button>
+
+        {/* Enhanced Tooltip for collapsed state */}
+        {!isOpen && isHovered && (
+          <div className="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 z-50">
+            <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-xl whitespace-nowrap text-sm">
+              <div className="font-medium">{item.label}</div>
+              {item.description && (
+                <div className="text-xs text-gray-300 mt-1">{item.description}</div>
+              )}
+              {item.badge && (
+                <div className="text-xs text-blue-300 mt-1">
+                  {item.badge} items
+                </div>
+              )}
+              {/* Tooltip arrow */}
+              <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+            </div>
+          </div>
+        )}
       </li>
     );
   };
@@ -236,17 +249,23 @@ const Sidebar = ({
   const sidebarContent = (
     <>
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3">
+      <div className={`border-b border-gray-200 transition-all duration-300 ${
+        isOpen ? 'p-6' : 'p-4'
+      }`}>
+        <div className={`flex items-center ${isOpen ? 'gap-3' : 'justify-center'}`}>
           <img 
             src="/DeanCallan.png" 
             alt="Dean Callan PM" 
-            className="w-10 h-10 object-contain"
+            className={`object-contain transition-all duration-300 ${
+              isOpen ? 'w-10 h-10' : 'w-8 h-8'
+            }`}
           />
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Dean Callan PM</h1>
-            <p className="text-sm text-gray-600">Property Management</p>
-          </div>
+          {isOpen && (
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Dean Callan PM</h1>
+              <p className="text-sm text-gray-600">Property Management</p>
+            </div>
+          )}
         </div>
         
         {/* Mobile close button */}
@@ -261,13 +280,17 @@ const Sidebar = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-        {navigationSections.map((section, sectionIndex) => (
+      <nav className={`flex-1 p-4 overflow-y-auto transition-all duration-300 ${
+        isOpen ? 'space-y-6' : 'space-y-4'
+      }`}>
+        {navigationSections.map((section) => (
           <div key={section.title}>
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
-              {section.title}
-            </h3>
-            <ul className="space-y-1">
+            {isOpen && (
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+                {section.title}
+              </h3>
+            )}
+            <ul className={isOpen ? 'space-y-1' : 'space-y-3'}>
               {section.items.map((item) => (
                 <NavItem 
                   key={item.id} 
@@ -281,20 +304,22 @@ const Sidebar = ({
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <Wrench className="w-4 h-4 text-white" />
+      {isOpen && (
+        <div className="p-4 border-t border-gray-200">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <Wrench className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">System Status</p>
+                <p className="text-xs text-gray-600">All systems operational</p>
+              </div>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">System Status</p>
-              <p className="text-xs text-gray-600">All systems operational</p>
-            </div>
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 
@@ -322,175 +347,14 @@ const Sidebar = ({
     );
   }
 
-  // Desktop sidebar
+  // Desktop sidebar with enhanced transitions
   return (
     <div className={`
       hidden lg:flex lg:flex-col h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300
-      ${isOpen ? 'w-80' : 'w-20'}
+      ${isOpen ? 'w-80' : 'w-16'}
     `}>
-      {isOpen ? (
-        <div className="flex flex-col h-full">
-          {sidebarContent}
-        </div>
-      ) : (
-        // Collapsed sidebar
-        <div className="flex flex-col h-full p-4">
-          <div className="flex justify-center mb-8">
-            <img 
-              src="/DeanCallan.png" 
-              alt="Dean Callan PM" 
-              className="w-8 h-8 object-contain"
-            />
-          </div>
-          
-          <nav className="flex-1 space-y-4">
-            {navigationSections.flatMap(section => section.items).map((item) => {
-              const Icon = item.icon;
-              const isActive = currentView === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={item.onClick}
-                  disabled={item.comingSoon}
-                  className={`
-                    w-full p-3 rounded-lg transition-all duration-200 group relative
-                    ${isActive 
-                      ? 'bg-blue-600 text-white' 
-                      : item.comingSoon 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }
-                  `}
-                  title={item.label}
-                >
-                  <Icon className="w-5 h-5 mx-auto" />
-                  
-                  {item.badge && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Demo component to show sidebar in action
-const SidebarDemo = () => {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
-
-  const handleNavigate = (view) => {
-    setCurrentView(view);
-    setIsMobileSidebarOpen(false); // Close mobile sidebar on navigation
-  };
-
-  const handleOpenModal = (modalType) => {
-    console.log(`Opening ${modalType} modal`);
-    setIsMobileSidebarOpen(false); // Close mobile sidebar when opening modal
-  };
-
-  return (
-    <div className="h-screen bg-gray-50 flex">
-      {/* Desktop Sidebar */}
-      <Sidebar
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        onOpenModal={handleOpenModal}
-        isOpen={isDesktopSidebarOpen}
-        onToggle={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
-      />
-      
-      {/* Mobile Sidebar */}
-      <Sidebar
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        onOpenModal={handleOpenModal}
-        isMobile={true}
-        isOpen={isMobileSidebarOpen}
-        onToggle={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Menu className="w-6 h-6 text-gray-600" />
-            </button>
-            
-            <div className="flex items-center gap-2">
-              <img 
-                src="/DeanCallan.png" 
-                alt="Dean Callan PM" 
-                className="w-8 h-8 object-contain"
-              />
-              <h1 className="text-lg font-semibold text-gray-900">Dean Callan PM</h1>
-            </div>
-            
-            <div className="w-10" /> {/* Spacer for alignment */}
-          </div>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden lg:block bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
-              
-              <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                {currentView.replace('-', ' ')}
-              </h2>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600">Welcome back, Admin</span>
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">DC</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4 capitalize">
-                {currentView.replace('-', ' ')} View
-              </h3>
-              <p className="text-gray-600 mb-6">
-                This is where the {currentView} content would be displayed.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <div key={item} className="bg-gray-50 rounded-lg p-4">
-                    <div className="h-24 bg-gray-200 rounded animate-pulse mb-3"></div>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col h-full">
+        {sidebarContent}
       </div>
     </div>
   );

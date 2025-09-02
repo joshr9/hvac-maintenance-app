@@ -1,0 +1,45 @@
+/* Drag & Drop Styles - CLEANED FOR PORTAL APPROACH */
+
+.draggable-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab;
+}
+
+.draggable-item:active {
+  cursor: grabbing;
+}
+
+.draggable-item.dragging {
+  opacity: 0.7;
+  transform: rotate(3deg) scale(1.05);
+  z-index: 1000;
+}
+
+.drop-zone {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  position: relative;
+}
+
+.drop-zone.drag-over {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px dashed #3b82f6;
+  transform: scale(1.02);
+}
+
+.drop-zone.drop-valid {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 2px dashed #22c55e;
+}
+
+.drop-zone.drop-invalid {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px dashed #ef4444;
+}
+
+/* Portal drag overlay - highest z-index */
+.portal-drag-overlay {
+  z-index: 999999 !important;
+  position: fixed !important;
+  pointer-events: none !important;
+}

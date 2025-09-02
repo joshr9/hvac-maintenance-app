@@ -1,0 +1,212 @@
+/* JobCard.css - Enhanced styling with dropdown fixes */
+
+/* Job Card Container */
+.job-card {
+  position: relative;
+  overflow: visible; /* Critical: Allow dropdowns to extend outside */
+  z-index: 1; /* Base z-index for cards */
+}
+
+/* Job Card when dropdown is open - increase stacking context */
+.job-card:has(.dropdown-open) {
+  z-index: 1000;
+  position: relative;
+}
+
+/* Job Actions Dropdown Container */
+.job-actions-dropdown {
+  position: relative;
+  z-index: 999;
+}
+
+/* Dropdown menu specific styling */
+.job-actions-dropdown .dropdown-menu {
+  position: absolute;
+  z-index: 9999 !important;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  min-width: 180px;
+  overflow: visible;
+  backdrop-filter: blur(8px);
+}
+
+/* Position classes for dropdown */
+.dropdown-bottom-right {
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+}
+
+.dropdown-bottom-left {
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+}
+
+.dropdown-top-right {
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 4px;
+}
+
+.dropdown-top-left {
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+}
+
+/* Dropdown backdrop for mobile/touch devices */
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+/* Job title container - no truncation */
+.job-title-container {
+  width: 100%;
+  min-height: 2.5rem; /* Ensure consistent height */
+}
+
+.job-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.25;
+  /* Remove any text truncation */
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: none;
+}
+
+/* Job Cards List Container - Critical fixes */
+.jobs-list-container,
+.jobs-grid-container {
+  overflow: visible !important; /* Never hide dropdowns */
+}
+
+/* Individual job card wrapper */
+.job-card-wrapper {
+  position: relative;
+  overflow: visible !important;
+  z-index: 1;
+}
+
+/* When dropdown is active, boost the entire card's z-index */
+.job-card-wrapper:has(.dropdown-open),
+.job-card-wrapper.dropdown-active {
+  z-index: 1001 !important;
+  position: relative;
+}
+
+/* Jobs page container fixes */
+.jobs-page-content {
+  overflow-x: hidden; /* Only hide horizontal overflow */
+  overflow-y: visible; /* Allow vertical overflow for dropdowns */
+}
+
+/* Parent container fixes - ensure no overflow hidden on job containers */
+.jobs-page,
+.jobs-container,
+.job-grid,
+.job-list {
+  overflow: visible !important;
+}
+
+/* Mobile responsive dropdown adjustments */
+@media (max-width: 768px) {
+  .job-actions-dropdown .dropdown-menu {
+    position: fixed;
+    top: auto !important;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    z-index: 10000;
+  }
+  
+  .dropdown-backdrop {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Animation for dropdown */
+.dropdown-menu {
+  opacity: 0;
+  transform: scale(0.95) translateY(-5px);
+  transition: all 0.15s ease-out;
+}
+
+.dropdown-menu.dropdown-open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Priority-based job card borders */
+.job-card.priority-urgent {
+  border-left: 4px solid #ef4444;
+}
+
+.job-card.priority-high {
+  border-left: 4px solid #f97316;
+}
+
+.job-card.priority-medium {
+  border-left: 4px solid #3b82f6;
+}
+
+.job-card.priority-low {
+  border-left: 4px solid #10b981;
+}
+
+/* Status indicators */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Hover effects */
+.job-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-out;
+}
+
+/* Fix for any grid/flexbox containers that might clip dropdowns */
+.grid-container,
+.flex-container {
+  overflow: visible !important;
+}
+
+/* Ensure all parent containers allow dropdown overflow */
+.job-card * {
+  position: relative;
+}
+
+/* Override any utility classes that might cause issues */
+.overflow-hidden .job-actions-dropdown {
+  overflow: visible !important;
+}
+
+/* Emergency fix for any stubborn overflow issues */
+body:has(.dropdown-open) {
+  overflow-x: hidden;
+}
+
+.dropdown-open {
+  z-index: 10000 !important;
+  position: fixed !important;
+}

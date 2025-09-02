@@ -10,7 +10,15 @@ export { default as JobDetailModal } from './JobDetailModal';
 export { default as JobDetailView } from './JobDetailView'; 
 export { default as CreateJobModal } from './CreateJobModal';
 
-// New service-related exports
+// Job Detail Components (broken out from JobDetailView)
+export { default as OverviewTab } from './OverviewTab';
+export { default as NotesTab } from './NotesTab';
+
+// Job Action Components
+export { default as EditJobModal } from './EditJobModal';
+export { default as JobActionsDropdown } from './JobActionsDropdown';
+
+// Service-related exports
 export { default as ServicesTab } from './ServicesTab';
 export { default as AddServiceModal } from './AddServiceModal';
 export { default as EditServiceModal } from './EditServiceModal';

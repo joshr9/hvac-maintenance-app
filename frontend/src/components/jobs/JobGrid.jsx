@@ -1,4 +1,4 @@
-// components/jobs/JobGrid.jsx - Complete File
+// components/jobs/JobGrid.jsx - Enhanced with Timer Support
 import React from 'react';
 import { Briefcase } from 'lucide-react';
 import JobCard from './JobCard';
@@ -6,7 +6,13 @@ import JobCard from './JobCard';
 const JobGrid = ({ 
   jobs = [], 
   onView, 
-  onStatusUpdate, 
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onReschedule,
+  onAssignTechnician,
+  onStatusUpdate,
+  onTimerUpdate, // NEW: Timer update handler
   hasFilters = false 
 }) => {
   if (jobs.length === 0) {
@@ -31,7 +37,13 @@ const JobGrid = ({
           key={job.id} 
           job={job} 
           onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onDuplicate={onDuplicate}
+          onReschedule={onReschedule}
+          onAssignTechnician={onAssignTechnician}
           onStatusUpdate={onStatusUpdate}
+          onTimerUpdate={onTimerUpdate} // NEW: Pass timer handler to JobCard
         />
       ))}
     </div>

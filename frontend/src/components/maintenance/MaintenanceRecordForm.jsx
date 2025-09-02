@@ -1,25 +1,7 @@
-/**
- * Props:
- * - selectedSuite: object (suite/unit the record is for)
- * - selectedUnit: string|number (ID of selected HVAC unit)
- * - setSelectedUnit: function (updates the selected unit)
- * - maintenanceType: string (type of maintenance)
- * - setMaintenanceType: function (updates the type)
- * - serviceDate: string (YYYY-MM-DD)
- * - setServiceDate: function (updates the date)
- * - maintenanceNote: string (record notes)
- * - setMaintenanceNote: function (updates the notes)
- * - photoFiles: array (selected photo files)
- * - setPhotoFiles: function (updates photoFiles)
- * - uploadStatus: string (status message for photo upload)
- * - formError: string (form error message)
- * - submitStatus: string (form submission status)
- * - handleSubmit: function (submit handler)
- * - setShowAddHVAC: function (shows the Add HVAC modal)
- */
+// MaintenanceRecordForm.jsx - Fixed with proper null checks
 
 import React from 'react';
-import { Plus, Calendar, FileText } from 'lucide-react';
+import { Plus, Calendar, FileText, Camera, Upload, X } from 'lucide-react';
 
 const MAINTENANCE_TYPES = [
   { value: 'INSPECTION', label: 'Inspection' },
@@ -46,170 +28,223 @@ const MaintenanceRecordForm = ({
   submitStatus,
   handleSubmit,
   setShowAddHVAC
-}) => (
-  <div className="bg-white rounded-xl shadow-lg p-6">
-    <div className="flex items-center gap-3 mb-6">
-      <div className="p-2 rounded-lg" style={{backgroundColor: '#e8eafc'}}>
-        <Plus className="w-5 h-5" style={{color: '#2a3a91'}} />
+}) => {
+  // ✅ FIXED: Add null check for selectedSuite
+  if (!selectedSuite) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-center h-32">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading suite data...</p>
+          </div>
+        </div>
       </div>
-      <h3 className="text-xl font-semibold text-gray-900">Add Maintenance Record</h3>
-    </div>
+    );
+  }
 
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">        <div>
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setPhotoFiles(prev => [...prev, ...files]);
+  };
+
+  const removePhoto = (index) => {
+    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 rounded-lg" style={{backgroundColor: '#e8eafc'}}>
+          <Plus className="w-5 h-5" style={{color: '#2a3a91'}} />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900">Add Maintenance Record</h3>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">        
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Maintenance Type
+            </label>
+            <select
+              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
+              style={{'--tw-ring-color': '#2a3a91'}}
+              onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
+              value={maintenanceType}
+              onChange={e => setMaintenanceType(e.target.value)}
+              required
+            >
+              <option value="">Select maintenance type...</option>
+              {MAINTENANCE_TYPES.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Service Date
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="date"
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
+                style={{'--tw-ring-color': '#2a3a91'}}
+                onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
+                value={serviceDate}
+                onChange={e => setServiceDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ✅ FIXED: Added proper null checks for selectedSuite.hvacUnits */}
+        <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Maintenance Type
+            HVAC Unit
           </label>
-          <select
+          <div className="flex gap-3">
+            <select
+              className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
+              style={{'--tw-ring-color': '#2a3a91'}}
+              onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
+              value={selectedUnit}
+              onChange={e => setSelectedUnit(e.target.value)}
+              required
+            >
+              <option value="">Select HVAC unit...</option>
+              {/* ✅ FIXED: Added optional chaining and proper null checks */}
+              {selectedSuite?.hvacUnits && selectedSuite.hvacUnits.length > 0 ? (
+                selectedSuite.hvacUnits.map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.label || unit.name || unit.serialNumber || unit.filterSize || `Unit ${unit.id}`}
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>No HVAC units found. Please add one.</option>
+              )}
+            </select>
+            <button
+              className="px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-colors whitespace-nowrap"
+              style={{backgroundColor: '#2a3a91'}}
+              onClick={() => setShowAddHVAC(true)}
+              type="button"
+            >
+              Add Unit
+            </button>
+          </div>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Maintenance Notes
+          </label>
+          <textarea
             className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
             style={{'--tw-ring-color': '#2a3a91'}}
             onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
-            value={maintenanceType}
-            onChange={e => setMaintenanceType(e.target.value)}
+            rows="5"
+            value={maintenanceNote}
+            onChange={e => setMaintenanceNote(e.target.value)}
+            placeholder="Describe the work performed, parts used, issues found, and any recommendations..."
             required
-          >
-            <option value="">Select maintenance type...</option>
-            {MAINTENANCE_TYPES.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
+          />
         </div>
+        
+        {/* Photo Upload Section */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Service Date
+            Attach Photos (Optional)
           </label>
-          <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
             <input
-              type="date"
-              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{'--tw-ring-color': '#2a3a91'}}
-              onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
-              value={serviceDate}
-              onChange={e => setServiceDate(e.target.value)}
-              required
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              id="photo-upload"
             />
+            <label 
+              htmlFor="photo-upload" 
+              className="cursor-pointer flex flex-col items-center gap-2"
+            >
+              <Camera className="w-8 h-8 text-gray-400" />
+              <span className="text-sm text-gray-600">
+                Click to add photos or drag and drop
+              </span>
+              <span className="text-xs text-gray-500">
+                PNG, JPG, GIF up to 10MB each
+              </span>
+            </label>
           </div>
-        </div>
-      </div>
 
-      {/* HVAC Unit Selection */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          HVAC Unit
-        </label>
-        <div className="flex gap-3">
-          <select
-            className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
-            style={{'--tw-ring-color': '#2a3a91'}}
-            onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
-            value={selectedUnit}
-            onChange={e => setSelectedUnit(e.target.value)}
-            required
-          >
-            <option value="">Select HVAC unit...</option>
-            {selectedSuite.hvacUnits && selectedSuite.hvacUnits.length > 0 ? (
-              selectedSuite.hvacUnits.map(unit => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.name || unit.serialNumber || unit.filterSize || `Unit ${unit.id}`}
-                </option>
-              ))
-            ) : (
-              <option value="" disabled>No HVAC units found. Please add one.</option>
-            )}
-          </select>
-          <button
-            className="px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-colors whitespace-nowrap"
-            style={{backgroundColor: '#2a3a91'}}
-            onClick={() => setShowAddHVAC(true)}
-            type="button"
-          >
-            Add Unit
-          </button>
-        </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Maintenance Notes
-        </label>
-        <textarea
-          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
-          style={{'--tw-ring-color': '#2a3a91'}}
-          onFocus={e => e.target.style.setProperty('--tw-ring-color', '#2a3a91')}
-          rows="5"
-          value={maintenanceNote}
-          onChange={e => setMaintenanceNote(e.target.value)}
-          placeholder="Describe the work performed, parts used, issues found, and any recommendations..."
-          required
-        ></textarea>
-      </div>
-      
-      {/* Photo Upload Section */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Attach Photos (optional)
-        </label>
-        <label
-          className="inline-flex items-center gap-2 px-4 py-2 text-white font-semibold rounded-lg shadow hover:opacity-90 transition-colors cursor-pointer mb-2"
-          style={{backgroundColor: '#2a3a91'}}
-        >
-          <Plus className="w-4 h-4" />
-          Choose Photos
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={e => setPhotoFiles(Array.from(e.target.files))}
-            className="hidden"
-          />
-        </label>
-        {photoFiles.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {photoFiles.map((file, idx) => (
-              <div key={idx} className="w-16 h-16 relative">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt="Selected"
-                  className="w-16 h-16 object-cover rounded border"
-                />
+          {/* Photo Preview */}
+          {photoFiles && photoFiles.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                Selected Photos ({photoFiles.length})
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {photoFiles.map((file, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+          
+          {uploadStatus && (
+            <div className="mt-2 text-sm font-medium" style={{color: '#2a3a91'}}>
+              {uploadStatus}
+            </div>
+          )}
+        </div>
+
+        {/* Error Messages */}
+        {formError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600 font-medium">{formError}</p>
           </div>
         )}
-        {uploadStatus && <div className="text-sm mt-1" style={{color: '#2a3a91'}}>{uploadStatus}</div>}
-      </div>
 
-      <div className="flex items-center justify-between pt-4">
-        <div className="text-sm text-gray-500">
-          All fields are required to save the maintenance record
+        {/* Success Messages */}
+        {submitStatus && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-600 font-medium">{submitStatus}</p>
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <div className="flex gap-3 pt-4">
+          <button
+            type="submit"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-colors"
+            style={{backgroundColor: '#2a3a91'}}
+          >
+            <FileText className="w-4 h-4" />
+            Save Maintenance Record
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="inline-flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-colors"
-          style={{backgroundColor: '#2a3a91'}}
-        >
-          <FileText className="w-5 h-5" />
-          Save Maintenance Record
-        </button>
-      </div>
-      
-      {formError && (
-        <div className="flex items-center gap-3 p-4 border rounded-lg" style={{backgroundColor: '#fef2f2', borderColor: '#ef4444'}}>
-          <FileText className="w-5 h-5 flex-shrink-0" style={{color: '#ef4444'}} />
-          <div className="font-medium" style={{color: '#b91c1c'}}>{formError}</div>
-        </div>
-      )}
-      
-      {submitStatus && (
-        <div className="flex items-center gap-3 p-4 border rounded-lg" style={{backgroundColor: '#f0f9ff', borderColor: '#22c55e'}}>
-          <FileText className="w-5 h-5 flex-shrink-0" style={{color: '#22c55e'}} />
-          <div className="font-medium" style={{color: '#15803d'}}>{submitStatus}</div>
-        </div>
-      )}
+      </form>
     </div>
-  </div>
-);
+  );
+};
 
 export default MaintenanceRecordForm;

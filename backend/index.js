@@ -12,18 +12,22 @@ app.use(express.json());
 // uploading photos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// ✅ NEW: Serve CSS and other static files
+app.use('/styles', express.static(path.join(__dirname, 'styles')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Routes
 const maintenancePhotosRoutes = require('./routes/maintenancePhotos');
 app.use('/api/maintenance', maintenancePhotosRoutes);
 
-const hvacRoutes = require('./routes/hvacUnits')
-app.use('/api/hvac-units', hvacRoutes)
+const hvacRoutes = require('./routes/hvacUnits');
+app.use('/api/hvac-units', hvacRoutes);
 
-const propertyRoutes = require('./routes/properties')
-app.use('/api/properties', propertyRoutes)
+const propertyRoutes = require('./routes/properties');
+app.use('/api/properties', propertyRoutes);
 
-const maintenanceRoutes = require('./routes/maintenanceLogs')
-app.use('/api/maintenance', maintenanceRoutes)
+const maintenanceRoutes = require('./routes/maintenanceLogs');
+app.use('/api/maintenance-logs', maintenanceRoutes); // Changed to avoid conflict with photos
 
 const scheduledMaintenanceRoutes = require('./routes/scheduledMaintenance');
 app.use('/api/scheduled-maintenance', scheduledMaintenanceRoutes);
@@ -31,12 +35,69 @@ app.use('/api/scheduled-maintenance', scheduledMaintenanceRoutes);
 const jobsRoutes = require('./routes/jobs');
 app.use('/api/jobs', jobsRoutes);
 
+const jobServicesRoutes = require('./routes/jobServices');
+app.use('/api/jobs', jobServicesRoutes);
+
 const servicesRoutes = require('./routes/services');
 app.use('/api/services', servicesRoutes);
 
-// Jobs routes - FIXED: Import once and mount properly
-const jobsRouter = require('./routes/jobs');
-app.use('/api/jobs', jobsRouter); // ← ADD THIS LINE
+const teamMembersRoutes = require('./routes/teamMembers');
+app.use('/api/team-members', teamMembersRoutes);
+
+// Territory Management Routes
+const zonesRoutes = require('./routes/zones');
+app.use('/api/zones', zonesRoutes);
+
+const { clerkAuth, authenticateUser } = require('./middleware/clerkAuth');
+
+const messagesRoutes = require('./routes/messages');
+app.use('/api/messages', clerkAuth, authenticateUser, messagesRoutes);
+
+const tasksRoutes = require('./routes/tasks');  
+app.use('/api/tasks', clerkAuth, authenticateUser, tasksRoutes);
+
+// FIXED: Use singular form to match your file name
+const recurringJobTemplateRoutes = require('./routes/recurringJobTemplate');
+app.use('/api/recurring-job-templates', recurringJobTemplateRoutes);
+
+// ✅ NEW: Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    scheduler: process.env.ENABLE_SCHEDULER === 'true' ? 'enabled' : 'disabled'
+  });
+});
+
+// ✅ NEW: Manual job generation endpoint for admin dashboard
+app.post('/api/admin/generate-jobs', async (req, res) => {
+  try {
+    console.log('🔄 Manual job generation triggered via API...');
+    
+    const response = await fetch(`http://localhost:${PORT}/api/recurring-job-templates/generate-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      res.json({
+        success: true,
+        message: 'Jobs generated successfully',
+        ...result
+      });
+    } else {
+      throw new Error('Generation request failed');
+    }
+  } catch (error) {
+    console.error('❌ Manual generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Root Route
 app.get("/", (req, res) => {
@@ -44,6 +105,43 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// ✅ NEW: Optional scheduler startup
+if (process.env.ENABLE_SCHEDULER === 'true') {
+  console.log('🔄 Starting integrated recurring job scheduler...');
+  try {
+    require('./scripts/jobScheduler');
+    console.log('✅ Scheduler integrated successfully');
+  } catch (error) {
+    console.error('❌ Failed to start scheduler:', error);
+    console.log('💡 You can run the scheduler separately with: npm run scheduler');
+  }
+}
+
+// ✅ ENHANCED: Server startup with detailed logging
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📅 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔧 Scheduler: ${process.env.ENABLE_SCHEDULER === 'true' ? 'Integrated' : 'Separate process'}`);
+  console.log(`🌐 API available at: http://localhost:${PORT}/api`);
+  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+  
+  if (process.env.ENABLE_SCHEDULER !== 'true') {
+    console.log('\n💡 To enable automatic job generation:');
+    console.log('   1. Set ENABLE_SCHEDULER=true in your .env file, or');
+    console.log('   2. Run: npm run scheduler (in a separate terminal)');
+  }
+  
+  console.log('\n' + '='.repeat(60) + '\n');
+});
+
+// ✅ NEW: Graceful shutdown handling
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Received SIGINT. Shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM. Shutting down gracefully...');
+  process.exit(0);
 });

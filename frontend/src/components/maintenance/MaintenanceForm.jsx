@@ -1,3 +1,5 @@
+// MaintenanceForm.jsx - Updated to accept pre-selected property/suite/unit from HVAC dashboard
+
 import React, { useState, useEffect } from 'react';
 import MaintenanceHeader from './MaintenanceHeader';
 import MaintenanceSteps from './MaintenanceSteps';
@@ -12,9 +14,10 @@ import ManageHVACUnitsSection from '../hvac/ManageHVACUnitsSection';
 import AddHVACModal from '../hvac/AddHVACModal';
 import MaintenanceModeToggle from './MaintenanceModeToggle';
 import Card from '../common/Card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Wrench, Building, MapPin } from 'lucide-react';
 
-const MaintenanceForm = () => {
+// ✅ UPDATED: Accept navigationData prop to pre-populate selections
+const MaintenanceForm = ({ onNavigate, navigationData }) => {
   const [properties, setProperties] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,13 +45,28 @@ const MaintenanceForm = () => {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState("");
 
+  // ✅ NEW: Check if we have pre-selected data from HVAC dashboard
+  const hasPreselectedData = navigationData?.selectedProperty && navigationData?.selectedSuite;
+  const preselectedUnit = navigationData?.selectedUnit;
+
   // Fetch properties from backend
   useEffect(() => {
     fetch("/api/properties")
       .then(res => res.json())
-      .then(data => setProperties(data))
+      .then(data => {
+        setProperties(data);
+        
+        // ✅ NEW: If we have pre-selected data, set it after properties are loaded
+        if (hasPreselectedData && navigationData.selectedProperty) {
+          setSelectedProperty(navigationData.selectedProperty);
+          setSelectedSuite(navigationData.selectedSuite);
+          if (preselectedUnit) {
+            setSelectedUnit(preselectedUnit.toString());
+          }
+        }
+      })
       .catch(err => console.error("Failed to fetch properties", err));
-  }, []);
+  }, [hasPreselectedData, navigationData]);
 
   // Fetch maintenance logs for selected suite
   useEffect(() => {
@@ -69,72 +87,58 @@ const MaintenanceForm = () => {
       })
       .catch(() => setMaintenanceLogs([]));
   }, [selectedSuite]);
-  
-  // Remove duplicates by address
-  const uniqueProperties = Array.from(
-    new Map(properties.map(p => [p.address, p])).values()
-  );
 
   // Filter properties based on search
-  const filteredProperties = uniqueProperties.filter(property =>
-    (property.name && property.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (property.address && property.address.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredProperties = properties.filter(property =>
+    property.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    property.address?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handlePropertySelect = (property) => {
     setSelectedProperty(property);
-    setSearchQuery('');
     setSelectedSuite(null);
-    setPhotoFiles([]);
-    setUploadStatus("");
+    setSelectedUnit('');
   };
 
   const handleSuiteSelect = (suite) => {
     setSelectedSuite(suite);
     setSelectedUnit('');
-    setPhotoFiles([]);
-    setUploadStatus("");
   };
-  
-  const handleSubmit = async (e) => {
+
+  // Save maintenance record
+  const handleMaintenanceSubmit = async (e) => {
     e.preventDefault();
-    setFormError('');
-    if (!selectedSuite) {
-      setFormError('No suite selected.');
-      return;
-    }
     if (!selectedUnit) {
       setFormError('Please select an HVAC unit.');
       return;
     }
-    if (!maintenanceType || !maintenanceNote || !serviceDate) {
-      setFormError('Please fill in all required fields.');
+    if (!maintenanceNote.trim()) {
+      setFormError('Please enter maintenance notes.');
       return;
     }
-    const payload = {
-      hvacUnitId: Number(selectedUnit),
-      technicianId: 1,
-      notes: maintenanceNote,
-      maintenanceType,
-      status: 'COMPLETED',
-      createdAt: serviceDate,
-    };
+
     try {
-      const response = await fetch('/api/maintenance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const response = await fetch("/api/maintenance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hvacUnitId: Number(selectedUnit),
+          notes: maintenanceNote,
+          maintenanceType: maintenanceType || 'MAINTENANCE',
+          createdAt: serviceDate,
+        }),
       });
+
       if (response.ok) {
         const newLog = await response.json();
-        setSubmitStatus('Maintenance record saved successfully!');
-        setMaintenanceNote('');
-        setMaintenanceType('');
-        setSelectedUnit('');
-        setMaintenanceLogs(logs => [newLog, ...logs]);
+        setSubmitStatus("Maintenance record saved successfully!");
+        setMaintenanceNote("");
+        setMaintenanceType("");
+        
         if (photoFiles.length > 0) {
           await handlePhotoUpload(newLog.id);
         }
+        
         fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
           .then(res => res.json())
           .then(data => setMaintenanceLogs(Array.isArray(data) ? data : []))
@@ -237,10 +241,8 @@ const MaintenanceForm = () => {
   };
 
   const handleChecklistComplete = (savedLog) => {
-    // Add the new log to the maintenance history
     setMaintenanceLogs(logs => [savedLog, ...logs]);
     
-    // Refresh the full maintenance logs from backend to ensure consistency
     if (selectedSuite) {
       fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
         .then(res => res.json())
@@ -257,17 +259,80 @@ const MaintenanceForm = () => {
     }
   };
 
+  // ✅ NEW: Handle going back to HVAC dashboard
+  const handleBackToHVAC = () => {
+    if (onNavigate) {
+      onNavigate('hvac');
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)'}}>
       <MaintenanceHeader />
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <MaintenanceSteps 
-          selectedProperty={selectedProperty}
-          selectedSuite={selectedSuite}
-        />
+        {/* ✅ NEW: Show context breadcrumb when coming from HVAC dashboard */}
+        {hasPreselectedData && (
+          <div className="mb-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={handleBackToHVAC}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to HVAC Dashboard
+                  </button>
+                  
+                  <div className="h-6 w-px bg-gray-300"></div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-900">
+                        {selectedProperty?.name || selectedProperty?.address}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        {selectedSuite?.name || `Suite ${selectedSuite?.id}`}
+                      </span>
+                    </div>
+                    
+                    {preselectedUnit && (
+                      <div className="flex items-center gap-2">
+                        <Wrench className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.label || 
+                           selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.serialNumber || 
+                           `Unit ${preselectedUnit}`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-500">
+                  Maintenance for selected HVAC unit
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {!selectedProperty ? (
+        {/* ✅ UPDATED: Only show steps if not coming from HVAC dashboard */}
+        {!hasPreselectedData && (
+          <MaintenanceSteps 
+            selectedProperty={selectedProperty}
+            selectedSuite={selectedSuite}
+          />
+        )}
+
+        {/* ✅ UPDATED: Skip property/suite selection if pre-selected from HVAC dashboard */}
+        {!selectedProperty && !hasPreselectedData ? (
           <PropertySearchStep
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -276,7 +341,7 @@ const MaintenanceForm = () => {
             properties={properties}
             setProperties={setProperties}
           />
-        ) : !selectedSuite ? (
+        ) : (!selectedSuite && !hasPreselectedData) ? (
           <Card variant="glass" padding="md" className="max-w-4xl mx-auto">
             <SuiteSelectionStep
               selectedProperty={selectedProperty}
@@ -286,81 +351,79 @@ const MaintenanceForm = () => {
           </Card>
         ) : (
           <div className="max-w-4xl mx-auto space-y-6">
-            <PropertyBreadcrumb 
-              selectedProperty={selectedProperty}
-              selectedSuite={selectedSuite}
-              onBackToSuites={() => setSelectedSuite(null)}
-              onChangeProperty={() => setSelectedProperty(null)}
-            />
+            {/* ✅ UPDATED: Only show breadcrumb if not coming from HVAC dashboard */}
+            {!hasPreselectedData && (
+              <PropertyBreadcrumb 
+                selectedProperty={selectedProperty}
+                selectedSuite={selectedSuite}
+                onBackToSuites={() => setSelectedSuite(null)}
+                onChangeProperty={() => setSelectedProperty(null)}
+              />
+            )}
 
             <Card variant="glass" padding="sm">
               <MaintenanceModeToggle mode={mode} setMode={setMode} />
             </Card>
 
             {mode === 'quick' ? (
-              <>
-                <Card variant="glass" padding="md">
-                  <MaintenanceRecordForm
-                    selectedSuite={selectedSuite}
-                    selectedUnit={selectedUnit}
-                    setSelectedUnit={setSelectedUnit}
-                    maintenanceType={maintenanceType}
-                    setMaintenanceType={setMaintenanceType}
-                    serviceDate={serviceDate}
-                    setServiceDate={setServiceDate}
-                    maintenanceNote={maintenanceNote}
-                    setMaintenanceNote={setMaintenanceNote}
-                    photoFiles={photoFiles}
-                    setPhotoFiles={setPhotoFiles}
-                    uploadStatus={uploadStatus}
-                    formError={formError}
-                    submitStatus={submitStatus}
-                    handleSubmit={handleSubmit}
-                    setShowAddHVAC={setShowAddHVAC}
-                  />
-                </Card>
-
-                {selectedSuite.hvacUnits && selectedSuite.hvacUnits.length > 0 && (
-                  <Card variant="glass" padding="md">
-                    <ManageHVACUnitsSection
-                      hvacUnits={selectedSuite.hvacUnits}
-                      onUnitUpdate={handleHVACUnitUpdate}
-                    />
-                  </Card>
-                )}
-
-                <MaintenanceActions onDownloadReport={downloadReport} />
-
-                <Card variant="glass" padding="md">
-                  <MaintenanceHistory
-                    maintenanceLogs={maintenanceLogs}
-                    selectedUnit={selectedUnit}
-                  />
-                </Card>
-              </>
+              <Card variant="glass" padding="md">
+                <MaintenanceRecordForm 
+                  selectedSuite={selectedSuite}
+                  selectedUnit={selectedUnit}
+                  setSelectedUnit={setSelectedUnit}
+                  maintenanceNote={maintenanceNote}
+                  setMaintenanceNote={setMaintenanceNote}
+                  maintenanceType={maintenanceType}
+                  setMaintenanceType={setMaintenanceType}
+                  serviceDate={serviceDate}
+                  setServiceDate={setServiceDate}
+                  handleMaintenanceSubmit={handleMaintenanceSubmit}
+                  submitStatus={submitStatus}
+                  formError={formError}
+                  setShowAddHVAC={setShowAddHVAC}
+                  photoFiles={photoFiles}
+                  setPhotoFiles={setPhotoFiles}
+                  uploadStatus={uploadStatus}
+                />
+              </Card>
             ) : (
               <Card variant="glass" padding="md">
                 <MaintenanceChecklist 
                   selectedSuite={selectedSuite}
                   selectedUnit={selectedUnit}
                   setSelectedUnit={setSelectedUnit}
+                  onChecklistComplete={handleChecklistComplete}
                   setShowAddHVAC={setShowAddHVAC}
                   submitStatus={submitStatus}
                   setSubmitStatus={setSubmitStatus}
-                  onChecklistComplete={handleChecklistComplete}
                 />
               </Card>
             )}
+
+            <Card variant="glass" padding="md">
+              <MaintenanceHistory 
+                maintenanceLogs={maintenanceLogs}
+                selectedUnit={selectedUnit}
+                onDownloadReport={downloadReport}
+              />
+            </Card>
+
+            <Card variant="glass" padding="md">
+              <ManageHVACUnitsSection 
+                selectedSuite={selectedSuite}
+                onUnitUpdate={handleHVACUnitUpdate}
+              />
+            </Card>
           </div>
         )}
       </div>
 
-      <AddHVACModal
-        showAddHVAC={showAddHVAC}
-        setShowAddHVAC={setShowAddHVAC}
+      <AddHVACModal 
+        isOpen={showAddHVAC}
+        onClose={() => setShowAddHVAC(false)}
+        onSubmit={handleAddHVAC}
         newUnit={newUnit}
         setNewUnit={setNewUnit}
-        handleAddHVAC={handleAddHVAC}
         addHVACStatus={addHVACStatus}
       />
     </div>

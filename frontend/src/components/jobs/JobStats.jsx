@@ -1,15 +1,57 @@
-// components/jobs/JobStats.jsx
+// components/jobs/JobStats.jsx - COMPLETE FULL COMPONENT
 import React from 'react';
-import { Briefcase, Clock, Activity, Award } from 'lucide-react';
+import { 
+  Briefcase, 
+  Clock, 
+  Activity, 
+  Award, 
+  AlertTriangle, 
+  Repeat, 
+  Calendar, 
+  Zap, 
+  TrendingUp,
+  CheckCircle
+} from 'lucide-react';
 
-const StatCard = ({ title, value, icon: Icon, color, change, prefix = '', suffix = '' }) => (
-  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+const StatCard = ({ 
+  title, 
+  value, 
+  icon: Icon, 
+  color, 
+  change, 
+  prefix = '', 
+  suffix = '', 
+  subtitle, 
+  urgent = false,
+  onClick
+}) => (
+  <div 
+    className={`bg-white rounded-xl p-6 shadow-sm border transition-all ${
+      onClick ? 'cursor-pointer hover:shadow-md hover:scale-105' : ''
+    } ${
+      urgent ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-200'
+    }`}
+    onClick={onClick}
+  >
     <div className="flex items-center justify-between">
-      <div className="flex-1 min-w-0 pr-4"> {/* Add flex-1 min-w-0 for text, pr-4 for spacing */}
-        <p className="text-sm font-medium text-gray-600 mb-1 leading-tight">{title}</p> {/* Add leading-tight */}
-        <p className="text-2xl font-bold text-gray-900">
+      <div className="flex-1 min-w-0 pr-4">
+        <p className={`text-sm font-medium mb-1 leading-tight ${
+          urgent ? 'text-red-600' : 'text-gray-600'
+        }`}>
+          {title}
+        </p>
+        <p className={`text-2xl font-bold ${
+          urgent ? 'text-red-900' : 'text-gray-900'
+        }`}>
           {prefix}{typeof value === 'number' ? value.toLocaleString() : value}{suffix}
         </p>
+        {subtitle && (
+          <p className={`text-xs mt-1 ${
+            urgent ? 'text-red-500' : 'text-gray-500'
+          }`}>
+            {subtitle}
+          </p>
+        )}
         {change && (
           <div className="flex items-center gap-1 mt-1">
             <TrendingUp className="w-4 h-4 text-green-600" />
@@ -17,40 +59,192 @@ const StatCard = ({ title, value, icon: Icon, color, change, prefix = '', suffix
           </div>
         )}
       </div>
-      <div className={`p-3 rounded-xl ${color} flex-shrink-0`}> {/* Add flex-shrink-0 */}
+      <div className={`p-3 rounded-xl ${color} flex-shrink-0 ${
+        urgent ? 'animate-pulse' : ''
+      }`}>
         <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
   </div>
 );
 
-const JobStats = ({ stats = {} }) => {
+const LateJobsAlert = ({ lateJobs, onViewLateJobs }) => {
+  if (!lateJobs || lateJobs === 0) return null;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <StatCard
-        title="Total Jobs"
-        value={stats.totalJobs || 0}
-        icon={Briefcase}
-        color="bg-blue-600"
-      />
-      <StatCard
-        title="Active Jobs"
-        value={stats.scheduledJobs || 0}
-        icon={Clock}
-        color="bg-orange-600"
-      />
-      <StatCard
-        title="In Progress"
-        value={stats.inProgressJobs || 0}
-        icon={Activity}
-        color="bg-green-600"
-      />
-      <StatCard
-        title="Completed"
-        value={stats.completedThisWeek || 0}
-        icon={Award}
-        color="bg-yellow-600"
-      />
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          <span className="font-medium text-red-900">
+            {lateJobs} job{lateJobs !== 1 ? 's' : ''} overdue and need immediate attention
+          </span>
+        </div>
+        <button
+          onClick={onViewLateJobs}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
+        >
+          View Late Jobs
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const JobStats = ({ 
+  stats = {}, 
+  showRecurring = false, 
+  showAlert = true,
+  onLateJobsClick,
+  onViewLateJobs
+}) => {
+  const hasLateJobs = (stats.lateJobs || 0) > 0;
+
+  // Handle late jobs click
+  const handleLateJobsClick = () => {
+    if (hasLateJobs && onLateJobsClick) {
+      onLateJobsClick();
+    }
+  };
+
+  // Two-row layout with recurring stats
+  if (showRecurring && stats.recurringTemplates !== undefined) {
+    return (
+      <div className="space-y-6 mb-8">
+        {/* Alert Banner */}
+        {showAlert && (
+          <LateJobsAlert 
+            lateJobs={stats.lateJobs} 
+            onViewLateJobs={onViewLateJobs}
+          />
+        )}
+
+        {/* Main Job Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <StatCard
+            title="Total Jobs"
+            value={stats.totalJobs || 0}
+            icon={Briefcase}
+            color="bg-blue-600"
+          />
+          <StatCard
+            title="Active Jobs"
+            value={stats.scheduledJobs || 0}
+            icon={Clock}
+            color="bg-orange-600"
+            subtitle="Scheduled & dispatched"
+          />
+          <StatCard
+            title="In Progress"
+            value={stats.inProgressJobs || 0}
+            icon={Activity}
+            color="bg-green-600"
+            subtitle="Currently being worked"
+          />
+          <StatCard
+            title="Late Jobs"
+            value={stats.lateJobs || 0}
+            icon={AlertTriangle}
+            color="bg-red-600"
+            subtitle="Overdue & need attention"
+            urgent={hasLateJobs}
+            onClick={handleLateJobsClick}
+          />
+          <StatCard
+            title="Completed"
+            value={stats.completedThisWeek || 0}
+            icon={Award}
+            color="bg-yellow-600"
+            subtitle="This week"
+          />
+        </div>
+
+        {/* Recurring Job Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Active Templates"
+            value={stats.recurringTemplates || 0}
+            icon={Repeat}
+            color="bg-purple-600"
+            subtitle="Recurring job templates"
+          />
+          <StatCard
+            title="Auto-Generated"
+            value={stats.autoGeneratedJobs || 0}
+            icon={Zap}
+            color="bg-indigo-600"
+            subtitle="This week"
+          />
+          <StatCard
+            title="Next Recurring"
+            value={stats.upcomingRecurring || 0}
+            icon={Calendar}
+            color="bg-teal-600"
+            subtitle="Next 7 days"
+          />
+          <StatCard
+            title="Automation Rate"
+            value={stats.automationRate || 0}
+            icon={CheckCircle}
+            color="bg-rose-600"
+            suffix="%"
+            subtitle="Jobs from templates"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Single-row layout (standard view)
+  return (
+    <div className="space-y-6 mb-8">
+      {/* Alert Banner */}
+      {showAlert && (
+        <LateJobsAlert 
+          lateJobs={stats.lateJobs} 
+          onViewLateJobs={onViewLateJobs}
+        />
+      )}
+
+      {/* Main Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <StatCard
+          title="Total Jobs"
+          value={stats.totalJobs || 0}
+          icon={Briefcase}
+          color="bg-blue-600"
+        />
+        <StatCard
+          title="Active Jobs"
+          value={stats.scheduledJobs || 0}
+          icon={Clock}
+          color="bg-orange-600"
+          subtitle="Scheduled & dispatched"
+        />
+        <StatCard
+          title="In Progress"
+          value={stats.inProgressJobs || 0}
+          icon={Activity}
+          color="bg-green-600"
+          subtitle="Currently being worked"
+        />
+        <StatCard
+          title="Late Jobs"
+          value={stats.lateJobs || 0}
+          icon={AlertTriangle}
+          color="bg-red-600"
+          subtitle="Overdue"
+          urgent={hasLateJobs}
+          onClick={handleLateJobsClick}
+        />
+        <StatCard
+          title="Completed"
+          value={stats.completedThisWeek || 0}
+          icon={Award}
+          color="bg-yellow-600"
+          subtitle="This week"
+        />
+      </div>
     </div>
   );
 };

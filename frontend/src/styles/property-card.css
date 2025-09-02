@@ -1,0 +1,65 @@
+/* styles/property-card.css - Add this to fix dropdown z-index issues */
+
+/* Property card container - ensure overflow is visible */
+.property-card {
+  position: relative;
+  overflow: visible !important;
+  z-index: 1;
+}
+
+/* When dropdown is open, boost the card's z-index */
+.property-card:has(.dropdown-open) {
+  z-index: 1000;
+  position: relative;
+}
+
+/* Property cards grid container - allow overflow */
+.properties-grid {
+  overflow: visible !important;
+}
+
+/* Dropdown menu positioning */
+.property-dropdown {
+  position: absolute;
+  z-index: 9999 !important;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  min-width: 200px;
+  overflow: visible;
+}
+
+/* Dropdown backdrop */
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+/* Parent containers - ensure no overflow hidden */
+.properties-page,
+.properties-container {
+  overflow: visible !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .property-dropdown {
+    position: fixed;
+    top: auto !important;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    z-index: 10000;
+  }
+  
+  .dropdown-backdrop {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}

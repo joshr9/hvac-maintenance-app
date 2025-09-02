@@ -2,8 +2,6 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { Parser } = require('json2csv'); 
 
-
-
 exports.getAllLogs = async (req, res) => {
   try {
     const logs = await prisma.maintenanceLog.findMany({
@@ -55,8 +53,7 @@ exports.getLogsBySuite = async (req, res) => {
   }
 };
 
-// Update your existing createLog function to handle checklist data:
-
+// UPDATED createLog function with validation to fix foreign key constraint errors
 exports.createLog = async (req, res) => {
   const { 
     hvacUnitId, 
@@ -70,16 +67,56 @@ exports.createLog = async (req, res) => {
     serviceTechnician,
     specialNotes
   } = req.body;
-  
+
   try {
+    // 1. VALIDATE REQUIRED FIELDS
+    if (!hvacUnitId || !technicianId || !maintenanceType) {
+      return res.status(400).json({
+        error: 'Missing required fields: hvacUnitId, technicianId, and maintenanceType are required'
+      });
+    }
+
+    // 2. VALIDATE TECHNICIAN EXISTS
+    const technician = await prisma.user.findFirst({
+      where: {
+        id: parseInt(technicianId),
+        role: 'TECHNICIAN'
+      }
+    });
+
+    if (!technician) {
+      // Get available technicians to help with debugging
+      const availableTechnicians = await prisma.user.findMany({
+        where: { role: 'TECHNICIAN' },
+        select: { id: true, name: true }
+      });
+
+      return res.status(400).json({
+        error: `Technician with ID ${technicianId} not found. Please use a valid technician ID.`,
+        availableTechnicians: availableTechnicians
+      });
+    }
+
+    // 3. VALIDATE HVAC UNIT EXISTS
+    const hvacUnit = await prisma.hvacUnit.findUnique({
+      where: { id: parseInt(hvacUnitId) }
+    });
+
+    if (!hvacUnit) {
+      return res.status(400).json({
+        error: `HVAC Unit with ID ${hvacUnitId} not found.`
+      });
+    }
+
+    // 4. CREATE MAINTENANCE LOG
     const newLog = await prisma.maintenanceLog.create({
       data: {
-        hvacUnitId,
-        technicianId,
+        hvacUnitId: parseInt(hvacUnitId),
+        technicianId: parseInt(technicianId),
         notes,
         maintenanceType,
         status,
-        createdAt: new Date(createdAt),
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
         // Add optional checklist fields
         ...(checklistData && { checklistData }),
         ...(serviceTechnician && { serviceTechnician }),
@@ -91,10 +128,32 @@ exports.createLog = async (req, res) => {
         photos: true
       }
     });
+
+    console.log('✅ Maintenance log created successfully:', newLog.id);
     res.json(newLog);
+
   } catch (error) {
-    console.error('Error creating log:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ Error creating maintenance log:', error);
+    
+    // Handle specific Prisma errors
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        error: 'Foreign key constraint failed. Please check that technicianId and hvacUnitId are valid.',
+        details: error.meta
+      });
+    }
+    
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        error: 'Unique constraint violation',
+        details: error.meta
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to create maintenance log',
+      details: error.message
+    });
   }
 };
 

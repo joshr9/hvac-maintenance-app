@@ -26,7 +26,7 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import PropertiesPage from './components/properties/PropertiesPage';
 import RoleBasedCalendar from './components/calendar/RoleBasedCalendar';
 import MessagingPage from './components/messaging/MessagingPage';
-import HVACPage from './components/hvac/HVACPage';
+import HVACPage from './components/hvac/HVACpage';
 import TaskManagement from './components/tasks/TaskManagement';
 
 

@@ -75,42 +75,45 @@ function App() {
     email: 'john@company.com'
   });
 
-  // ✅ EXISTING: Load properties (100% PRESERVED - your exact code)
-  useEffect(() => {
-    const loadProperties = async () => {
-      try {
-        const response = await fetch('/api/properties');
-        if (response.ok) {
-          const data = await response.json();
-          setProperties(Array.isArray(data) ? data : []);
-        }
-      } catch (error) {
-        console.error('Error loading properties:', error);
-        setProperties([]);
-      }
-    };
-    
-    loadProperties();
-  }, []);
-// ✅ FIXED: Load global jobs data with proper API handling and no infinite loops
-  const loadGlobalJobsData = useCallback(async () => {
-    console.log('🔍 loadGlobalJobsData STARTED');
-    console.log('🔍 Current globalJobsData:', globalJobsData);
-    
+// ✅ FIXED: Load properties with absolute URL
+useEffect(() => {
+  const loadProperties = async () => {
     try {
-      const [jobsResponse, statsResponse] = await Promise.all([
-        fetch('/api/jobs'),
-        fetch('/api/jobs/stats')
-      ]);
+      const apiUrl = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL;
+      const response = await fetch(`${apiUrl}/api/properties`);
+      if (response.ok) {
+        const data = await response.json();
+        setProperties(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error loading properties:', error);
+      setProperties([]);
+    }
+  };
+  
+  loadProperties();
+}, []);
 
-      console.log('🔍 Jobs response status:', jobsResponse.status);
-      console.log('🔍 Stats response status:', statsResponse.status);
+// ✅ FIXED: Load global jobs data with absolute URLs
+const loadGlobalJobsData = useCallback(async () => {
+  console.log('🔍 loadGlobalJobsData STARTED');
+  
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL;
+    const [jobsResponse, statsResponse] = await Promise.all([
+      fetch(`${apiUrl}/api/jobs`),
+      fetch(`${apiUrl}/api/jobs/stats`)
+    ]);
 
-      const newData = {
-        jobs: [],
-        stats: {},
-        lastUpdated: null
-      };
+    console.log('🔍 Jobs response status:', jobsResponse.status);
+    console.log('🔍 Stats response status:', statsResponse.status);
+
+    const newData = {
+      jobs: [],
+      stats: {},
+      lastUpdated: null
+    };
+    // ... rest of your existing code
 
       if (jobsResponse.ok) {
         const jobsData = await jobsResponse.json();

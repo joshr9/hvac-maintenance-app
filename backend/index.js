@@ -6,7 +6,15 @@ const path = require("path"); // for photos
 
 // Middleware
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://app.deancallanpm.com',
+    'https://front-end-production-3ed1.up.railway.app'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // uploading photos

@@ -5,10 +5,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './styles/jobcard.css';
 import './styles/drag-drop.css';
 
-// ✅ NEW: Add authentication imports (only add these lines)
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+// ❌ COMMENTED OUT: Authentication imports (causing the white screen)
+// import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+// import { AuthProvider } from './contexts/AuthContext';
+// import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // ✅ EXISTING: Your current timer contexts (100% PRESERVED)
 import { TimerProvider } from './contexts/TimerContext';
@@ -29,25 +29,22 @@ import MessagingPage from './components/messaging/MessagingPage';
 import HVACPage from './components/hvac/HVACpage';
 import TaskManagement from './components/tasks/TaskManagement';
 
-
-
-
-
 // ✅ EXISTING: ALL your current timer components (100% PRESERVED)
 import TimeHistoryPage from './components/timer/TimeHistoryPage';
 import FloatingTimerWidget from './components/timer/FloatingTimerWidget';
 import OfflineIndicator from './components/timer/OfflineIndicator';
 
-// ✅ NEW: Optional development helpers (can be removed in production)
-import AuthTester from './components/dev/AuthTester';
+// ❌ COMMENTED OUT: Development helpers that might use Clerk
+// import AuthTester from './components/dev/AuthTester';
 import { isDevelopmentFeatureEnabled } from './utils/developmentHelpers';
 
-// ✅ NEW: Get Clerk publishable key (optional - app works without it)
-const clerkPubKey = 
-  typeof process !== 'undefined' 
-    ? process.env.REACT_APP_CLERK_PUBLISHABLE_KEY  // Create React App
-    : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;   // Vite
+// ❌ COMMENTED OUT: Clerk key detection (not needed)
+// const clerkPubKey = 
+//   typeof process !== 'undefined' 
+//     ? process.env.REACT_APP_CLERK_PUBLISHABLE_KEY  // Create React App
+//     : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;   // Vite
 
+// ✅ FORCE DISABLED: Authentication completely off
 const authEnabled = false;
 
 function App() {
@@ -67,7 +64,7 @@ function App() {
     lastUpdated: null
   });
 
-  // ✅ EXISTING: Mock current user for testing (PRESERVED - Clerk will enhance this)
+  // ✅ EXISTING: Mock current user for testing (PRESERVED - no Clerk needed)
   const [currentUser, setCurrentUser] = useState({
     id: 'user_123',
     name: 'John Smith',
@@ -92,7 +89,8 @@ function App() {
     
     loadProperties();
   }, []);
-// ✅ FIXED: Load global jobs data with proper API handling and no infinite loops
+
+  // ✅ FIXED: Load global jobs data with proper API handling and no infinite loops
   const loadGlobalJobsData = useCallback(async () => {
     console.log('🔍 loadGlobalJobsData STARTED');
     console.log('🔍 Current globalJobsData:', globalJobsData);
@@ -144,7 +142,6 @@ function App() {
     }
   }, []); // ✅ FIXED: Empty dependency array to prevent infinite loops
 
-
   // ✅ EXISTING: Load data on mount and when refresh is triggered (100% PRESERVED)
   useEffect(() => {
     loadGlobalJobsData();
@@ -179,144 +176,117 @@ function App() {
     handleDataRefresh();
   }, [handleDataRefresh]);
 
-  // ✅ EXISTING: Your complete render view logic (100% PRESERVED with optional auth enhancement)
-const renderCurrentView = () => {
-  switch (currentView) {
-    case 'jobs':
-      return (
-        <JobsList 
-          onNavigate={handleNavigate}
-          onOpenModal={handleOpenModal}
-          jobsData={globalJobsData.jobs}
-          onDataRefresh={handleDataRefresh}
-        />
-      );
+  // ✅ SIMPLIFIED: Render view logic without any auth protection
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'jobs':
+        return (
+          <JobsList 
+            onNavigate={handleNavigate}
+            onOpenModal={handleOpenModal}
+            jobsData={globalJobsData.jobs}
+            onDataRefresh={handleDataRefresh}
+          />
+        );
 
-    case 'properties':
-      return (
-        <PropertiesPage 
-          onNavigate={handleNavigate}
-        />
-      );
+      case 'properties':
+        return (
+          <PropertiesPage 
+            onNavigate={handleNavigate}
+          />
+        );
 
-    case 'services':
-      return (
-        <ServiceCatalog 
-          onNavigate={handleNavigate}
-        />
-      );
+      case 'services':
+        return (
+          <ServiceCatalog 
+            onNavigate={handleNavigate}
+          />
+        );
 
-    case 'hvac':
-      return (
-        <HVACPage 
-          onNavigate={handleNavigate}
-          onOpenModal={handleOpenModal}
-          properties={properties}
-          navigationData={navigationData}
-          onDataRefresh={handleDataRefresh}
-        />
-      );
+      case 'hvac':
+        return (
+          <HVACPage 
+            onNavigate={handleNavigate}
+            onOpenModal={handleOpenModal}
+            properties={properties}
+            navigationData={navigationData}
+            onDataRefresh={handleDataRefresh}
+          />
+        );
 
-    case 'calendar':
-    case 'schedule':
-      return (
-        // ✅ ENHANCED: Optional auth protection (your calendar works with or without)
-        authEnabled ? (
-          <ProtectedRoute requiredPermissions={['canViewSchedules']}>
-            <RoleBasedCalendar
-              jobsRefreshTrigger={jobsRefreshTrigger}
-              onJobCreated={handleJobCreated}
-              allProperties={properties}
-              onNavigate={handleNavigate}        // ✅ Preserved
-              onOpenModal={handleOpenModal}      // ✅ Preserved
-              navigationData={navigationData}    // ✅ Preserved
-              currentUser={currentUser}          // ✅ Enhanced with auth
-            />
-          </ProtectedRoute>
-        ) : (
+      case 'calendar':
+      case 'schedule':
+        return (
+          // ✅ SIMPLIFIED: No auth protection, direct component render
           <RoleBasedCalendar
             jobsRefreshTrigger={jobsRefreshTrigger}
             onJobCreated={handleJobCreated}
             allProperties={properties}
-            onNavigate={handleNavigate}        
-            onOpenModal={handleOpenModal}      
-            navigationData={navigationData}    
-            currentUser={currentUser}          
+            onNavigate={handleNavigate}
+            onOpenModal={handleOpenModal}
+            navigationData={navigationData}
+            currentUser={currentUser}
           />
-        )
-      );
+        );
 
-    // ✅ NEW: Team Chat/Messaging System (ADDED WITHOUT REMOVING ANYTHING)
-    case 'messaging':
-      return (
-        <MessagingPage 
-          onNavigate={handleNavigate}
-          onOpenModal={handleOpenModal}
-          allProperties={properties}
-          globalJobsData={globalJobsData}
-          // currentUser={currentUser}
-        />
-      );
+      case 'messaging':
+        return (
+          <MessagingPage 
+            onNavigate={handleNavigate}
+            onOpenModal={handleOpenModal}
+            allProperties={properties}
+            globalJobsData={globalJobsData}
+          />
+        );
     
       case 'tasks':
-      return (
-        <TaskManagement 
-          allProperties={properties}
-          globalJobsData={globalJobsData}
-          onNavigate={handleNavigate}
-        />
-      );
+        return (
+          <TaskManagement 
+            allProperties={properties}
+            globalJobsData={globalJobsData}
+            onNavigate={handleNavigate}
+          />
+        );
 
+      case 'maintenance':
+        return (
+          <MaintenanceForm 
+            onNavigate={handleNavigate}
+            navigationData={navigationData}
+          />
+        );
 
-    case 'maintenance':
-      return (
-        <MaintenanceForm 
-          onNavigate={handleNavigate}
-          navigationData={navigationData}
-        />
-      );
-
-    case 'admin':
-      return (
-        // ✅ ENHANCED: Optional admin protection
-        authEnabled ? (
-          <ProtectedRoute requiredRole="admin">
-            <AdminDashboard 
-              onNavigate={handleNavigate}
-              globalJobsData={globalJobsData}
-            />
-          </ProtectedRoute>
-        ) : (
+      case 'admin':
+        return (
+          // ✅ SIMPLIFIED: No auth protection, direct component render
           <AdminDashboard 
             onNavigate={handleNavigate}
             globalJobsData={globalJobsData}
           />
-        )
-      );
+        );
 
-    // ✅ EXISTING: Time History Page (100% PRESERVED)
-    case 'timeHistory':
-      return (
-        <TimeHistoryPage 
-          onNavigate={handleNavigate}
-          technicianName="Default User"
-        />
-      );
+      case 'timeHistory':
+        return (
+          <TimeHistoryPage 
+            onNavigate={handleNavigate}
+            technicianName="Default User"
+          />
+        );
 
-    default:
-      return (
-        <Homepage 
-          onNavigate={handleNavigate}
-          onOpenModal={handleOpenModal}
-          dashboardStats={globalJobsData.stats}
-          lastDataUpdate={globalJobsData.lastUpdated}
-        />
-      );
-  }
-};
+      default:
+        return (
+          <Homepage 
+            onNavigate={handleNavigate}
+            onOpenModal={handleOpenModal}
+            dashboardStats={globalJobsData.stats}
+            lastDataUpdate={globalJobsData.lastUpdated}
+          />
+        );
+    }
+  };
 
-  // ✅ EXISTING: Your complete app structure (100% PRESERVED with optional auth enhancement)
-  const AppContent = () => (
+  // ✅ SIMPLIFIED: Direct app content without any auth wrappers
+  return (
     <TimerProvider technicianName="Default User">
       <OfflineQueueProvider>
         <div className="min-h-screen bg-gray-50">
@@ -336,8 +306,8 @@ const renderCurrentView = () => {
           {/* ✅ EXISTING: Always-Visible Timer Widget (100% PRESERVED) */}
           <FloatingTimerWidget />
 
-          {/* ✅ NEW: Optional development tools */}
-          {isDevelopmentFeatureEnabled('authTester') && <AuthTester />}
+          {/* ❌ COMMENTED OUT: Development tools that might use Clerk */}
+          {/* {isDevelopmentFeatureEnabled('authTester') && <AuthTester />} */}
 
           {/* ✅ EXISTING: Global modal system (100% PRESERVED) */}
           {activeModal?.type === 'createJob' && (
@@ -355,31 +325,6 @@ const renderCurrentView = () => {
         </div>
       </OfflineQueueProvider>
     </TimerProvider>
-  );
-
-  // ✅ ENHANCED: Conditional authentication wrapper (your app works with or without auth)
-  if (!authEnabled) {
-    // ✅ FALLBACK: Your app works exactly as it does now
-    console.log('🔧 Running without authentication - add REACT_APP_CLERK_PUBLISHABLE_KEY to enable auth');
-    return <AppContent />;
-  }
-
-  // ✅ NEW: Full Clerk authentication wrapper (only when auth is enabled)
-  return (
-    <ClerkProvider publishableKey={clerkPubKey}>
-      <AuthProvider>
-        <SignedIn>
-          <AppContent />
-        </SignedIn>
-        
-        <SignedOut>
-          <RedirectToSignIn 
-            redirectUrl={window.location.href}
-            signUpUrl="/sign-up"
-          />
-        </SignedOut>
-      </AuthProvider>
-    </ClerkProvider>
   );
 }
 

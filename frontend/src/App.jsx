@@ -48,7 +48,7 @@ const clerkPubKey =
     ? process.env.REACT_APP_CLERK_PUBLISHABLE_KEY  // Create React App
     : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;   // Vite
 
-const authEnabled = !!clerkPubKey;
+const authEnabled = false;
 
 function App() {
   // ✅ EXISTING: ALL your current state (100% PRESERVED)

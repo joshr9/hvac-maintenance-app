@@ -6,7 +6,7 @@ const path = require('path');
 
 const prisma = new PrismaClient();
 
-const FILE_PATH = path.join(__dirname, '../../', 'HVAC_Properties.xlsx');
+const FILE_PATH = path.join(__dirname, '../', 'HVAC_Properties.xlsx');
 
 async function main() {
   let workbook;

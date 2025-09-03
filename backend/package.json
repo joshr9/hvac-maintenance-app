@@ -4,8 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start" : "npx prisma migrate deploy && npx prisma generate && node scripts/seedZones.js && node scripts/seedChannels.js && node scripts/importProperties.js && node index.js",
-    "dev": "nodemon index.js",
+    "start": "npx prisma migrate deploy && npx prisma generate && node scripts/seedZones.js && node scripts/importProperties.js && node index.js"    "dev": "nodemon index.js",
     "scheduler": "node scripts/startScheduler.js",
     "generate-jobs": "node scripts/generateRecurringJobs.js"
   },

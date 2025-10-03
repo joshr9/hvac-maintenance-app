@@ -19,6 +19,9 @@ const HVACPage = ({
   const [loading, setLoading] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [pullStartY, setPullStartY] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [hvacStats, setHvacStats] = useState({
     todayJobs: 0,
@@ -54,6 +57,55 @@ const HVACPage = ({
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
+
+  // iOS-style pull-to-refresh
+  useEffect(() => {
+    const scrollContainer = document.querySelector('main');
+    if (!scrollContainer) return;
+
+    const handleTouchStart = (e) => {
+      if (scrollContainer.scrollTop === 0) {
+        setPullStartY(e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (pullStartY === 0 || scrollContainer.scrollTop > 0) return;
+
+      const currentY = e.touches[0].clientY;
+      const distance = currentY - pullStartY;
+
+      if (distance > 0 && distance < 120) {
+        setPullDistance(distance);
+      }
+    };
+
+    const handleTouchEnd = async () => {
+      if (pullDistance > 80) {
+        setIsRefreshing(true);
+        await fetchHVACStats();
+        if (onDataRefresh) onDataRefresh();
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+          setPullStartY(0);
+        }, 500);
+      } else {
+        setPullDistance(0);
+        setPullStartY(0);
+      }
+    };
+
+    scrollContainer.addEventListener('touchstart', handleTouchStart);
+    scrollContainer.addEventListener('touchmove', handleTouchMove);
+    scrollContainer.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      scrollContainer.removeEventListener('touchstart', handleTouchStart);
+      scrollContainer.removeEventListener('touchmove', handleTouchMove);
+      scrollContainer.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [pullStartY, pullDistance, onDataRefresh]);
 
   const fetchHVACStats = async () => {
     try {
@@ -177,40 +229,22 @@ const HVACPage = ({
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
-      {/* ✅ MOBILE HEADER - Collapsing on Scroll */}
-      <div className={`sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 ${headerCollapsed ? 'pb-2' : ''}`}>
-        {/* Top Bar */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onNavigate('dashboard')}
-              className="p-3 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
-            >
-              <Home className="w-6 h-6 text-gray-600" />
-            </button>
-            <h1 className="text-xl font-bold text-gray-900">HVAC Work</h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onNavigate('maintenance')}
-              className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-md min-h-[48px] text-sm sm:text-base"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Add Record</span>
-              <span className="sm:hidden">Add</span>
-            </button>
-            <button
-              onClick={onDataRefresh}
-              className="p-3 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
-            >
-              <RefreshCw className="w-6 h-6 text-gray-600" />
-            </button>
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="fixed top-16 left-0 right-0 flex justify-center items-center z-50 transition-all duration-200"
+          style={{ transform: `translateY(${Math.min(pullDistance, 80)}px)`, opacity: Math.min(pullDistance / 80, 1) }}
+        >
+          <div className="bg-white rounded-full p-2 shadow-lg">
+            <RefreshCw className={`w-5 h-5 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
           </div>
         </div>
+      )}
 
+      {/* ✅ iOS-STYLE: Stats and Tabs (collapsible on scroll) */}
+      <div className={`sticky top-[64px] z-30 bg-white border-b border-gray-200 shadow-sm transition-all duration-300`}>
         {/* ✅ COMPACT STATS ROW - Hidden when scrolling */}
-        <div className={`px-4 pb-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 pb-0' : 'max-h-24 opacity-100'}`}>
+        <div className={`px-4 pt-3 pb-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 pt-0 pb-0' : 'max-h-24 opacity-100'}`}>
           <div className="grid grid-cols-4 gap-2">
             <div className="bg-blue-50 rounded-lg p-2 text-center">
               <Clock className="w-4 h-4 text-blue-600 mx-auto mb-1" />

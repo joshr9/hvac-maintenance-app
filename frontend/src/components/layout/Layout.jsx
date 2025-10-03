@@ -620,11 +620,24 @@ const Layout = ({
               <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-none">{getPageTitle()}</h1>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Universal Search */}
-              <div className="hidden md:block">
-                <UniversalSearchBar onNavigate={onNavigate} />
-              </div>
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* HVAC Page: Show Add button */}
+              {currentView === 'hvac' && (
+                <button
+                  onClick={() => onNavigate('maintenance')}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add</span>
+                </button>
+              )}
+
+              {/* Universal Search - Hidden on mobile for HVAC page */}
+              {currentView !== 'hvac' && (
+                <div className="hidden md:block">
+                  <UniversalSearchBar onNavigate={onNavigate} />
+                </div>
+              )}
 
               {/* Notifications */}
               <div className="relative">

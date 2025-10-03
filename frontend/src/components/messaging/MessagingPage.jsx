@@ -325,7 +325,8 @@ const MessagingPage = ({
   const currentChannelData = getCurrentChannelData();
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] bg-gray-100 rounded-lg overflow-hidden">
+    <div className="p-6" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)', minHeight: '100vh' }}>
+      <div className="flex h-[calc(100vh-8rem)] bg-white/80 backdrop-blur-sm rounded-lg overflow-hidden shadow-lg border border-white/20">
       {/* Left Sidebar - Channels */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Header */}
@@ -810,6 +811,7 @@ const MessagingPage = ({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

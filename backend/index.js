@@ -25,9 +25,6 @@ app.use('/styles', express.static(path.join(__dirname, 'styles')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Routes
-const maintenancePhotosRoutes = require('./routes/maintenancePhotos');
-app.use('/api/maintenance', maintenancePhotosRoutes);
-
 const hvacRoutes = require('./routes/hvacUnits');
 app.use('/api/hvac-units', hvacRoutes);
 
@@ -35,7 +32,7 @@ const propertyRoutes = require('./routes/properties');
 app.use('/api/properties', propertyRoutes);
 
 const maintenanceRoutes = require('./routes/maintenanceLogs');
-app.use('/api/maintenance-logs', maintenanceRoutes); // Changed to avoid conflict with photos
+app.use('/api/maintenance-logs', maintenanceRoutes); // Includes photo upload routes
 
 const scheduledMaintenanceRoutes = require('./routes/scheduledMaintenance');
 app.use('/api/scheduled-maintenance', scheduledMaintenanceRoutes);

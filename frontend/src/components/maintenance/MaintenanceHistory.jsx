@@ -5,10 +5,12 @@
  */
 
 import React, { useState } from 'react';
-import { FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Wrench, ChevronDown, ChevronUp, X, Camera } from 'lucide-react';
 
 const MaintenanceHistory = ({ maintenanceLogs, selectedUnit }) => {
   const [expandedLogs, setExpandedLogs] = useState(new Set());
+  const [enlargedPhoto, setEnlargedPhoto] = useState(null);
+  const apiUrl = import.meta.env.VITE_API_URL || '';
 
   const toggleExpanded = (logId) => {
     const newExpanded = new Set(expandedLogs);
@@ -131,13 +133,14 @@ const MaintenanceHistory = ({ maintenanceLogs, selectedUnit }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-lg" style={{backgroundColor: '#e8eafc'}}>
-          <FileText className="w-5 h-5" style={{color: '#2a3a91'}} />
+    <>
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-lg" style={{backgroundColor: '#e8eafc'}}>
+            <FileText className="w-5 h-5" style={{color: '#2a3a91'}} />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900">Maintenance History</h3>
         </div>
-        <h3 className="text-xl font-semibold text-gray-900">Maintenance History</h3>
-      </div>
       
       {selectedUnit ? (
         maintenanceLogs.filter(log => String(log.hvacUnitId) === String(selectedUnit)).length === 0 ? (
@@ -176,27 +179,47 @@ const MaintenanceHistory = ({ maintenanceLogs, selectedUnit }) => {
                     {renderChecklistSummary(log)}
                     
                     {log.photos && log.photos.length > 0 && (
-                      <div className="flex gap-2 mt-2">
-                        {log.photos
-                          .filter(photo => photo.url || photo.fileName)
-                          .map(photo => (
-                            <img
-                              key={photo.id}
-                              src={
-                                photo.url
-                                  ? `http://localhost:3000${photo.url}`
-                                  : `http://localhost:3000/uploads/${photo.fileName}`
-                              }
-                              alt="Maintenance"
-                              className="w-20 h-20 object-cover rounded shadow"
-                              onError={e => {
-                                e.target.onerror = null;
-                                e.target.style.opacity = 0.3;
-                                e.target.src =
-                                  "data:image/svg+xml;utf8,<svg width='80' height='80' xmlns='http://www.w3.org/2000/svg'><rect width='80' height='80' fill='%23eee'/><text x='40' y='45' font-size='16' text-anchor='middle' fill='%23666'>No Img</text></svg>";
-                              }}
-                            />
-                          ))}
+                      <div className="mt-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Camera className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm font-medium text-gray-600">
+                            {log.photos.length} Photo{log.photos.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {log.photos
+                            .filter(photo => photo.url || photo.fileName)
+                            .map(photo => {
+                              const photoUrl = photo.url
+                                ? `${apiUrl}${photo.url}`
+                                : `${apiUrl}/uploads/${photo.fileName}`;
+
+                              return (
+                                <button
+                                  key={photo.id}
+                                  onClick={() => setEnlargedPhoto(photoUrl)}
+                                  className="relative group cursor-pointer hover:opacity-90 transition-opacity"
+                                >
+                                  <img
+                                    src={photoUrl}
+                                    alt="Maintenance"
+                                    className="w-24 h-24 object-cover rounded-lg shadow-md border-2 border-gray-200"
+                                    onError={e => {
+                                      e.target.onerror = null;
+                                      e.target.style.opacity = 0.3;
+                                      e.target.src =
+                                        "data:image/svg+xml;utf8,<svg width='96' height='96' xmlns='http://www.w3.org/2000/svg'><rect width='96' height='96' fill='%23eee'/><text x='48' y='52' font-size='14' text-anchor='middle' fill='%23666'>No Image</text></svg>";
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all flex items-center justify-center">
+                                    <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+                                      Click to enlarge
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -210,7 +233,31 @@ const MaintenanceHistory = ({ maintenanceLogs, selectedUnit }) => {
           <p className="text-gray-500 mb-2">Please select an HVAC unit to view its maintenance history.</p>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Photo Enlargement Modal */}
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          <div className="relative max-w-6xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => setEnlargedPhoto(null)}
+              className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-gray-700" />
+            </button>
+            <img
+              src={enlargedPhoto}
+              alt="Enlarged maintenance photo"
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

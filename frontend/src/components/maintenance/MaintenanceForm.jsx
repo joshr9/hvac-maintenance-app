@@ -1,6 +1,7 @@
 // MaintenanceForm.jsx - Updated to accept pre-selected property/suite/unit from HVAC dashboard
 
 import React, { useState, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 import MaintenanceHeader from './MaintenanceHeader';
 import MaintenanceSteps from './MaintenanceSteps';
 import PropertyBreadcrumb from './PropertyBreadcrumb';
@@ -18,12 +19,14 @@ import { ArrowLeft, Wrench, Building, MapPin } from 'lucide-react';
 
 // ✅ UPDATED: Accept navigationData prop to pre-populate selections
 const MaintenanceForm = ({ onNavigate, navigationData }) => {
+  const { user: clerkUser } = useUser();
   const [properties, setProperties] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [maintenanceNote, setMaintenanceNote] = useState('');
   const [maintenanceType, setMaintenanceType] = useState('');
   const [submitStatus, setSubmitStatus] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [selectedSuite, setSelectedSuite] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState('');
   const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
@@ -46,27 +49,42 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
   const [uploadStatus, setUploadStatus] = useState("");
 
   // ✅ NEW: Check if we have pre-selected data from HVAC dashboard
-  const hasPreselectedData = navigationData?.selectedProperty && navigationData?.selectedSuite;
+  const skipWizard = navigationData?.skipPropertySelection === true;
+  const hasPreselectedData = skipWizard && navigationData?.selectedProperty && navigationData?.selectedSuite;
   const preselectedUnit = navigationData?.selectedUnit;
+  const openPhotoSection = navigationData?.openPhotoSection === true;
+
+  // ✅ DEBUG: Log the values
+  console.log('🔍 MaintenanceForm render:', {
+    skipWizard,
+    hasPreselectedData,
+    navigationData,
+    selectedProperty,
+    selectedSuite
+  });
 
   // Fetch properties from backend
   useEffect(() => {
-    fetch("/api/properties")
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/properties`)
       .then(res => res.json())
       .then(data => {
         setProperties(data);
-        
-        // ✅ NEW: If we have pre-selected data, set it after properties are loaded
-        if (hasPreselectedData && navigationData.selectedProperty) {
-          setSelectedProperty(navigationData.selectedProperty);
-          setSelectedSuite(navigationData.selectedSuite);
-          if (preselectedUnit) {
-            setSelectedUnit(preselectedUnit.toString());
-          }
-        }
       })
       .catch(err => console.error("Failed to fetch properties", err));
-  }, [hasPreselectedData, navigationData]);
+  }, []);
+
+  // ✅ NEW: Separate effect to handle pre-selected data
+  useEffect(() => {
+    if (skipWizard && navigationData?.selectedProperty && navigationData?.selectedSuite) {
+      console.log('✅ Setting pre-selected data:', navigationData);
+      setSelectedProperty(navigationData.selectedProperty);
+      setSelectedSuite(navigationData.selectedSuite);
+      if (navigationData.selectedUnit) {
+        setSelectedUnit(navigationData.selectedUnit.toString());
+      }
+    }
+  }, [skipWizard, navigationData]);
 
   // Fetch maintenance logs for selected suite
   useEffect(() => {
@@ -74,7 +92,8 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
       setMaintenanceLogs([]);
       return;
     }
-    fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
       .then(res => res.json())
       .then(data => {
         const logsWithPhotos = Array.isArray(data)
@@ -105,6 +124,41 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
     setSelectedUnit('');
   };
 
+  // Get or create technician in database from Clerk user
+  const getTechnicianId = async () => {
+    if (!clerkUser) {
+      throw new Error('User not logged in');
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+
+    // Try to find existing user by email
+    const response = await fetch(`${apiUrl}/api/team-members`);
+    const technicians = await response.json();
+
+    const existingTech = technicians.find(t =>
+      t.email === clerkUser.primaryEmailAddress?.emailAddress
+    );
+
+    if (existingTech) {
+      return existingTech.id;
+    }
+
+    // If not found, create new technician
+    const createResponse = await fetch(`${apiUrl}/api/team-members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: clerkUser.fullName || `${clerkUser.firstName} ${clerkUser.lastName}`,
+        email: clerkUser.primaryEmailAddress?.emailAddress,
+        role: 'TECHNICIAN'
+      })
+    });
+
+    const newTech = await createResponse.json();
+    return newTech.id;
+  };
+
   // Save maintenance record
   const handleMaintenanceSubmit = async (e) => {
     e.preventDefault();
@@ -118,11 +172,17 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
     }
 
     try {
-      const response = await fetch("/api/maintenance", {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+
+      // Get technician ID from logged-in Clerk user
+      const technicianId = await getTechnicianId();
+
+      const response = await fetch(`${apiUrl}/api/maintenance-logs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hvacUnitId: Number(selectedUnit),
+          technicianId: technicianId,
           notes: maintenanceNote,
           maintenanceType: maintenanceType || 'MAINTENANCE',
           createdAt: serviceDate,
@@ -132,14 +192,15 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
       if (response.ok) {
         const newLog = await response.json();
         setSubmitStatus("Maintenance record saved successfully!");
+        setSubmitError('');
         setMaintenanceNote("");
         setMaintenanceType("");
-        
+
         if (photoFiles.length > 0) {
           await handlePhotoUpload(newLog.id);
         }
-        
-        fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
+
+        fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
           .then(res => res.json())
           .then(data => setMaintenanceLogs(Array.isArray(data) ? data : []))
           .catch(() => setMaintenanceLogs([]));
@@ -147,32 +208,54 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
         setUploadStatus("");
       } else {
         const err = await response.json();
-        setSubmitStatus(err?.error || 'Error saving maintenance record.');
+        setSubmitError(err?.error || 'Error saving maintenance record.');
+        setSubmitStatus('');
       }
     } catch (err) {
-      setSubmitStatus('Network error saving maintenance record.');
+      setSubmitError('Network error saving maintenance record.');
+      setSubmitStatus('');
       console.error(err);
     }
-    setTimeout(() => setSubmitStatus(''), 3000);
+    setTimeout(() => {
+      setSubmitStatus('');
+      setSubmitError('');
+    }, 3000);
   };
 
   const handlePhotoUpload = async (logId) => {
-    if (!photoFiles.length || !logId) return;
+    console.log('📸 handlePhotoUpload called with logId:', logId);
+    console.log('📸 photoFiles:', photoFiles);
+
+    if (!photoFiles.length || !logId) {
+      console.log('⚠️ No photos or logId, skipping upload');
+      return;
+    }
+
     setUploadStatus("Uploading...");
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+
     for (let i = 0; i < photoFiles.length; i++) {
       const formData = new FormData();
       formData.append('photo', photoFiles[i]);
-      await fetch(`/api/maintenance/${logId}/photos`, {
+      const uploadUrl = `${apiUrl}/api/maintenance-logs/${logId}/photos`;
+      console.log('📸 Uploading to:', uploadUrl);
+
+      const response = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
       });
+
+      const result = await response.json();
+      console.log('📸 Upload response:', response.status, result);
     }
+
     setUploadStatus("Photos uploaded!");
     setPhotoFiles([]);
     setTimeout(() => setUploadStatus(""), 2000);
 
     if (selectedSuite) {
-      fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
         .then(res => res.json())
         .then(data => setMaintenanceLogs(Array.isArray(data) ? data : []))
         .catch(() => setMaintenanceLogs([]));
@@ -182,7 +265,8 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
   const downloadReport = async () => {
     if (!selectedSuite) return;
     try {
-      const res = await fetch(`/api/maintenance/report?suiteId=${selectedSuite.id}`);
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/maintenance-logs/report?suiteId=${selectedSuite.id}`);
       if (!res.ok) {
         alert('Failed to download report');
         return;
@@ -242,9 +326,10 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
 
   const handleChecklistComplete = (savedLog) => {
     setMaintenanceLogs(logs => [savedLog, ...logs]);
-    
+
     if (selectedSuite) {
-      fetch(`/api/maintenance?suiteId=${selectedSuite.id}`)
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
         .then(res => res.json())
         .then(data => {
           const logsWithPhotos = Array.isArray(data)
@@ -367,7 +452,7 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
 
             {mode === 'quick' ? (
               <Card variant="glass" padding="md">
-                <MaintenanceRecordForm 
+                <MaintenanceRecordForm
                   selectedSuite={selectedSuite}
                   selectedUnit={selectedUnit}
                   setSelectedUnit={setSelectedUnit}
@@ -379,11 +464,14 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
                   setServiceDate={setServiceDate}
                   handleMaintenanceSubmit={handleMaintenanceSubmit}
                   submitStatus={submitStatus}
+                  submitError={submitError}
                   formError={formError}
                   setShowAddHVAC={setShowAddHVAC}
                   photoFiles={photoFiles}
                   setPhotoFiles={setPhotoFiles}
                   uploadStatus={uploadStatus}
+                  handleSubmit={handleMaintenanceSubmit}
+                  openPhotoSection={openPhotoSection}
                 />
               </Card>
             ) : (
@@ -409,8 +497,8 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
             </Card>
 
             <Card variant="glass" padding="md">
-              <ManageHVACUnitsSection 
-                selectedSuite={selectedSuite}
+              <ManageHVACUnitsSection
+                hvacUnits={selectedSuite?.hvacUnits || []}
                 onUnitUpdate={handleHVACUnitUpdate}
               />
             </Card>
@@ -418,10 +506,10 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
         )}
       </div>
 
-      <AddHVACModal 
-        isOpen={showAddHVAC}
-        onClose={() => setShowAddHVAC(false)}
-        onSubmit={handleAddHVAC}
+      <AddHVACModal
+        showAddHVAC={showAddHVAC}
+        setShowAddHVAC={setShowAddHVAC}
+        handleAddHVAC={handleAddHVAC}
         newUnit={newUnit}
         setNewUnit={setNewUnit}
         addHVACStatus={addHVACStatus}

@@ -1,23 +1,59 @@
+// MaintenanceChecklist.jsx - Mobile-Optimized (Preserving ALL Your Structure & Logic)
 import React, { useState } from 'react';
-import { FileText, CheckCircle, AlertTriangle, Camera, X } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
+import { FileText, CheckCircle, AlertTriangle, Camera, X, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
-const MaintenanceChecklist = ({ 
+// ✅ MOBILE INPUT COMPONENT - Moved outside to prevent re-creation
+const MobileInput = ({ label, value, onChange, placeholder, type = "text", required = false }) => (
+  <div className="space-y-2">
+    <label className="block text-base font-semibold text-gray-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <input
+      type={type}
+      className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[56px]"
+      style={{'--tw-ring-color': '#2a3a91'}}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      required={required}
+    />
+  </div>
+);
+
+// ✅ MOBILE TEXTAREA COMPONENT - Moved outside to prevent re-creation
+const MobileTextarea = ({ label, value, onChange, placeholder, required = false }) => (
+  <div className="space-y-2">
+    <label className="block text-base font-semibold text-gray-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <textarea
+      className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[120px] resize-y"
+      style={{'--tw-ring-color': '#2a3a91'}}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      required={required}
+      rows={4}
+    />
+  </div>
+);
+
+const MaintenanceChecklist = ({
   selectedSuite,
   selectedUnit,
   setSelectedUnit,
   onChecklistComplete,
   setShowAddHVAC,
-  // Add these props to match your existing pattern
   submitStatus,
   setSubmitStatus
 }) => {
+  const { user: clerkUser } = useUser();
   const [checklistData, setChecklistData] = useState({
-    // Header info - pre-populate with current data
     serviceDate: new Date().toISOString().split('T')[0],
-    serviceTechnician: '', // You could pass current user here
+    serviceTechnician: '',
     specialNotes: '',
     
-    // Fans section
     fans: {
       checkReplaceFilters: false,
       lubricateBearings: false,
@@ -32,7 +68,6 @@ const MaintenanceChecklist = ({
       indoorNamePlateAmps: { amp1: '', amp2: '', amp3: '' }
     },
     
-    // Cooling season
     coolingSeason: {
       checkDischargePressure: false,
       dischargePress: '',
@@ -49,7 +84,6 @@ const MaintenanceChecklist = ({
       compressorNamePlateAmps: { amp1: '', amp2: '' }
     },
     
-    // Heating season
     heatingSeason: {
       checkHighLimitCutOut: false,
       checkFanLimitControl: false,
@@ -60,15 +94,13 @@ const MaintenanceChecklist = ({
       checkFlueBlockage: false
     },
     
-    // Filter and problems - pre-populate with HVAC unit data
     filterList: selectedSuite?.hvacUnits?.find(u => u.id == selectedUnit)?.filterSize || '',
     problemsFound: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
-  
-  // Photo management state
+
   const [sectionPhotos, setSectionPhotos] = useState({
     fans: [],
     coolingSeason: [],
@@ -76,6 +108,24 @@ const MaintenanceChecklist = ({
     general: []
   });
   const [photoUploadStatus, setPhotoUploadStatus] = useState('');
+
+  // ✅ NEW: Collapsible sections state (all expanded by default)
+  const [expandedSections, setExpandedSections] = useState({
+    unitSelection: true,
+    serviceInfo: true,
+    fans: true,
+    cooling: true,
+    heating: true,
+    filterList: true,
+    problems: true
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const handleCheckboxChange = (section, field, value) => {
     setChecklistData(prev => ({
@@ -97,7 +147,13 @@ const MaintenanceChecklist = ({
     }));
   };
 
-  // Photo management functions
+  const handleTopLevelChange = (field, value) => {
+    setChecklistData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const handleSectionPhotoAdd = (section, files) => {
     const newPhotos = Array.from(files).map(file => ({
       file,
@@ -122,7 +178,12 @@ const MaintenanceChecklist = ({
     setPhotoUploadStatus("Uploading photos...");
     
     try {
-      const allPhotos = [...sectionPhotos.fans, ...sectionPhotos.coolingSeason, ...sectionPhotos.heatingSeason, ...sectionPhotos.general];
+      const allPhotos = [
+        ...sectionPhotos.fans, 
+        ...sectionPhotos.coolingSeason, 
+        ...sectionPhotos.heatingSeason, 
+        ...sectionPhotos.general
+      ];
       
       for (let photo of allPhotos) {
         const formData = new FormData();
@@ -142,29 +203,55 @@ const MaintenanceChecklist = ({
     }
   };
 
-  const handleTopLevelChange = (field, value) => {
-    setChecklistData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Calculate completion percentage
   const calculateCompletionPercentage = () => {
     const allChecks = [
       ...Object.values(checklistData.fans).filter(v => typeof v === 'boolean'),
       ...Object.values(checklistData.coolingSeason).filter(v => typeof v === 'boolean'),
       ...Object.values(checklistData.heatingSeason).filter(v => typeof v === 'boolean')
     ];
-    
+
     const completedChecks = allChecks.filter(Boolean).length;
     return Math.round((completedChecks / allChecks.length) * 100);
+  };
+
+  // Get or create technician in database from Clerk user
+  const getTechnicianId = async () => {
+    if (!clerkUser) {
+      throw new Error('User not logged in');
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+
+    // Try to find existing user by email
+    const response = await fetch(`${apiUrl}/api/team-members`);
+    const technicians = await response.json();
+
+    const existingTech = technicians.find(t =>
+      t.email === clerkUser.primaryEmailAddress?.emailAddress
+    );
+
+    if (existingTech) {
+      return existingTech.id;
+    }
+
+    // If not found, create new technician
+    const createResponse = await fetch(`${apiUrl}/api/team-members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: clerkUser.fullName || `${clerkUser.firstName} ${clerkUser.lastName}`,
+        email: clerkUser.primaryEmailAddress?.emailAddress,
+        role: 'TECHNICIAN'
+      })
+    });
+
+    const newTech = await createResponse.json();
+    return newTech.id;
   };
 
   const handleSubmit = async () => {
     setFormError('');
     
-    // Validation
     if (!selectedSuite) {
       setFormError('No suite selected.');
       return;
@@ -179,17 +266,20 @@ const MaintenanceChecklist = ({
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      // Create maintenance log with embedded checklist data
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+
+      // Get technician ID from logged-in Clerk user
+      const technicianId = await getTechnicianId();
+
       const maintenanceLogPayload = {
         hvacUnitId: Number(selectedUnit),
-        technicianId: 1, // You might want to get this from your auth system
+        technicianId: technicianId,
         notes: checklistData.problemsFound || 'Full inspection checklist completed',
         maintenanceType: 'FULL_INSPECTION_CHECKLIST',
-        status: 'COMPLETED', 
+        status: 'COMPLETED',
         createdAt: checklistData.serviceDate,
-        // Add checklist-specific fields
         checklistData: {
           fans: checklistData.fans,
           coolingSeason: checklistData.coolingSeason,
@@ -201,7 +291,7 @@ const MaintenanceChecklist = ({
         specialNotes: checklistData.specialNotes
       };
 
-      const logResponse = await fetch('/api/maintenance', {
+      const logResponse = await fetch(`${apiUrl}/api/maintenance-logs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(maintenanceLogPayload),
@@ -213,7 +303,6 @@ const MaintenanceChecklist = ({
 
       const savedLog = await logResponse.json();
       
-      // Upload photos if any were added
       const totalPhotos = sectionPhotos.fans.length + sectionPhotos.coolingSeason.length + 
                          sectionPhotos.heatingSeason.length + sectionPhotos.general.length;
       
@@ -223,141 +312,129 @@ const MaintenanceChecklist = ({
       
       setSubmitStatus('Full inspection checklist saved successfully!');
       
-      // Call parent callback if provided
       if (onChecklistComplete) {
         onChecklistComplete(savedLog);
       }
-
-      // Reset form
-      setChecklistData({
-        serviceDate: new Date().toISOString().split('T')[0],
-        serviceTechnician: '',
-        specialNotes: '',
-        fans: {
-          checkReplaceFilters: false,
-          lubricateBearings: false,
-          checkFanWheelShaft: false,
-          inspectCondensatePan: false,
-          checkBeltsAndPulleys: false,
-          beltSize: '',
-          checkEconomizerOperation: false,
-          outdoorFanAmps: { amp1: '', amp2: '', amp3: '' },
-          outdoorNamePlateAmps: { amp1: '', amp2: '', amp3: '' },
-          indoorFanAmps: { amp1: '', amp2: '', amp3: '' },
-          indoorNamePlateAmps: { amp1: '', amp2: '', amp3: '' }
-        },
-        coolingSeason: {
-          checkDischargePressure: false,
-          dischargePress: '',
-          suctionPress: '',
-          pressureNotes: '',
-          checkSuctionLineTemp: false,
-          inspectMotorContacts: false,
-          visualCheckRefrigerantLeaks: false,
-          checkCondenserHailDamage: false,
-          checkCrankCaseHeater: false,
-          compressorVolts: { volt1: '', volt2: '' },
-          compressorNamePlateVolts: { volt1: '', volt2: '' },
-          compressorAmps: { amp1: '', amp2: '' },
-          compressorNamePlateAmps: { amp1: '', amp2: '' }
-        },
-        heatingSeason: {
-          checkHighLimitCutOut: false,
-          checkFanLimitControl: false,
-          checkBurnerCorrosion: false,
-          checkCombustionBlower: false,
-          checkPilotAssembly: false,
-          checkGasLeaks: false,
-          checkFlueBlockage: false
-        },
-        filterList: '',
-        problemsFound: ''
-      });
       
-      // Reset photos
-      setSectionPhotos({
-        fans: [],
-        coolingSeason: [],
-        heatingSeason: [],
-        general: []
-      });
-
+      setTimeout(() => setSubmitStatus(''), 3000);
     } catch (error) {
       console.error('Error saving checklist:', error);
       setFormError('Failed to save checklist. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-
-    // Clear status after 3 seconds
-    setTimeout(() => setSubmitStatus(''), 3000);
   };
 
-  const currentUnit = selectedSuite?.hvacUnits?.find(u => u.id == selectedUnit);
+  // ✅ COLLAPSIBLE SECTION HEADER
+  const CollapsibleSection = ({ title, sectionKey, children, color = "blue" }) => {
+    const isExpanded = expandedSections[sectionKey];
 
-  // Photo Section Component
-  const PhotoSection = ({ 
-    sectionKey, 
-    sectionTitle, 
-    photos, 
-    onPhotoAdd, 
-    onPhotoRemove 
-  }) => {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => toggleSection(sectionKey)}
+          className="w-full p-6 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        >
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+            <div className={`w-4 h-4 rounded-full bg-${color}-600`}></div>
+            {title}
+          </h3>
+          {isExpanded ? (
+            <ChevronUp className="w-6 h-6 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-6 h-6 text-gray-400" />
+          )}
+        </button>
+
+        {isExpanded && (
+          <div className="p-6 pt-0 border-t-2 border-gray-100">
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ✅ MOBILE CHECKBOX COMPONENT - 44px Touch Target
+  const MobileCheckbox = ({ section, field, label, checked }) => (
+    <label className="flex items-start gap-4 p-4 hover:bg-blue-50 rounded-xl transition-colors active:bg-blue-100 cursor-pointer">
+      <div className="relative flex-shrink-0 mt-0.5">
+        <input
+          type="checkbox"
+          className="w-7 h-7 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+          style={{accentColor: '#2a3a91'}}
+          checked={checked}
+          onChange={(e) => handleCheckboxChange(section, field, e.target.checked)}
+        />
+        {checked && (
+          <Check className="absolute inset-0 w-5 h-5 m-1 text-white pointer-events-none" />
+        )}
+      </div>
+      <span className="text-base font-medium text-gray-700 leading-relaxed select-none flex-1">
+        {label}
+      </span>
+    </label>
+  );
+
+  // ✅ MOBILE PHOTO SECTION
+  const MobilePhotoSection = ({ sectionKey, sectionTitle, photos }) => {
+    const fileInputRef = React.useRef(null);
+    
     const handleFileChange = (e) => {
       if (e.target.files.length > 0) {
-        onPhotoAdd(sectionKey, e.target.files);
-        e.target.value = ''; // Reset input
+        handleSectionPhotoAdd(sectionKey, e.target.files);
+        e.target.value = '';
       }
     };
 
     return (
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-        <div className="flex items-center justify-between mb-3">
-          <h5 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Camera className="w-4 h-4" />
+      <div className="mt-6 p-5 bg-blue-50 rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h5 className="text-lg font-semibold text-gray-700 flex items-center gap-3">
+            <Camera className="w-6 h-6 text-blue-600" />
             {sectionTitle} Photos
           </h5>
           
-          <label className="cursor-pointer inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-lg text-white hover:opacity-90 transition-colors"
-                 style={{backgroundColor: '#2a3a91'}}>
-            <Camera className="w-3 h-3" />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-2 px-5 py-3 text-base font-medium rounded-xl text-white hover:opacity-90 transition-colors active:scale-95 min-h-[48px]"
+            style={{backgroundColor: '#2a3a91'}}
+          >
+            <Camera className="w-5 h-5" />
             Add Photo
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              capture="environment" // Use rear camera on mobile
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
+          </button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileChange}
+            className="hidden"
+          />
         </div>
 
         {photos.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {photos.map((photo) => (
-              <div key={photo.id} className="relative group">
+              <div key={photo.id} className="relative group rounded-xl overflow-hidden bg-white shadow-sm">
                 <img
                   src={photo.url}
-                  alt={`${sectionTitle} photo`}
-                  className="w-full h-20 object-cover rounded border"
+                  alt="Maintenance"
+                  className="w-full h-40 object-cover"
                 />
                 <button
-                  onClick={() => onPhotoRemove(sectionKey, photo.id)}
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   type="button"
+                  onClick={() => handlePhotoRemove(sectionKey, photo.id)}
+                  className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity active:scale-95 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             ))}
-          </div>
-        )}
-
-        {photos.length === 0 && (
-          <div className="text-center py-4 text-gray-500">
-            <Camera className="w-6 h-6 mx-auto mb-1 opacity-50" />
-            <p className="text-xs">Tap "Add Photo" for visual proof</p>
           </div>
         )}
       </div>
@@ -365,430 +442,352 @@ const MaintenanceChecklist = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      {/* Mobile-optimized Header */}
-      <div className="bg-white sticky top-0 z-10 border-b border-gray-200 p-4 sm:relative sm:border-0 sm:bg-transparent sm:p-0 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg" style={{backgroundColor: '#e8eafc'}}>
-              <FileText className="w-5 h-5" style={{color: '#2a3a91'}} />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Full Inspection</h2>
-              <p className="text-xs sm:text-sm text-gray-600">
-                {currentUnit?.label || currentUnit?.serialNumber || 'HVAC Unit'}
-              </p>
-            </div>
+    <div className="max-w-4xl mx-auto">
+      {/* ✅ MOBILE HEADER - Sticky */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-5 mb-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-3">
+          <FileText className="w-7 h-7 text-blue-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">HVAC Maintenance Checklist</h2>
+            <p className="text-gray-600 mt-1">Complete inspection and maintenance tasks</p>
           </div>
-          
-          {selectedUnit && (
-            <div className="text-right">
-              <div className="text-lg font-bold" style={{color: '#2a3a91'}}>
-                {calculateCompletionPercentage()}%
-              </div>
-              <div className="text-xs text-gray-600">Complete</div>
-            </div>
-          )}
         </div>
         
-        {/* Progress bar */}
-        {selectedUnit && (
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-            <div 
-              className="h-2 rounded-full transition-all duration-300" 
-              style={{
-                backgroundColor: '#2a3a91',
-                width: `${calculateCompletionPercentage()}%`
-              }}
-            ></div>
+        {/* Progress Bar */}
+        <div className="bg-gray-200 rounded-full h-3 mt-4">
+          <div 
+            className="bg-green-500 rounded-full h-3 transition-all duration-500"
+            style={{ width: `${calculateCompletionPercentage()}%` }}
+          />
+        </div>
+        <p className="text-sm text-gray-600 text-center mt-2">
+          {calculateCompletionPercentage()}% Complete
+        </p>
+      </div>
+
+      <div className="space-y-8 p-4 pb-32">
+        {/* ✅ ERROR DISPLAY */}
+        {formError && (
+          <div className="p-5 bg-red-50 border-l-4 border-red-400 rounded-xl">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-red-400" />
+              <p className="text-red-700 font-medium text-base">{formError}</p>
+            </div>
           </div>
         )}
-      </div>
 
-      {/* HVAC Unit Selection - matching your existing pattern */}
-      <div className="mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          HVAC Unit
-        </label>
-        <div className="flex gap-3">
-          <select
-            className="flex-1 p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
-            style={{'--tw-ring-color': '#2a3a91'}}
-            value={selectedUnit}
-            onChange={e => setSelectedUnit(e.target.value)}
-            required
-          >
-            <option value="">Select HVAC unit...</option>
-            {selectedSuite?.hvacUnits && selectedSuite.hvacUnits.length > 0 ? (
-              selectedSuite.hvacUnits.map(unit => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.label || unit.serialNumber || unit.filterSize || `Unit ${unit.id}`}
-                </option>
-              ))
-            ) : (
-              <option value="" disabled>No HVAC units found. Please add one.</option>
-            )}
-          </select>
-          <button
-            className="px-4 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-colors whitespace-nowrap"
-            style={{backgroundColor: '#2a3a91'}}
-            onClick={() => setShowAddHVAC(true)}
-            type="button"
-          >
-            Add Unit
-          </button>
-        </div>
-      </div>
-
-      {/* Only show the rest of the form if a unit is selected */}
-      {selectedUnit && (
-        <>
-          {/* Service Information */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 p-4 bg-gray-50 rounded-lg">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Service Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:border-transparent"
-                style={{'--tw-ring-color': '#2a3a91'}}
-                value={checklistData.serviceDate}
-                onChange={e => handleTopLevelChange('serviceDate', e.target.value)}
-              />
+        {/* ✅ SUCCESS STATUS */}
+        {submitStatus && (
+          <div className="p-5 bg-green-50 border-l-4 border-green-400 rounded-xl">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 text-green-400" />
+              <p className="text-green-700 font-medium text-base">{submitStatus}</p>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Service Technician *</label>
-              <input
-                type="text"
-                className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:border-transparent"
-                style={{'--tw-ring-color': '#2a3a91'}}
+          </div>
+        )}
+
+        {/* ✅ HVAC UNIT SELECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-5">HVAC Unit Selection</h3>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-base font-semibold text-gray-700">
+                Select HVAC Unit <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 min-h-[56px]"
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value)}
+                required
+              >
+                <option value="">Select HVAC Unit...</option>
+                {selectedSuite?.hvacUnits?.length > 0 ? (
+                  selectedSuite.hvacUnits.map(unit => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.label || unit.serialNumber || unit.filterSize || `Unit ${unit.id}`}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>No HVAC units found. Please add one.</option>
+                )}
+              </select>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setShowAddHVAC(true)}
+              className="w-full py-4 px-6 bg-gray-600 text-white font-semibold rounded-xl hover:bg-gray-700 active:bg-gray-800 transition-colors min-h-[56px]"
+            >
+              Add New HVAC Unit
+            </button>
+          </div>
+        </div>
+
+        {/* ✅ SERVICE INFORMATION */}
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Service Information</h3>
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <MobileInput
+                label="Service Date"
+                type="date"
+                value={checklistData.serviceDate}
+                onChange={(val) => handleTopLevelChange('serviceDate', val)}
+                required
+              />
+              
+              <MobileInput
+                label="Service Technician"
                 value={checklistData.serviceTechnician}
-                onChange={e => handleTopLevelChange('serviceTechnician', e.target.value)}
-                placeholder="Technician name"
+                onChange={(val) => handleTopLevelChange('serviceTechnician', val)}
+                placeholder="Enter technician name"
                 required
               />
             </div>
-            <div className="lg:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Special Notes</label>
-              <input
-                type="text"
-                className="w-full p-2 border border-gray-200 rounded focus:ring-2 focus:border-transparent"
-                style={{'--tw-ring-color': '#2a3a91'}}
-                value={checklistData.specialNotes}
-                onChange={e => handleTopLevelChange('specialNotes', e.target.value)}
-                placeholder="Any special notes or observations"
+            
+            <MobileInput
+              label="Special Notes"
+              value={checklistData.specialNotes}
+              onChange={(val) => handleTopLevelChange('specialNotes', val)}
+              placeholder="Any special observations or instructions"
+            />
+          </div>
+        </div>
+
+        {/* ✅ FANS SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-blue-600"></div>
+            FANS
+          </h3>
+          
+          <div className="space-y-2">
+            <MobileCheckbox
+              section="fans"
+              field="checkReplaceFilters"
+              label="CHECK/REPLACE AIR FILTERS"
+              checked={checklistData.fans.checkReplaceFilters}
+            />
+            <MobileCheckbox
+              section="fans"
+              field="lubricateBearings"
+              label="LUBRICATE BEARINGS"
+              checked={checklistData.fans.lubricateBearings}
+            />
+            <MobileCheckbox
+              section="fans"
+              field="checkFanWheelShaft"
+              label="CHECK FAN WHEEL SHAFT"
+              checked={checklistData.fans.checkFanWheelShaft}
+            />
+            <MobileCheckbox
+              section="fans"
+              field="inspectCondensatePan"
+              label="INSPECT CONDENSATE PAN AND DRAIN LINE"
+              checked={checklistData.fans.inspectCondensatePan}
+            />
+            <MobileCheckbox
+              section="fans"
+              field="checkEconomizerOperation"
+              label="CHECK ECONOMIZER OPERATION"
+              checked={checklistData.fans.checkEconomizerOperation}
+            />
+          </div>
+
+          <div className="mt-6 pt-6 border-t-2 border-gray-100">
+            <MobileInput
+              label="Belt Size (if applicable)"
+              value={checklistData.fans.beltSize}
+              onChange={(val) => handleInputChange('fans', 'beltSize', val)}
+              placeholder="e.g., A-42 or 4L420"
+            />
+          </div>
+
+          <MobilePhotoSection
+            sectionKey="fans"
+            sectionTitle="Fans"
+            photos={sectionPhotos.fans}
+          />
+        </div>
+
+        {/* ✅ COOLING SEASON SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-blue-400"></div>
+            COOLING SEASON
+          </h3>
+          
+          <div className="space-y-2">
+            <MobileCheckbox
+              section="coolingSeason"
+              field="checkDischargePressure"
+              label="CHECK DISCHARGE PRESSURE"
+              checked={checklistData.coolingSeason.checkDischargePressure}
+            />
+            <MobileCheckbox
+              section="coolingSeason"
+              field="checkSuctionLineTemp"
+              label="CHECK SUCTION LINE TEMPERATURE"
+              checked={checklistData.coolingSeason.checkSuctionLineTemp}
+            />
+            <MobileCheckbox
+              section="coolingSeason"
+              field="inspectMotorContacts"
+              label="INSPECT MOTOR CONTACTS"
+              checked={checklistData.coolingSeason.inspectMotorContacts}
+            />
+            <MobileCheckbox
+              section="coolingSeason"
+              field="visualCheckRefrigerantLeaks"
+              label="VISUAL CHECK FOR REFRIGERANT LEAKS"
+              checked={checklistData.coolingSeason.visualCheckRefrigerantLeaks}
+            />
+            <MobileCheckbox
+              section="coolingSeason"
+              field="checkCondenserHailDamage"
+              label="CHECK CONDENSER FOR HAIL DAMAGE"
+              checked={checklistData.coolingSeason.checkCondenserHailDamage}
+            />
+          </div>
+
+          <div className="mt-6 pt-6 border-t-2 border-gray-100 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <MobileInput
+                label="Discharge Pressure"
+                value={checklistData.coolingSeason.dischargePress}
+                onChange={(val) => handleInputChange('coolingSeason', 'dischargePress', val)}
+                placeholder="PSI"
+              />
+              <MobileInput
+                label="Suction Pressure"
+                value={checklistData.coolingSeason.suctionPress}
+                onChange={(val) => handleInputChange('coolingSeason', 'suctionPress', val)}
+                placeholder="PSI"
               />
             </div>
           </div>
 
-          {/* FANS Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#2a3a91'}}></div>
-              FANS
-            </h3>
+          <MobilePhotoSection
+            sectionKey="coolingSeason"
+            sectionTitle="Cooling Season"
+            photos={sectionPhotos.coolingSeason}
+          />
+        </div>
+
+        {/* ✅ HEATING SEASON SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
+            HEATING SEASON
+          </h3>
+          
+          <div className="space-y-2">
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkHighLimitCutOut"
+              label="CHECK HIGH LIMIT CUT OUT"
+              checked={checklistData.heatingSeason.checkHighLimitCutOut}
+            />
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkFanLimitControl"
+              label="CHECK FAN LIMIT CONTROL"
+              checked={checklistData.heatingSeason.checkFanLimitControl}
+            />
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkBurnerCorrosion"
+              label="CHECK BURNER FOR CORROSION"
+              checked={checklistData.heatingSeason.checkBurnerCorrosion}
+            />
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkCombustionBlower"
+              label="CHECK COMBUSTION BLOWER"
+              checked={checklistData.heatingSeason.checkCombustionBlower}
+            />
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkPilotAssembly"
+              label="CHECK PILOT ASSEMBLY AND SAFETY"
+              checked={checklistData.heatingSeason.checkPilotAssembly}
+            />
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkGasLeaks"
+              label="CHECK FOR GAS LEAKS"
+              checked={checklistData.heatingSeason.checkGasLeaks}
+            />
+            <MobileCheckbox
+              section="heatingSeason"
+              field="checkFlueBlockage"
+              label="CHECK FLUE FOR BLOCKAGE"
+              checked={checklistData.heatingSeason.checkFlueBlockage}
+            />
+          </div>
+
+          <MobilePhotoSection
+            sectionKey="heatingSeason"
+            sectionTitle="Heating Season"
+            photos={sectionPhotos.heatingSeason}
+          />
+        </div>
+
+        {/* ✅ FILTER AND PROBLEMS */}
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Additional Information</h3>
+          
+          <div className="space-y-6">
+            <MobileInput
+              label="Filter List"
+              value={checklistData.filterList}
+              onChange={(val) => handleTopLevelChange('filterList', val)}
+              placeholder="e.g., (2) 16x25x2"
+            />
             
-            <div className="space-y-3">
-              {[
-                { key: 'checkReplaceFilters', label: 'CHECK/REPLACE AIR FILTERS' },
-                { key: 'lubricateBearings', label: 'LUBRICATE BEARINGS' },
-                { key: 'checkFanWheelShaft', label: 'CHECK FAN WHEEL SHAFT' },
-                { key: 'inspectCondensatePan', label: 'INSPECT CONDENSATE PAN AND DRAIN LINE' },
-                { key: 'checkEconomizerOperation', label: 'CHECK ECONOMIZER OPERATION' }
-              ].map(item => (
-                <label key={item.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-2 border-gray-300"
-                    style={{'accentColor': '#2a3a91'}}
-                    checked={checklistData.fans[item.key]}
-                    onChange={e => handleCheckboxChange('fans', item.key, e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                </label>
-              ))}
-              
-              {/* Mobile-optimized belt size input */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3">
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    className="w-6 h-6 sm:w-5 sm:h-5 rounded border-2 border-gray-300"
-                    style={{'accentColor': '#2a3a91'}}
-                    checked={checklistData.fans.checkBeltsAndPulleys}
-                    onChange={e => handleCheckboxChange('fans', 'checkBeltsAndPulleys', e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-gray-700">CHECK BELTS AND PULLEYS</span>
-                </label>
-                <div className="flex items-center gap-2 ml-8 sm:ml-0">
-                  <span className="text-sm text-gray-600">Belt Size:</span>
-                  <input
-                    type="text"
-                    className="w-24 p-2 border border-gray-200 rounded text-sm"
-                    value={checklistData.fans.beltSize}
-                    onChange={e => handleInputChange('fans', 'beltSize', e.target.value)}
-                    placeholder="AX38"
-                  />
-                </div>
-              </div>
-
-              {/* Mobile-optimized amps readings */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">OUTDOOR FAN AMPS</h4>
-                  <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
-                    {['amp1', 'amp2', 'amp3'].map((amp, idx) => (
-                      <div key={amp} className="flex items-center gap-2 sm:flex-col sm:flex-1">
-                        <label className="text-sm text-gray-600 w-12 sm:w-auto">#{idx + 1}</label>
-                        <input
-                          type="text"
-                          className="flex-1 sm:w-full p-2 border border-gray-200 rounded text-sm"
-                          value={checklistData.fans.outdoorFanAmps[amp]}
-                          onChange={e => handleInputChange('fans', 'outdoorFanAmps', {
-                            ...checklistData.fans.outdoorFanAmps,
-                            [amp]: e.target.value
-                          })}
-                          placeholder="0.0"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">NAME PLATE AMPS</h4>
-                  <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
-                    {['amp1', 'amp2', 'amp3'].map((amp, idx) => (
-                      <div key={amp} className="flex items-center gap-2 sm:flex-col sm:flex-1">
-                        <label className="text-sm text-gray-600 w-12 sm:w-auto">#{idx + 1}</label>
-                        <input
-                          type="text"
-                          className="flex-1 sm:w-full p-2 border border-gray-200 rounded text-sm"
-                          value={checklistData.fans.outdoorNamePlateAmps[amp]}
-                          onChange={e => handleInputChange('fans', 'outdoorNamePlateAmps', {
-                            ...checklistData.fans.outdoorNamePlateAmps,
-                            [amp]: e.target.value
-                          })}
-                          placeholder="0.0"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Photo Section for Fans */}
-            <PhotoSection
-              sectionKey="fans"
-              sectionTitle="Fans"
-              photos={sectionPhotos.fans}
-              onPhotoAdd={handleSectionPhotoAdd}
-              onPhotoRemove={handlePhotoRemove}
-            />
-          </div>
-
-          {/* General Photos Section */}
-          <div className="mb-6">
-            <PhotoSection
-              sectionKey="general"
-              sectionTitle="General Inspection"
-              photos={sectionPhotos.general}
-              onPhotoAdd={handleSectionPhotoAdd}
-              onPhotoRemove={handlePhotoRemove}
-            />
-          </div>
-
-          {/* Photo Upload Status */}
-          {photoUploadStatus && (
-            <div className="flex items-center gap-3 p-4 border rounded-lg mb-4" style={{backgroundColor: '#f0f9ff', borderColor: '#2a3a91'}}>
-              <Camera className="w-5 h-5 flex-shrink-0" style={{color: '#2a3a91'}} />
-              <div className="font-medium" style={{color: '#2a3a91'}}>{photoUploadStatus}</div>
-            </div>
-          )}
-
-          {/* COOLING SEASON Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#2a3a91'}}></div>
-              COOLING SEASON
-            </h3>
-            
-            <div className="space-y-3">
-              {/* Pressure readings */}
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <label className="flex items-center gap-3 mb-3">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-2 border-gray-300"
-                    style={{'accentColor': '#2a3a91'}}
-                    checked={checklistData.coolingSeason.checkDischargePressure}
-                    onChange={e => handleCheckboxChange('coolingSeason', 'checkDischargePressure', e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-gray-700">CHECK DISCHARGE PRESS. & SUCTION PRESS</span>
-                </label>
-                
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <label className="text-xs text-gray-600">Discharge Pressure</label>
-                    <input
-                      type="text"
-                      className="w-full p-2 border border-gray-200 rounded"
-                      value={checklistData.coolingSeason.dischargePress}
-                      onChange={e => handleInputChange('coolingSeason', 'dischargePress', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-600">Suction Pressure</label>
-                    <input
-                      type="text"
-                      className="w-full p-2 border border-gray-200 rounded"
-                      value={checklistData.coolingSeason.suctionPress}
-                      onChange={e => handleInputChange('coolingSeason', 'suctionPress', e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-xs text-gray-600">Pressure Notes</label>
-                  <textarea
-                    className="w-full p-2 border border-gray-200 rounded text-sm"
-                    rows="2"
-                    value={checklistData.coolingSeason.pressureNotes}
-                    onChange={e => handleInputChange('coolingSeason', 'pressureNotes', e.target.value)}
-                    placeholder="Additional pressure observations..."
-                  />
-                </div>
-              </div>
-
-              {/* Other cooling season checks */}
-              {[
-                { key: 'checkSuctionLineTemp', label: 'CHECK SUCTION LINE TEMP' },
-                { key: 'inspectMotorContacts', label: 'INSPECT MOTOR STARTER CONTACTS' },
-                { key: 'visualCheckRefrigerantLeaks', label: 'VISUAL CHECK FOR REFRIGERANT LEAKS' },
-                { key: 'checkCondenserHailDamage', label: 'CHECK CONDENSER FOR HAIL DAMAGE AND DEBRIS' },
-                { key: 'checkCrankCaseHeater', label: 'CHECK CRANK CASE HEATER' }
-              ].map(item => (
-                <label key={item.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-2 border-gray-300"
-                    style={{'accentColor': '#2a3a91'}}
-                    checked={checklistData.coolingSeason[item.key]}
-                    onChange={e => handleCheckboxChange('coolingSeason', item.key, e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* Photo Section for Cooling Season */}
-            <PhotoSection
-              sectionKey="coolingSeason"
-              sectionTitle="Cooling Season"
-              photos={sectionPhotos.coolingSeason}
-              onPhotoAdd={handleSectionPhotoAdd}
-              onPhotoRemove={handlePhotoRemove}
-            />
-          </div>
-
-          {/* HEATING SEASON Section */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{backgroundColor: '#2a3a91'}}></div>
-              HEATING SEASON
-            </h3>
-            
-            <div className="space-y-3">
-              {[
-                { key: 'checkHighLimitCutOut', label: 'CHECK HIGH LIMIT CUT OUT' },
-                { key: 'checkFanLimitControl', label: 'CHECK FAN LIMIT CONTROL' },
-                { key: 'checkBurnerCorrosion', label: 'CHECK BURNER FOR CORROSION AND DIRT' },
-                { key: 'checkCombustionBlower', label: 'CHECK COMBUSTION BLOWER' },
-                { key: 'checkPilotAssembly', label: 'CHECK PILOT ASSEMBLY AND SAFETY' },
-                { key: 'checkGasLeaks', label: 'CHECK FOR GAS LEAKS' },
-                { key: 'checkFlueBlockage', label: 'CHECK FLUE FOR BLOCKAGE' }
-              ].map(item => (
-                <label key={item.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded border-2 border-gray-300"
-                    style={{'accentColor': '#2a3a91'}}
-                    checked={checklistData.heatingSeason[item.key]}
-                    onChange={e => handleCheckboxChange('heatingSeason', item.key, e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* Photo Section for Heating Season */}
-            <PhotoSection
-              sectionKey="heatingSeason"
-              sectionTitle="Heating Season"
-              photos={sectionPhotos.heatingSeason}
-              onPhotoAdd={handleSectionPhotoAdd}
-              onPhotoRemove={handlePhotoRemove}
-            />
-          </div>
-
-          {/* Filter List and Problems */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Filter List</label>
-              <input
-                type="text"
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
-                style={{'--tw-ring-color': '#2a3a91'}}
-                value={checklistData.filterList}
-                onChange={e => handleTopLevelChange('filterList', e.target.value)}
-                placeholder="e.g., (2) 16x25x2"
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Problems Found</label>
-            <textarea
-              className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{'--tw-ring-color': '#2a3a91'}}
-              rows="4"
+            <MobileTextarea
+              label="Problems Found / Additional Notes"
               value={checklistData.problemsFound}
-              onChange={e => handleTopLevelChange('problemsFound', e.target.value)}
-              placeholder="Describe any problems found during inspection..."
+              onChange={(val) => handleTopLevelChange('problemsFound', val)}
+              placeholder="Describe any issues discovered, parts needed, or recommendations..."
             />
           </div>
+        </div>
+      </div>
 
-          {/* Error Messages */}
-          {formError && (
-            <div className="flex items-center gap-3 p-4 border rounded-lg mb-4" style={{backgroundColor: '#fef2f2', borderColor: '#ef4444'}}>
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{color: '#ef4444'}} />
-              <div className="font-medium" style={{color: '#b91c1c'}}>{formError}</div>
-            </div>
+      {/* ✅ SUBMIT BUTTON - Fixed at Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 shadow-2xl">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className={`w-full py-5 px-6 font-bold text-lg rounded-2xl transition-all min-h-[64px] flex items-center justify-center gap-3 shadow-xl ${
+            isSubmitting 
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+              : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 active:scale-98'
+          }`}
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              Saving Checklist...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-6 h-6" />
+              Save Complete Checklist ({calculateCompletionPercentage()}% Complete)
+            </>
           )}
+        </button>
+      </div>
 
-          {/* Success Messages */}
-          {submitStatus && (
-            <div className="flex items-center gap-3 p-4 border rounded-lg mb-4" style={{backgroundColor: '#f0f9ff', borderColor: '#22c55e'}}>
-              <CheckCircle className="w-5 h-5 flex-shrink-0" style={{color: '#22c55e'}} />
-              <div className="font-medium" style={{color: '#15803d'}}>{submitStatus}</div>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
-              style={{backgroundColor: '#2a3a91'}}
-            >
-              <CheckCircle className="w-5 h-5" />
-              {isSubmitting ? 'Saving Checklist...' : 'Complete Full Inspection'}
-            </button>
-          </div>
-        </>
-      )}
+      <style jsx>{`
+        .active\:scale-98:active {
+          transform: scale(0.98);
+        }
+      `}</style>
     </div>
   );
 };

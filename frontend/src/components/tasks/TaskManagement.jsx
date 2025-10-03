@@ -153,7 +153,7 @@ const TaskManagement = ({
   }
 
   return (
-    <div className="h-full bg-gray-50 p-6">
+    <div className="h-full p-6" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)', minHeight: '100vh' }}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">

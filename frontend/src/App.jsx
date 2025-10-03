@@ -155,6 +155,7 @@ const loadGlobalJobsData = useCallback(async () => {
 
   // ✅ EXISTING: ALL your navigation and modal handlers (100% PRESERVED)
   const handleNavigate = useCallback((view, data = null) => {
+    console.log('🔄 App.jsx handleNavigate called:', { view, data });
     setCurrentView(view);
     setNavigationData(data);
     setActiveModal(null); // Close any open modals when navigating

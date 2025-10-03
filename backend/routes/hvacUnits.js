@@ -2,6 +2,9 @@ const express = require('express')
 const router = express.Router()
 const controller = require('../controllers/hvacUnitsController')
 
+// GET HVAC stats (must be before /:id route)
+router.get('/stats', controller.getHVACStats)
+
 // GET all units
 router.get('/', controller.getAllUnits)
 

@@ -7,7 +7,11 @@ exports.getAllProperties = async (req, res) => {
       include: {
         suites: {
           include: {
-            hvacUnits: true,
+            hvacUnits: {
+              include: {
+                scheduledMaintenance: true,
+              },
+            },
           },
         },
       },

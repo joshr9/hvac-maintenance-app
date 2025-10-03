@@ -1,6 +1,71 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+exports.getHVACStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Get scheduled maintenance counts
+    const [todayScheduled, overdueScheduled, completedToday, totalUnits, totalScheduled] = await Promise.all([
+      // Today's scheduled maintenance
+      prisma.scheduledMaintenance.count({
+        where: {
+          date: {
+            gte: today,
+            lt: tomorrow
+          },
+          status: {
+            in: ['SCHEDULED', 'IN_PROGRESS']
+          }
+        }
+      }),
+
+      // Overdue maintenance (past due and not completed)
+      prisma.scheduledMaintenance.count({
+        where: {
+          date: {
+            lt: today
+          },
+          status: {
+            in: ['SCHEDULED', 'IN_PROGRESS']
+          }
+        }
+      }),
+
+      // Completed today
+      prisma.scheduledMaintenance.count({
+        where: {
+          date: {
+            gte: today,
+            lt: tomorrow
+          },
+          status: 'COMPLETED'
+        }
+      }),
+
+      // Total HVAC units
+      prisma.hvacUnit.count(),
+
+      // Total scheduled maintenance
+      prisma.scheduledMaintenance.count()
+    ]);
+
+    res.json({
+      todayJobs: todayScheduled,
+      overdueUnits: overdueScheduled,
+      completedToday: completedToday,
+      totalUnits: totalUnits,
+      totalScheduled: totalScheduled
+    });
+  } catch (err) {
+    console.error('Error fetching HVAC stats:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getAllUnits = async (req, res) => {
   try {
     const units = await prisma.hvacUnit.findMany({ include: { property: true } })

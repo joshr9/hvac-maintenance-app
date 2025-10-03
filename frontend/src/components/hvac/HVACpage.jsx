@@ -27,38 +27,32 @@ const HVACPage = ({
   });
 
   useEffect(() => {
-    calculateStats();
-  }, [properties]);
+    fetchHVACStats();
+  }, []);
 
-  const calculateStats = () => {
-    let totalUnits = 0;
-    let overdueUnits = 0;
-    let todayJobs = 0;
-    
-    properties.forEach(property => {
-      if (property.suites) {
-        property.suites.forEach(suite => {
-          if (suite.hvacUnits) {
-            suite.hvacUnits.forEach(unit => {
-              totalUnits++;
-              if (Math.random() > 0.7) overdueUnits++;
-              if (Math.random() > 0.8) todayJobs++;
-            });
-          }
+  const fetchHVACStats = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/hvac-units/stats`);
+      if (response.ok) {
+        const data = await response.json();
+        setHvacStats({
+          todayJobs: data.todayJobs,
+          overdueUnits: data.overdueUnits,
+          completedToday: data.completedToday,
+          totalUnits: data.totalUnits,
+          totalProperties: properties.length
         });
       }
-    });
-
-    setHvacStats({
-      todayJobs,
-      overdueUnits,
-      completedToday: 0,
-      totalUnits,
-      totalProperties: properties.length
-    });
+    } catch (err) {
+      console.error('Error fetching HVAC stats:', err);
+    }
   };
 
   const processPropertiesWithHVAC = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return properties.map(property => {
       const propertyUnits = [];
       let propertyTotalUnits = 0;
@@ -68,15 +62,28 @@ const HVACPage = ({
         property.suites.forEach(suite => {
           if (suite.hvacUnits) {
             suite.hvacUnits.forEach(unit => {
+              // Check if unit has scheduled maintenance
+              const scheduledMaintenance = unit.scheduledMaintenance || [];
+              const hasOverdue = scheduledMaintenance.some(sm => {
+                const smDate = new Date(sm.date);
+                smDate.setHours(0, 0, 0, 0);
+                return smDate < today && (sm.status === 'SCHEDULED' || sm.status === 'IN_PROGRESS');
+              });
+              const hasToday = scheduledMaintenance.some(sm => {
+                const smDate = new Date(sm.date);
+                smDate.setHours(0, 0, 0, 0);
+                return smDate.getTime() === today.getTime() && (sm.status === 'SCHEDULED' || sm.status === 'IN_PROGRESS');
+              });
+
               const enhancedUnit = {
                 ...unit,
                 suiteName: suite.name || `Suite ${suite.id}`,
                 suiteId: suite.id,
                 propertyName: property.name || property.address,
                 propertyAddress: property.address,
-                isOverdue: Math.random() > 0.7,
-                isToday: Math.random() > 0.8,
-                priority: Math.random() > 0.8 ? 'urgent' : 'normal'
+                isOverdue: hasOverdue,
+                isToday: hasToday,
+                priority: hasOverdue ? 'urgent' : 'normal'
               };
               propertyUnits.push(enhancedUnit);
               propertyTotalUnits++;

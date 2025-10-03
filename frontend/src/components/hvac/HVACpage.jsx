@@ -17,6 +17,8 @@ const HVACPage = ({
   const [currentView, setCurrentView] = useState('today');
   const [expandedProperties, setExpandedProperties] = useState(new Set());
   const [loading, setLoading] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const [hvacStats, setHvacStats] = useState({
     todayJobs: 0,
@@ -29,6 +31,25 @@ const HVACPage = ({
   useEffect(() => {
     fetchHVACStats();
   }, []);
+
+  // Scroll handler to collapse/expand header
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Collapse header when scrolling down past 50px
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setHeaderCollapsed(true);
+      } else {
+        setHeaderCollapsed(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const fetchHVACStats = async () => {
     try {
@@ -152,8 +173,8 @@ const HVACPage = ({
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
-      {/* ✅ MOBILE HEADER - Enhanced Touch Targets */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+      {/* ✅ MOBILE HEADER - Collapsing on Scroll */}
+      <div className={`sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 ${headerCollapsed ? 'pb-2' : ''}`}>
         {/* Top Bar */}
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
@@ -165,7 +186,7 @@ const HVACPage = ({
             </button>
             <h1 className="text-xl font-bold text-gray-900">HVAC Work</h1>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => onNavigate('maintenance')}
@@ -184,8 +205,8 @@ const HVACPage = ({
           </div>
         </div>
 
-        {/* ✅ COMPACT STATS ROW */}
-        <div className="px-4 pb-3">
+        {/* ✅ COMPACT STATS ROW - Hidden when scrolling */}
+        <div className={`px-4 pb-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 pb-0' : 'max-h-24 opacity-100'}`}>
           <div className="grid grid-cols-4 gap-2">
             <div className="bg-blue-50 rounded-lg p-2 text-center">
               <Clock className="w-4 h-4 text-blue-600 mx-auto mb-1" />
@@ -213,8 +234,8 @@ const HVACPage = ({
           </div>
         </div>
 
-        {/* ✅ VIEW TABS - Larger Touch Targets */}
-        <div className="flex bg-gray-100 mx-4 rounded-xl p-1 mb-4">
+        {/* ✅ VIEW TABS - Hidden when scrolling */}
+        <div className={`flex bg-gray-100 mx-4 rounded-xl p-1 mb-4 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-20 opacity-100'}`}>
           {[
             { id: 'today', label: 'Today', count: hvacStats.todayJobs },
             { id: 'overdue', label: 'Overdue', count: hvacStats.overdueUnits },

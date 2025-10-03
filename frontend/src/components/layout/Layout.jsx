@@ -678,8 +678,8 @@ const Layout = ({
           {children}
         </main>
 
-        {/* ✅ PRESERVED: Always-Visible QuickStats at Bottom */}
-        <QuickStats stats={jobsStats} lastUpdated={lastDataUpdate} />
+        {/* ✅ PRESERVED: Always-Visible QuickStats at Bottom (hidden on HVAC page) */}
+        {currentView !== 'hvac' && <QuickStats stats={jobsStats} lastUpdated={lastDataUpdate} />}
       </div>
     </div>
   );

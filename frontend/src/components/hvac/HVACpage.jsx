@@ -241,10 +241,10 @@ const HVACPage = ({
         </div>
       )}
 
-      {/* ✅ iOS-STYLE: Stats and Tabs (collapsible on scroll) */}
+      {/* ✅ iOS-STYLE: Stats, Tabs, and Search (collapsible on scroll) */}
       <div className={`sticky top-[64px] z-30 bg-white border-b border-gray-200 shadow-sm transition-all duration-300`}>
         {/* ✅ COMPACT STATS ROW - Hidden when scrolling */}
-        <div className={`px-4 pt-3 pb-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 pt-0 pb-0' : 'max-h-24 opacity-100'}`}>
+        <div className={`px-4 py-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 py-0' : 'max-h-24 opacity-100'}`}>
           <div className="grid grid-cols-4 gap-2">
             <div className="bg-blue-50 rounded-lg p-2 text-center">
               <Clock className="w-4 h-4 text-blue-600 mx-auto mb-1" />
@@ -273,7 +273,7 @@ const HVACPage = ({
         </div>
 
         {/* ✅ VIEW TABS - Hidden when scrolling */}
-        <div className={`flex bg-gray-100 mx-4 rounded-xl p-1 mb-4 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-20 opacity-100'}`}>
+        <div className={`flex bg-gray-100 mx-4 rounded-xl p-1 mb-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-20 opacity-100'}`}>
           {[
             { id: 'today', label: 'Today', count: hvacStats.todayJobs },
             { id: 'overdue', label: 'Overdue', count: hvacStats.overdueUnits },
@@ -293,8 +293,8 @@ const HVACPage = ({
           ))}
         </div>
 
-        {/* ✅ SEARCH BAR - Mobile Optimized */}
-        <div className="px-4 pb-4">
+        {/* ✅ SEARCH BAR - Always visible, sticks with header */}
+        <div className="px-4 pb-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
             <input

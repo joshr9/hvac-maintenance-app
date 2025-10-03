@@ -106,16 +106,13 @@ const MaintenanceRecordForm = ({
             <label className="block text-base sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
               Service Date
             </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-              <input
-                type="date"
-                className="w-full pl-10 pr-3 py-3 text-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
-                value={serviceDate}
-                onChange={e => setServiceDate(e.target.value)}
-                required
-              />
-            </div>
+            <input
+              type="date"
+              className="w-full px-3 py-3 text-xs sm:text-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
+              value={serviceDate}
+              onChange={e => setServiceDate(e.target.value)}
+              required
+            />
           </div>
         </div>
 

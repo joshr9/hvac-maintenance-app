@@ -359,49 +359,43 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
         {/* ✅ NEW: Show context breadcrumb when coming from HVAC dashboard */}
         {hasPreselectedData && (
           <div className="mb-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handleBackToHVAC}
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to HVAC Dashboard
-                  </button>
-                  
-                  <div className="h-6 w-px bg-gray-300"></div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-900">
-                        {selectedProperty?.name || selectedProperty?.address}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {selectedSuite?.name || `Suite ${selectedSuite?.id}`}
-                      </span>
-                    </div>
-                    
-                    {preselectedUnit && (
-                      <div className="flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.label || 
-                           selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.serialNumber || 
-                           `Unit ${preselectedUnit}`}
-                        </span>
-                      </div>
-                    )}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20 shadow-sm">
+              {/* Mobile: Stack vertically */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleBackToHVAC}
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm self-start"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to HVAC Dashboard
+                </button>
+
+                {/* Property/Suite/Unit Info - Stack on mobile */}
+                <div className="flex flex-col gap-2 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                    <span className="font-medium text-gray-900 truncate">
+                      {selectedProperty?.name || selectedProperty?.address}
+                    </span>
                   </div>
-                </div>
-                
-                <div className="text-xs text-gray-500">
-                  Maintenance for selected HVAC unit
+
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                    <span className="text-gray-600 truncate">
+                      {selectedSuite?.name || `Suite ${selectedSuite?.id}`}
+                    </span>
+                  </div>
+
+                  {preselectedUnit && (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Wrench className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-gray-600 truncate">
+                        {selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.label ||
+                         selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.serialNumber ||
+                         `Unit ${preselectedUnit}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

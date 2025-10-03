@@ -101,10 +101,16 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
         </div>
         <span className="text-sm font-semibold text-gray-700">Edit HVAC Units for this Suite</span>
       </div>
-      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+
+      {/* Mobile scroll hint */}
+      <div className="mb-2 text-xs text-gray-500 sm:hidden">
+        ← Scroll to see all columns →
+      </div>
+
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2" style={{WebkitOverflowScrolling: 'touch'}}>
         <div className="inline-block min-w-full align-middle">
           <div className="overflow-hidden shadow-sm rounded-xl">
-            <table className="min-w-full border border-gray-200 bg-white text-sm">
+            <table className="min-w-full border border-gray-200 bg-white text-xs sm:text-sm">
           <thead>
             <tr style={{backgroundColor: '#f8fafc'}}>
               <th className="p-3 text-left font-semibold text-gray-700 border-b">Label/Name</th>

@@ -184,39 +184,31 @@ const HVACPage = ({
           </div>
         </div>
 
-        {/* ✅ MOBILE STATS - Larger Cards, Better Scrolling */}
-        <div className="px-4 pb-4">
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            <div className="flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-5 min-w-[160px] shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-5 h-5" />
-                <span className="text-sm font-medium">Today</span>
-              </div>
-              <div className="text-3xl font-bold">{hvacStats.todayJobs}</div>
+        {/* ✅ COMPACT STATS ROW */}
+        <div className="px-4 pb-3">
+          <div className="grid grid-cols-4 gap-2">
+            <div className="bg-blue-50 rounded-lg p-2 text-center">
+              <Clock className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+              <div className="text-xl font-bold text-blue-600">{hvacStats.todayJobs}</div>
+              <div className="text-xs text-gray-600">Today</div>
             </div>
-            
-            <div className="flex-shrink-0 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-2xl p-5 min-w-[160px] shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-5 h-5" />
-                <span className="text-sm font-medium">Overdue</span>
-              </div>
-              <div className="text-3xl font-bold">{hvacStats.overdueUnits}</div>
+
+            <div className="bg-red-50 rounded-lg p-2 text-center">
+              <AlertTriangle className="w-4 h-4 text-red-600 mx-auto mb-1" />
+              <div className="text-xl font-bold text-red-600">{hvacStats.overdueUnits}</div>
+              <div className="text-xs text-gray-600">Overdue</div>
             </div>
-            
-            <div className="flex-shrink-0 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-5 min-w-[160px] shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-sm font-medium">Done</span>
-              </div>
-              <div className="text-3xl font-bold">{hvacStats.completedToday}</div>
+
+            <div className="bg-green-50 rounded-lg p-2 text-center">
+              <CheckCircle className="w-4 h-4 text-green-600 mx-auto mb-1" />
+              <div className="text-xl font-bold text-green-600">{hvacStats.completedToday}</div>
+              <div className="text-xs text-gray-600">Done</div>
             </div>
-            
-            <div className="flex-shrink-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-5 min-w-[160px] shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Building className="w-5 h-5" />
-                <span className="text-sm font-medium">Properties</span>
-              </div>
-              <div className="text-3xl font-bold">{hvacStats.totalProperties}</div>
+
+            <div className="bg-gray-50 rounded-lg p-2 text-center">
+              <Building className="w-4 h-4 text-gray-600 mx-auto mb-1" />
+              <div className="text-xl font-bold text-gray-900">{hvacStats.totalUnits}</div>
+              <div className="text-xs text-gray-600">Units</div>
             </div>
           </div>
         </div>

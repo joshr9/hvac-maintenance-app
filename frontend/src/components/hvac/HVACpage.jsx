@@ -34,8 +34,12 @@ const HVACPage = ({
 
   // Scroll handler to collapse/expand header
   useEffect(() => {
+    // Find the scrollable main container (Layout's main element)
+    const scrollContainer = document.querySelector('main');
+    if (!scrollContainer) return;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
+      const currentScrollY = scrollContainer.scrollTop;
 
       // Collapse header when scrolling down past 50px
       if (currentScrollY > lastScrollY && currentScrollY > 50) {
@@ -47,8 +51,8 @@ const HVACPage = ({
       setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
   const fetchHVACStats = async () => {

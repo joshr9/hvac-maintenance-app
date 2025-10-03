@@ -101,8 +101,10 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
         </div>
         <span className="text-sm font-semibold text-gray-700">Edit HVAC Units for this Suite</span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-xl bg-white shadow-sm text-sm">
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className="inline-block min-w-full align-middle">
+          <div className="overflow-hidden shadow-sm rounded-xl">
+            <table className="min-w-full border border-gray-200 bg-white text-sm">
           <thead>
             <tr style={{backgroundColor: '#f8fafc'}}>
               <th className="p-3 text-left font-semibold text-gray-700 border-b">Label/Name</th>
@@ -221,6 +223,8 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
             ))}
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
     </div>
   );

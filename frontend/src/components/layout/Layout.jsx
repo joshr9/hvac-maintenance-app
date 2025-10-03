@@ -617,7 +617,7 @@ const Layout = ({
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
 
-              <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-none">{getPageTitle()}</h1>
             </div>
 
             <div className="flex items-center gap-4">

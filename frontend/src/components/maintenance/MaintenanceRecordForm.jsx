@@ -107,10 +107,10 @@ const MaintenanceRecordForm = ({
               Service Date
             </label>
             <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 sm:w-6 sm:h-6" />
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
               <input
                 type="date"
-                className="w-full pl-12 sm:pl-14 pr-4 py-4 sm:py-3 text-base border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
+                className="w-full pl-10 pr-3 py-3 text-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
                 value={serviceDate}
                 onChange={e => setServiceDate(e.target.value)}
                 required
@@ -173,34 +173,57 @@ const MaintenanceRecordForm = ({
             Attach Photos {openPhotoSection && <span className="text-blue-600">(Tap to capture)</span>}
           </label>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 sm:p-8 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
             <input
               ref={fileInputRef}
               type="file"
               multiple
               accept="image/*"
-              capture="environment"
               onChange={handleFileChange}
               className="hidden"
               id="photo-upload"
             />
-            <button
-              type="button"
-              onClick={handleCameraCapture}
-              className="w-full flex flex-col items-center gap-3 cursor-pointer"
-            >
-              <div className="p-4 bg-blue-100 rounded-full">
-                <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-base sm:text-sm font-medium text-gray-700">
-                  Tap to take photo or upload
-                </p>
-                <p className="text-sm sm:text-xs text-gray-500">
-                  PNG, JPG up to 10MB each
-                </p>
-              </div>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center">
+              {/* Take Photo Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.capture = 'environment';
+                  input.multiple = true;
+                  input.onchange = (e) => {
+                    const files = Array.from(e.target.files);
+                    setPhotoFiles(prev => [...prev, ...files]);
+                  };
+                  input.click();
+                }}
+                className="flex-1 sm:flex-none flex flex-col items-center gap-2 p-4 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors w-full sm:w-auto"
+              >
+                <Camera className="w-8 h-8 text-blue-600" />
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-gray-900">Take Photo</p>
+                  <p className="text-xs text-gray-600">Use camera</p>
+                </div>
+              </button>
+
+              {/* Upload from Gallery Button */}
+              <button
+                type="button"
+                onClick={handleCameraCapture}
+                className="flex-1 sm:flex-none flex flex-col items-center gap-2 p-4 bg-green-100 hover:bg-green-200 rounded-xl transition-colors w-full sm:w-auto"
+              >
+                <Upload className="w-8 h-8 text-green-600" />
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-gray-900">Upload Photos</p>
+                  <p className="text-xs text-gray-600">From gallery</p>
+                </div>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              PNG, JPG up to 10MB each
+            </p>
           </div>
 
           {/* Photo Preview - Mobile Optimized Grid */}

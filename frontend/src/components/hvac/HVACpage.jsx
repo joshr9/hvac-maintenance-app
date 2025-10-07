@@ -242,7 +242,7 @@ const HVACPage = ({
       )}
 
       {/* ✅ iOS-STYLE: Stats, Tabs, and Search (collapsible on scroll) */}
-      <div className={`sticky top-[64px] z-30 bg-white border-b border-gray-200 shadow-sm transition-all duration-300`}>
+      <div className={`sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm transition-all duration-300`}>
         {/* ✅ COMPACT STATS ROW - Hidden when scrolling */}
         <div className={`px-4 py-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 py-0' : 'max-h-24 opacity-100'}`}>
           <div className="grid grid-cols-4 gap-2">

@@ -263,7 +263,7 @@ const PropertiesPage = ({ onNavigate }) => {
 
           {/* Stats Row - collapsible on mobile, always visible on desktop */}
           <div className={`overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 lg:max-h-full lg:opacity-100' : 'max-h-32 opacity-100'}`}>
-            <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-3 lg:gap-4 mb-4">
               <div className="bg-dc-blue-50 rounded-xl p-3 lg:p-4 text-center border border-dc-blue-100">
                 <Building className="w-5 h-5 lg:w-6 lg:h-6 text-dc-blue-500 mx-auto mb-1" />
                 <div className="text-xl lg:text-2xl font-bold text-dc-blue-600">{propertyStats.totalProperties}</div>
@@ -280,25 +280,6 @@ const PropertiesPage = ({ onNavigate }) => {
                 <Zap className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mx-auto mb-1" />
                 <div className="text-xl lg:text-2xl font-bold text-purple-600">{propertyStats.totalUnits}</div>
                 <div className="text-xs text-gray-600">HVAC Units</div>
-              </div>
-
-              {/* Desktop-only stats */}
-              <div className="hidden lg:block bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
-                <MapPin className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-gray-700">{properties.filter(p => p.city).length}</div>
-                <div className="text-xs text-gray-600">Locations</div>
-              </div>
-
-              <div className="hidden lg:block bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
-                <Building className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-gray-700">{filteredAndSortedProperties.length}</div>
-                <div className="text-xs text-gray-600">Showing</div>
-              </div>
-
-              <div className="hidden lg:block bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
-                <ChevronRight className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-gray-700">{viewMode}</div>
-                <div className="text-xs text-gray-600">View Mode</div>
               </div>
             </div>
           </div>

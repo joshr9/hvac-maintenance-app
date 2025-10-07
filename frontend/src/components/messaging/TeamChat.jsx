@@ -70,11 +70,20 @@ const TeamChat = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/users`);
+      // Fetch users from Clerk via backend endpoint
+      const response = await fetch(`${apiUrl}/api/clerk/users`);
       if (response.ok) {
         const data = await response.json();
+        // Map Clerk users to our format
+        const mappedUsers = data.map(clerkUser => ({
+          id: clerkUser.id,
+          name: `${clerkUser.first_name || ''} ${clerkUser.last_name || ''}`.trim() || clerkUser.email_addresses[0]?.email_address,
+          email: clerkUser.email_addresses[0]?.email_address,
+          role: 'Team Member'
+        }));
+
         // Filter out current user
-        const otherUsers = data.filter(u => u.clerkUserId !== user?.id);
+        const otherUsers = mappedUsers.filter(u => u.id !== user?.id);
         setUsers(otherUsers);
       } else {
         setUsers([]);

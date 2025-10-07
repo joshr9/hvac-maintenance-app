@@ -58,8 +58,11 @@ const { clerkAuth, authenticateUser } = require('./middleware/clerkAuth');
 const messagesRoutes = require('./routes/messages');
 app.use('/api/messages', clerkAuth, authenticateUser, messagesRoutes);
 
-const tasksRoutes = require('./routes/tasks');  
+const tasksRoutes = require('./routes/tasks');
 app.use('/api/tasks', clerkAuth, authenticateUser, tasksRoutes);
+
+const clerkRoutes = require('./routes/clerk');
+app.use('/api/clerk', clerkRoutes);
 
 // FIXED: Use singular form to match your file name
 const recurringJobTemplateRoutes = require('./routes/recurringJobTemplate');

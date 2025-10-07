@@ -108,51 +108,51 @@ const Homepage = ({ onNavigate, onOpenModal }) => {
         </div>
 
         {/* HVAC Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
+          <div className="bg-white rounded-lg md:rounded-xl shadow-md p-3 md:p-6 border-l-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Today's Work</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{hvacStats?.todayJobs || 0}</p>
+                <p className="text-xs md:text-sm text-gray-600 font-medium">Today's Work</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900 mt-1">{hvacStats?.todayJobs || 0}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Clock className="w-6 h-6 text-blue-600" />
+              <div className="p-2 md:p-3 bg-blue-100 rounded-lg">
+                <Clock className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
+          <div className="bg-white rounded-lg md:rounded-xl shadow-md p-3 md:p-6 border-l-4 border-red-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Overdue Units</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{hvacStats?.overdueUnits || 0}</p>
+                <p className="text-xs md:text-sm text-gray-600 font-medium">Overdue</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900 mt-1">{hvacStats?.overdueUnits || 0}</p>
               </div>
-              <div className="p-3 bg-red-100 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+              <div className="p-2 md:p-3 bg-red-100 rounded-lg">
+                <AlertTriangle className="w-4 h-4 md:w-6 md:h-6 text-red-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+          <div className="bg-white rounded-lg md:rounded-xl shadow-md p-3 md:p-6 border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Completed Today</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{hvacStats?.completedToday || 0}</p>
+                <p className="text-xs md:text-sm text-gray-600 font-medium">Completed</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900 mt-1">{hvacStats?.completedToday || 0}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="p-2 md:p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="w-4 h-4 md:w-6 md:h-6 text-green-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+          <div className="bg-white rounded-lg md:rounded-xl shadow-md p-3 md:p-6 border-l-4 border-purple-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 font-medium">Total HVAC Units</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{hvacStats?.totalUnits || 0}</p>
+                <p className="text-xs md:text-sm text-gray-600 font-medium">Total Units</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900 mt-1">{hvacStats?.totalUnits || 0}</p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Zap className="w-6 h-6 text-purple-600" />
+              <div className="p-2 md:p-3 bg-purple-100 rounded-lg">
+                <Zap className="w-4 h-4 md:w-6 md:h-6 text-purple-600" />
               </div>
             </div>
           </div>

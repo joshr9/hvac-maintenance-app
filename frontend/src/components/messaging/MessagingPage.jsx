@@ -74,6 +74,9 @@ const MessagingPage = ({
   const [newChannelName, setNewChannelName] = useState('');
   const [newChannelDescription, setNewChannelDescription] = useState('');
   const [creatingChannel, setCreatingChannel] = useState(false);
+  const [showStartDM, setShowStartDM] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // 📚 Reference for auto-scroll
   const messagesEndRef = useRef(null);

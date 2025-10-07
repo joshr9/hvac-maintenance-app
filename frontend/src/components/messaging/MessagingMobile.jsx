@@ -51,7 +51,8 @@ const MessagingMobile = () => {
 
   // Mobile: Show channels list OR chat view
   return (
-    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+    <div className="p-6 min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 12rem)' }}>
       {view === 'channels' ? (
         // Channels List View
         <>
@@ -264,6 +265,7 @@ const MessagingMobile = () => {
           padding-bottom: max(1rem, env(safe-area-inset-bottom));
         }
       `}</style>
+      </div>
     </div>
   );
 };

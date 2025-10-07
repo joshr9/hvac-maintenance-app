@@ -276,76 +276,80 @@ const Layout = ({
     }
   };
 
-  // ✅ PRESERVED: All existing navigation logic
+  // ✅ STREAMLINED: HVAC-focused navigation (keeping unused items for future)
   const navigationSections = [
     {
-      title: "Main",
+      title: "MAIN",
       items: [
-        { 
-          id: 'dashboard', 
-          label: 'Dashboard', 
-          icon: Home, 
+        {
+          id: 'dashboard',
+          label: 'Dashboard',
+          icon: Home,
           description: 'Overview & quick stats',
           badge: null
         },
-        { 
-          id: 'jobs', 
-          label: 'Jobs', 
-          icon: Briefcase, 
+        /* HIDDEN - May use later
+        {
+          id: 'jobs',
+          label: 'Jobs',
+          icon: Briefcase,
           description: 'Manage work orders',
           badge: jobsStats.lateJobs ? `${jobsStats.lateJobs} late` : null
         },
-        { 
-          id: 'calendar', 
-          label: 'Schedule', 
-          icon: Calendar, 
+        {
+          id: 'calendar',
+          label: 'Schedule',
+          icon: Calendar,
           description: 'View and manage schedule',
           badge: null
         },
-        { 
-        id: 'messaging', 
-        label: 'Team Chat', 
-        icon: MessageSquare,  // You'll need to import this from lucide-react
-        description: 'Team communication & messages',
-        badge: null // You can make this dynamic later
-      },
-      { 
-        id: 'tasks', 
-        label: 'Tasks', 
-        icon: CheckSquare,
-        description: 'Organize and track team tasks',
-        badge: null
-      },
-       { 
-          id: 'properties', 
-          label: 'Properties', 
-          icon: Building, 
+        */
+        {
+          id: 'messaging',
+          label: 'Team Chat',
+          icon: MessageSquare,
+          description: 'Team communication & messages',
+          badge: null
+        },
+        {
+          id: 'tasks',
+          label: 'Tasks',
+          icon: CheckSquare,
+          description: 'Organize and track team tasks',
+          badge: null
+        },
+        {
+          id: 'properties',
+          label: 'Properties',
+          icon: Building,
           description: 'Manage properties & locations',
           badge: null
-       }
+        }
       ]
     },
     {
-      title: "Services & Tools", 
+      title: "SERVICES & TOOLS",
       items: [
-        { 
-          id: 'services', 
-          label: 'Service Catalog', 
-          icon: Tag, 
+        /* HIDDEN - May use later
+        {
+          id: 'services',
+          label: 'Service Catalog',
+          icon: Tag,
           description: 'Manage services',
           badge: null
         },
-        { 
-      id: 'hvac', 
-      label: 'HVAC Systems', 
-      icon: Wrench, 
-      description: 'HVAC management & maintenance',
-      badge: null
-    },
-        { 
-          id: 'maintenance', 
-          label: 'Quick Entry', 
-          icon: Plus, 
+        */
+        {
+          id: 'hvac',
+          label: 'HVAC Systems',
+          icon: Wrench,
+          description: 'HVAC management & maintenance',
+          badge: null
+        },
+        {
+          id: 'maintenance',
+          label: 'Quick Entry',
+          icon: Plus,
           description: 'Add maintenance record',
           badge: null,
           isAction: true
@@ -353,61 +357,67 @@ const Layout = ({
       ]
     },
     {
-      title: "Business & Analytics",
+      title: "BUSINESS & ANALYTICS",
       items: [
-        { 
-          id: 'reports', 
-          label: 'Reports', 
-          icon: BarChart3, 
+        {
+          id: 'reports',
+          label: 'Reports',
+          icon: BarChart3,
           description: 'Analytics and insights',
-          badge: null,
+          badge: 'SOON',
           comingSoon: true
         },
-        { 
-          id: 'invoices', 
-          label: 'Invoicing', 
-          icon: Receipt, 
+        /* HIDDEN - May use later
+        {
+          id: 'invoices',
+          label: 'Invoicing',
+          icon: Receipt,
           description: 'Manage billing',
           badge: null,
           comingSoon: true
         },
-        { 
-          id: 'timeHistory', 
-          label: 'Timesheets', 
-          icon: Clock, 
+        */
+        {
+          id: 'timeHistory',
+          label: 'Timesheets',
+          icon: Clock,
           description: 'Time tracking & history',
           badge: 'NEW'
-        },
-        { 
-          id: 'expenses', 
-          label: 'Expenses', 
-          icon: DollarSign, 
+        }
+        /* HIDDEN - May use later
+        {
+          id: 'expenses',
+          label: 'Expenses',
+          icon: DollarSign,
           description: 'Expense tracking',
           badge: null,
           comingSoon: true
         }
+        */
       ]
-    },
+    }
+    /* HIDDEN - System Management section
     {
       title: "System Management",
       items: [
-        { 
-          id: 'admin', 
-          label: 'Admin Dashboard', 
-          icon: Shield, 
+        {
+          id: 'admin',
+          label: 'Admin Dashboard',
+          icon: Shield,
           description: 'System management',
           badge: 'NEW'
         },
-        { 
-          id: 'team', 
-          label: 'Team', 
-          icon: Users, 
+        {
+          id: 'team',
+          label: 'Team',
+          icon: Users,
           description: 'Team management',
           badge: null,
           comingSoon: true
         }
       ]
     }
+    */
   ];
 
   // ✅ PRESERVED: All existing utility functions

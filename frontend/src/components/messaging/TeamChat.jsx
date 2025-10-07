@@ -1,6 +1,6 @@
 // TeamChat.jsx - iOS-Optimized Mobile Chat with Channels & DMs
 import React, { useState, useEffect, useRef } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import {
   MessageCircle,
   Plus,
@@ -13,6 +13,7 @@ import {
 
 const TeamChat = () => {
   const { user, isLoaded, isSignedIn } = useUser();
+  const { getToken } = useAuth();
 
   // State
   const [view, setView] = useState('list'); // 'list', 'channel', 'dm'
@@ -183,6 +184,7 @@ const TeamChat = () => {
     if (!messageContent.trim()) return;
 
     try {
+      const token = await getToken();
       const body = {
         content: messageContent.trim(),
         authorId: user.id
@@ -196,7 +198,10 @@ const TeamChat = () => {
 
       const response = await fetch(`${apiUrl}/api/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(body)
       });
 
@@ -204,6 +209,8 @@ const TeamChat = () => {
         const newMessage = await response.json();
         setMessages(prev => [...prev, newMessage]);
         setMessageContent('');
+      } else {
+        console.error('Failed to send message:', response.status);
       }
     } catch (error) {
       console.error('Error sending message:', error);

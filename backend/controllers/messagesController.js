@@ -631,6 +631,44 @@ exports.getDirectMessages = async (req, res) => {
 };
 
 // ==============================================
+// POST /api/messages/channels - Create a new channel
+// ==============================================
+exports.createChannel = async (req, res) => {
+  try {
+    const { name, description, type = 'channel' } = req.body;
+    const userId = req.userId;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Channel name is required' });
+    }
+
+    // Check if channel name already exists
+    const existing = await prisma.channel.findUnique({
+      where: { name: name.trim().toLowerCase() }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Channel name already exists' });
+    }
+
+    const channel = await prisma.channel.create({
+      data: {
+        name: name.trim().toLowerCase(),
+        description: description?.trim() || null,
+        type,
+        participants: type === 'private' ? [userId] : null
+      }
+    });
+
+    res.json(channel);
+
+  } catch (error) {
+    console.error('Error creating channel:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==============================================
 // EXPORT ALL CONTROLLER FUNCTIONS
 // ==============================================
 module.exports = {
@@ -642,5 +680,6 @@ module.exports = {
   saveToJob: exports.saveToJob,
   saveToProperty: exports.saveToProperty,
   getChannels: exports.getChannels,
+  createChannel: exports.createChannel,
   getDirectMessages: exports.getDirectMessages
 };

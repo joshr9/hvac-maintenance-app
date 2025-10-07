@@ -70,7 +70,11 @@ const MessagingPage = ({
   // 🎯 Modal State
   const [showSaveToModal, setShowSaveToModal] = useState(null);
   const [showJobCreation, setShowJobCreation] = useState(null);  // For job creation
-  
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [newChannelDescription, setNewChannelDescription] = useState('');
+  const [creatingChannel, setCreatingChannel] = useState(false);
+
   // 📚 Reference for auto-scroll
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -102,7 +106,7 @@ const MessagingPage = ({
     try {
       const data = await apiCall('/messages/channels');
       setChannels(data);
-      
+
       // Set first channel as default if none selected
       if (!currentChannel && data.length > 0) {
         setCurrentChannel(data[0].id);
@@ -110,6 +114,42 @@ const MessagingPage = ({
     } catch (error) {
       console.error('Error loading channels:', error);
       setError('Failed to load channels');
+    }
+  };
+
+  // ➕ Create New Channel
+  const createChannel = async () => {
+    if (!newChannelName.trim()) {
+      alert('Please enter a channel name');
+      return;
+    }
+
+    try {
+      setCreatingChannel(true);
+      const newChannel = await apiCall('/messages/channels', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newChannelName.trim(),
+          description: newChannelDescription.trim() || null,
+          type: 'channel'
+        })
+      });
+
+      // Add to channels list
+      setChannels(prev => [...prev, newChannel]);
+
+      // Select the new channel
+      setCurrentChannel(newChannel.id);
+
+      // Reset and close modal
+      setNewChannelName('');
+      setNewChannelDescription('');
+      setShowCreateChannel(false);
+    } catch (error) {
+      console.error('Error creating channel:', error);
+      alert('Failed to create channel: ' + error.message);
+    } finally {
+      setCreatingChannel(false);
     }
   };
 
@@ -333,7 +373,11 @@ const MessagingPage = ({
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold text-gray-900">Team Chat</h1>
-            <button className="p-2 hover:bg-gray-100 rounded">
+            <button
+              onClick={() => setShowCreateChannel(true)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Create new channel"
+            >
               <Plus className="w-5 h-5" />
             </button>
           </div>
@@ -777,6 +821,90 @@ const MessagingPage = ({
         </div>
       )}
 
+      {/* Create Channel Modal */}
+      {showCreateChannel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Create New Channel</h3>
+              <button
+                onClick={() => {
+                  setShowCreateChannel(false);
+                  setNewChannelName('');
+                  setNewChannelDescription('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Channel Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={newChannelName}
+                    onChange={(e) => setNewChannelName(e.target.value)}
+                    placeholder="general, hvac-team, announcements..."
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Use lowercase and dashes (e.g., hvac-maintenance)</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newChannelDescription}
+                  onChange={(e) => setNewChannelDescription(e.target.value)}
+                  placeholder="What's this channel about?"
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCreateChannel(false);
+                  setNewChannelName('');
+                  setNewChannelDescription('');
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createChannel}
+                disabled={creatingChannel || !newChannelName.trim()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {creatingChannel ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Create Channel
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create Job Modal */}
       {showJobCreation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -795,7 +923,7 @@ const MessagingPage = ({
               <button
                 onClick={() => {
                   // Navigate to job creation with message context
-                  onNavigate('jobs', { 
+                  onNavigate('jobs', {
                     action: 'create',
                     fromMessage: showJobCreation.content,
                     messageId: showJobCreation.id

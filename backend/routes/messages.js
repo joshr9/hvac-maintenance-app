@@ -26,6 +26,9 @@ router.post('/:id/save-to-property', messagesController.saveToProperty);
 // GET /api/messages/channels - Get available channels
 router.get('/channels', messagesController.getChannels);
 
+// POST /api/messages/channels - Create a new channel
+router.post('/channels', messagesController.createChannel);
+
 // GET /api/messages/direct/:userId - Get DM conversation
 router.get('/direct/:userId', messagesController.getDirectMessages);
 

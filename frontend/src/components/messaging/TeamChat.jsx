@@ -74,6 +74,8 @@ const TeamChat = () => {
       const response = await fetch(`${apiUrl}/api/clerk/users`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Loaded users from Clerk:', data);
+
         // Map Clerk users to our format
         const mappedUsers = data.map(clerkUser => ({
           id: clerkUser.id,
@@ -84,8 +86,11 @@ const TeamChat = () => {
 
         // Filter out current user
         const otherUsers = mappedUsers.filter(u => u.id !== user?.id);
+        console.log('Other users (excluding current):', otherUsers);
         setUsers(otherUsers);
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to load users:', response.status, errorData);
         setUsers([]);
       }
     } catch (error) {

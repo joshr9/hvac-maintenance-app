@@ -1,22 +1,18 @@
-// components/properties/PropertiesPage.jsx - Complete with Modal Integration
+// PropertiesPage.jsx - iOS-Optimized Mobile Design
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Building, 
-  Plus, 
-  Search, 
-  Filter, 
-  Grid3X3, 
+import {
+  Building,
+  Plus,
+  Search,
+  Filter,
+  Grid3X3,
   List,
   Users,
   Zap,
-  MapPin
+  MapPin,
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
-
-// Common components
-import PageWrapper from '../common/PageWrapper';
-import PageHeader from '../common/PageHeader';
-import CustomDropdown from '../common/CustomDropdown';
-import Pagination from '../common/Pagination';
 
 // Property-specific components
 import PropertyCard from './PropertyCard';
@@ -30,21 +26,24 @@ const PropertiesPage = ({ onNavigate }) => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
-  
+
   // Filters and search
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('recent');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [viewMode, setViewMode] = useState('grid');
+
+  // Mobile optimizations
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [pullStartY, setPullStartY] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Load properties
   useEffect(() => {
@@ -55,30 +54,96 @@ const PropertiesPage = ({ onNavigate }) => {
     try {
       setLoading(true);
       setError('');
-      
-      const response = await fetch('/api/properties');
+
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/properties`);
       if (response.ok) {
         const data = await response.json();
         setProperties(Array.isArray(data) ? data : []);
       } else {
-        throw new Error('Failed to load properties');
+        setProperties([]);
       }
     } catch (error) {
       console.error('Error loading properties:', error);
-      setError('Failed to load properties. Please try again.');
+      setProperties([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Scroll handler
+  useEffect(() => {
+    const scrollContainer = document.querySelector('main');
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const currentScrollY = scrollContainer.scrollTop;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setHeaderCollapsed(true);
+      } else {
+        setHeaderCollapsed(false);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  // Pull to refresh
+  useEffect(() => {
+    const scrollContainer = document.querySelector('main');
+    if (!scrollContainer) return;
+
+    const handleTouchStart = (e) => {
+      if (scrollContainer.scrollTop === 0) {
+        setPullStartY(e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (pullStartY === 0 || scrollContainer.scrollTop > 0) return;
+      const currentY = e.touches[0].clientY;
+      const distance = currentY - pullStartY;
+      if (distance > 0 && distance < 120) {
+        setPullDistance(distance);
+      }
+    };
+
+    const handleTouchEnd = async () => {
+      if (pullDistance > 80) {
+        setIsRefreshing(true);
+        await loadProperties();
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+          setPullStartY(0);
+        }, 500);
+      } else {
+        setPullDistance(0);
+        setPullStartY(0);
+      }
+    };
+
+    scrollContainer.addEventListener('touchstart', handleTouchStart);
+    scrollContainer.addEventListener('touchmove', handleTouchMove);
+    scrollContainer.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      scrollContainer.removeEventListener('touchstart', handleTouchStart);
+      scrollContainer.removeEventListener('touchmove', handleTouchMove);
+      scrollContainer.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [pullStartY, pullDistance]);
+
   // Property stats calculation
   const propertyStats = useMemo(() => {
     const totalProperties = properties.length;
     const totalSuites = properties.reduce((sum, p) => sum + (p.suites?.length || 0), 0);
-    const totalUnits = properties.reduce((sum, p) => 
-      sum + (p.suites?.reduce((suiteSum, suite) => 
+    const totalUnits = properties.reduce((sum, p) =>
+      sum + (p.suites?.reduce((suiteSum, suite) =>
         suiteSum + (suite.hvacUnits?.length || 0), 0) || 0), 0);
-    
+
     return { totalProperties, totalSuites, totalUnits };
   }, [properties]);
 
@@ -86,7 +151,6 @@ const PropertiesPage = ({ onNavigate }) => {
   const filteredAndSortedProperties = useMemo(() => {
     let filtered = properties;
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const search = searchQuery.toLowerCase();
       filtered = properties.filter(property =>
@@ -95,7 +159,6 @@ const PropertiesPage = ({ onNavigate }) => {
       );
     }
 
-    // Apply sorting
     const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'name':
@@ -116,13 +179,6 @@ const PropertiesPage = ({ onNavigate }) => {
     return sorted;
   }, [properties, searchQuery, sortBy]);
 
-  // Paginated properties
-  const paginatedProperties = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedProperties.slice(startIndex, endIndex);
-  }, [filteredAndSortedProperties, currentPage, itemsPerPage]);
-
   // Handle property actions
   const handleViewProperty = (property) => {
     setSelectedProperty(property);
@@ -137,286 +193,180 @@ const PropertiesPage = ({ onNavigate }) => {
   const handleDeleteProperty = async (property) => {
     if (window.confirm(`Are you sure you want to delete "${property.name || property.address}"?`)) {
       try {
-        const response = await fetch(`/api/properties/${property.id}`, {
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        const response = await fetch(`${apiUrl}/api/properties/${property.id}`, {
           method: 'DELETE'
         });
-        
+
         if (response.ok) {
           setProperties(prev => prev.filter(p => p.id !== property.id));
-        } else {
-          throw new Error('Failed to delete property');
         }
       } catch (error) {
         console.error('Error deleting property:', error);
-        alert('Failed to delete property. Please try again.');
       }
     }
   };
 
-  const handleCreateProperty = () => {
-    setShowAddModal(true);
-  };
-
-  // Modal handlers
   const handlePropertyAdded = (newProperty) => {
     setProperties(prev => [newProperty, ...prev]);
     setShowAddModal(false);
   };
 
   const handlePropertyUpdated = (updatedProperty) => {
-    setProperties(prev => 
+    setProperties(prev =>
       prev.map(p => p.id === updatedProperty.id ? updatedProperty : p)
     );
     setShowEditModal(false);
     setSelectedProperty(null);
   };
 
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-    setSelectedProperty(null);
-  };
-
-  const handleCloseDetailModal = () => {
-    setShowDetailModal(false);
-    setSelectedProperty(null);
-  };
-
-  // Handle pagination
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
-  const handlePageSizeChange = (newSize) => {
-    setItemsPerPage(newSize);
-    setCurrentPage(1); // Reset to first page
-  };
-
-  // Sort options
-  const sortOptions = [
-    { value: 'recent', label: 'Recently Updated' },
-    { value: 'name', label: 'Name (A-Z)' },
-    { value: 'address', label: 'Address (A-Z)' },
-    { value: 'units', label: 'Most HVAC Units' }
-  ];
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredAndSortedProperties.length / itemsPerPage);
-  const showPagination = totalPages > 1;
-
   // Loading state
   if (loading) {
     return (
-      <PageWrapper>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading properties...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading properties...</p>
         </div>
-      </PageWrapper>
+      </div>
     );
   }
 
   return (
-    <PageWrapper>
-      {/* Page Header */}
-      <PageHeader
-        title="Properties"
-        subtitle="Manage all your property locations and their details"
-        actionButton={
-          <button
-            onClick={handleCreateProperty}
-            className="inline-flex items-center gap-2 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90 transition-all duration-300 shadow-lg"
-            style={{
-              background: 'linear-gradient(135deg, #2a3a91 0%, #3b4ae6 100%)',
-              boxShadow: '0 4px 14px rgba(42, 58, 145, 0.25)'
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            Add Property
-          </button>
-        }
-      />
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div
+          className="fixed top-16 left-0 right-0 flex justify-center items-center z-50 transition-all duration-200"
+          style={{ transform: `translateY(${Math.min(pullDistance, 80)}px)`, opacity: Math.min(pullDistance / 80, 1) }}
+        >
+          <div className="bg-white rounded-full p-2 shadow-lg">
+            <RefreshCw className={`w-5 h-5 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </div>
+        </div>
+      )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-blue-100">
-              <Building className="w-6 h-6 text-blue-600" />
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm transition-all duration-300">
+        {/* Stats Row */}
+        <div className={`px-4 py-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 py-0' : 'max-h-32 opacity-100'}`}>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="bg-blue-50 rounded-lg p-3 text-center">
+              <Building className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+              <div className="text-2xl font-bold text-blue-600">{propertyStats.totalProperties}</div>
+              <div className="text-xs text-gray-600">Properties</div>
             </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">{propertyStats.totalProperties}</h3>
-              <p className="text-sm text-gray-600">Total Properties</p>
+
+            <div className="bg-green-50 rounded-lg p-3 text-center">
+              <Users className="w-5 h-5 text-green-600 mx-auto mb-1" />
+              <div className="text-2xl font-bold text-green-600">{propertyStats.totalSuites}</div>
+              <div className="text-xs text-gray-600">Suites</div>
+            </div>
+
+            <div className="bg-purple-50 rounded-lg p-3 text-center">
+              <Zap className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+              <div className="text-2xl font-bold text-purple-600">{propertyStats.totalUnits}</div>
+              <div className="text-xs text-gray-600">Units</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-green-100">
-              <Users className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">{propertyStats.totalSuites}</h3>
-              <p className="text-sm text-gray-600">Total Suites</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-purple-100">
-              <Zap className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">{propertyStats.totalUnits}</h3>
-              <p className="text-sm text-gray-600">HVAC Units</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters and Controls */}
-      <div className="sticky top-0 z-10 bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        {/* Search Bar */}
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
             <input
               type="text"
               placeholder="Search properties..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all"
             />
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-4">
-            {/* Results Count */}
-            <span className="text-sm text-gray-600">
-              {filteredAndSortedProperties.length} {filteredAndSortedProperties.length === 1 ? 'property' : 'properties'}
-            </span>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <CustomDropdown
-                value={sortBy}
-                onChange={setSortBy}
-                options={sortOptions}
-                placeholder="Sort by..."
-                className="min-w-[160px]"
-              />
-            </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                title="Grid View"
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-                title="List View"
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="space-y-6">
+      {/* Properties List */}
+      <div className="p-4">
         {filteredAndSortedProperties.length === 0 ? (
-          // Empty State
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {searchQuery ? 'No properties found' : 'No properties yet'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchQuery 
-                ? 'Try adjusting your search terms or filters.' 
-                : 'Get started by adding your first property.'
+              {searchQuery
+                ? 'Try adjusting your search terms'
+                : 'Get started by adding your first property'
               }
             </p>
             {!searchQuery && (
               <button
-                onClick={handleCreateProperty}
-                className="inline-flex items-center gap-2 px-4 py-2 text-white font-semibold rounded-lg hover:opacity-90 transition-all"
-                style={{background: 'linear-gradient(135deg, #2a3a91 0%, #3b4ae6 100%)'}}
+                onClick={() => setShowAddModal(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg"
               >
-                <Plus className="w-4 h-4" />
-                Add Your First Property
+                <Plus className="w-5 h-5" />
+                Add Property
               </button>
             )}
           </div>
         ) : (
-          <>
-            {/* Properties Display - Grid or List */}
-            {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {paginatedProperties.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    property={property}
-                    onView={handleViewProperty}
-                    onEdit={handleEditProperty}
-                    onDelete={handleDeleteProperty}
-                    onNavigate={onNavigate}
-                  />
-                ))}
-              </div>
-            ) : (
-              <PropertiesListView
-                properties={paginatedProperties}
-                onView={handleViewProperty}
-                onEdit={handleEditProperty}
-                onDelete={handleDeleteProperty}
-                onNavigate={onNavigate}
-              />
-            )}
+          <div className="space-y-3">
+            {filteredAndSortedProperties.map((property) => (
+              <div
+                key={property.id}
+                onClick={() => handleViewProperty(property)}
+                className="bg-white rounded-2xl p-5 shadow-lg active:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Building className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {property.name || property.address}
+                      </h3>
+                    </div>
 
-            {/* Pagination - Clean and Professional */}
-            {showPagination && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredAndSortedProperties.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-                pageSizeOptions={[6, 12, 24, 48]}
-                showPageSizes={true}
-                showInfo={true}
-                className="mt-8 bg-white rounded-lg border border-gray-200 p-6 shadow-sm"
-              />
-            )}
-          </>
+                    {property.address && property.name && (
+                      <div className="flex items-center gap-2 text-gray-600 ml-9 mb-2">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm">{property.address}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 ml-9">
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {property.suites?.length || 0} suites
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Zap className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {property.suites?.reduce((sum, suite) =>
+                            sum + (suite.hvacUnits?.length || 0), 0) || 0} units
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      {/* Floating Add Button */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 active:bg-blue-800 transition-all flex items-center justify-center z-20"
+        style={{ boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)' }}
+      >
+        <Plus className="w-7 h-7" />
+      </button>
 
       {/* Modals */}
       <AddPropertyModal
@@ -427,20 +377,26 @@ const PropertiesPage = ({ onNavigate }) => {
 
       <EditPropertyModal
         isOpen={showEditModal}
-        onClose={handleCloseEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedProperty(null);
+        }}
         property={selectedProperty}
         onPropertyUpdated={handlePropertyUpdated}
       />
 
       <PropertyDetailModal
         isOpen={showDetailModal}
-        onClose={handleCloseDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedProperty(null);
+        }}
         property={selectedProperty}
         onEdit={handleEditProperty}
         onDelete={handleDeleteProperty}
         onNavigate={onNavigate}
       />
-    </PageWrapper>
+    </div>
   );
 };
 

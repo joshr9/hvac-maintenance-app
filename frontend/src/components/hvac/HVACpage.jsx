@@ -77,6 +77,8 @@ const HVACPage = ({
 
       if (distance > 0 && distance < 120) {
         setPullDistance(distance);
+        // Prevent default scroll behavior to avoid jiggle
+        e.preventDefault();
       }
     };
 
@@ -96,9 +98,9 @@ const HVACPage = ({
       }
     };
 
-    scrollContainer.addEventListener('touchstart', handleTouchStart);
-    scrollContainer.addEventListener('touchmove', handleTouchMove);
-    scrollContainer.addEventListener('touchend', handleTouchEnd);
+    scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+    scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+    scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       scrollContainer.removeEventListener('touchstart', handleTouchStart);

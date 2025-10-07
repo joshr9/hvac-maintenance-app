@@ -1,10 +1,9 @@
-// PropertiesPage.jsx - iOS-Optimized Mobile Design
+// PropertiesPage.jsx - iOS-Optimized with Grid/List Views
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Building,
   Plus,
   Search,
-  Filter,
   Grid3X3,
   List,
   Users,
@@ -25,7 +24,6 @@ const PropertiesPage = ({ onNavigate }) => {
   // State
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
@@ -36,7 +34,7 @@ const PropertiesPage = ({ onNavigate }) => {
   // Filters and search
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('recent');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
   // Mobile optimizations
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
@@ -53,7 +51,6 @@ const PropertiesPage = ({ onNavigate }) => {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      setError('');
 
       const apiUrl = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${apiUrl}/api/properties`);
@@ -107,6 +104,7 @@ const PropertiesPage = ({ onNavigate }) => {
       const distance = currentY - pullStartY;
       if (distance > 0 && distance < 120) {
         setPullDistance(distance);
+        e.preventDefault();
       }
     };
 
@@ -125,9 +123,9 @@ const PropertiesPage = ({ onNavigate }) => {
       }
     };
 
-    scrollContainer.addEventListener('touchstart', handleTouchStart);
-    scrollContainer.addEventListener('touchmove', handleTouchMove);
-    scrollContainer.addEventListener('touchend', handleTouchEnd);
+    scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+    scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+    scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       scrollContainer.removeEventListener('touchstart', handleTouchStart);
@@ -271,22 +269,48 @@ const PropertiesPage = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar & View Toggle */}
         <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search properties..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all"
-            />
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search properties..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 rounded-xl p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-3 rounded-lg transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Grid3X3 className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-3 rounded-lg transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <List className="w-6 h-6" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Properties List */}
+      {/* Properties Content */}
       <div className="p-4">
         {filteredAndSortedProperties.length === 0 ? (
           <div className="text-center py-16">
@@ -310,51 +334,108 @@ const PropertiesPage = ({ onNavigate }) => {
               </button>
             )}
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredAndSortedProperties.map((property) => (
-              <div
-                key={property.id}
-                onClick={() => handleViewProperty(property)}
-                className="bg-white rounded-2xl p-5 shadow-lg active:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Building className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                      <h3 className="text-lg font-bold text-gray-900">
+        ) : viewMode === 'grid' ? (
+          // Grid View - Visual cards
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredAndSortedProperties.map((property) => {
+              const suiteCount = property.suites?.length || 0;
+              const unitCount = property.suites?.reduce((sum, suite) =>
+                sum + (suite.hvacUnits?.length || 0), 0) || 0;
+
+              return (
+                <div
+                  key={property.id}
+                  onClick={() => handleViewProperty(property)}
+                  className="bg-white rounded-2xl p-5 shadow-lg hover:shadow-xl active:bg-gray-50 transition-all cursor-pointer"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="p-3 bg-blue-50 rounded-xl">
+                      <Building className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">
                         {property.name || property.address}
                       </h3>
-                    </div>
-
-                    {property.address && property.name && (
-                      <div className="flex items-center gap-2 text-gray-600 ml-9 mb-2">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm">{property.address}</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-4 ml-9">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">
-                          {property.suites?.length || 0} suites
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Zap className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">
-                          {property.suites?.reduce((sum, suite) =>
-                            sum + (suite.hvacUnits?.length || 0), 0) || 0} units
-                        </span>
-                      </div>
+                      {property.address && property.name && (
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <MapPin className="w-4 h-4" />
+                          <span className="line-clamp-1">{property.address}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs text-gray-600">Suites</span>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900">{suiteCount}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="w-4 h-4 text-gray-400" />
+                        <span className="text-xs text-gray-600">HVAC Units</span>
+                      </div>
+                      <div className="text-xl font-bold text-gray-900">{unitCount}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+        ) : (
+          // List View - Detailed rows
+          <div className="space-y-3">
+            {filteredAndSortedProperties.map((property) => {
+              const suiteCount = property.suites?.length || 0;
+              const unitCount = property.suites?.reduce((sum, suite) =>
+                sum + (suite.hvacUnits?.length || 0), 0) || 0;
+
+              return (
+                <div
+                  key={property.id}
+                  onClick={() => handleViewProperty(property)}
+                  className="bg-white rounded-2xl p-5 shadow-lg active:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Building className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {property.name || property.address}
+                        </h3>
+                      </div>
+
+                      {property.address && property.name && (
+                        <div className="flex items-center gap-2 text-gray-600 ml-9 mb-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm">{property.address}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-4 ml-9">
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600">
+                            {suiteCount} {suiteCount === 1 ? 'suite' : 'suites'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Zap className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600">
+                            {unitCount} {unitCount === 1 ? 'unit' : 'units'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

@@ -2,6 +2,17 @@ const express = require('express');
 const router = express.Router();
 const messagesController = require('../controllers/messagesController');
 
+// IMPORTANT: Specific routes BEFORE parameterized routes
+
+// GET /api/messages/channels - Get available channels (MUST be before /:id)
+router.get('/channels', messagesController.getChannels);
+
+// POST /api/messages/channels - Create a new channel (MUST be before /:id)
+router.post('/channels', messagesController.createChannel);
+
+// GET /api/messages/direct/:userId - Get DM conversation (MUST be before /:id)
+router.get('/direct/:userId', messagesController.getDirectMessages);
+
 // GET /api/messages - Get messages for a channel/DM
 router.get('/', messagesController.getMessages);
 
@@ -22,14 +33,5 @@ router.post('/:id/save-to-job', messagesController.saveToJob);
 
 // POST /api/messages/:id/save-to-property - Save message to property
 router.post('/:id/save-to-property', messagesController.saveToProperty);
-
-// GET /api/messages/channels - Get available channels
-router.get('/channels', messagesController.getChannels);
-
-// POST /api/messages/channels - Create a new channel
-router.post('/channels', messagesController.createChannel);
-
-// GET /api/messages/direct/:userId - Get DM conversation
-router.get('/direct/:userId', messagesController.getDirectMessages);
 
 module.exports = router;

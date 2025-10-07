@@ -25,7 +25,7 @@ import CreateJobModal from './components/jobs/CreateJobModal';
 import AdminDashboard from './components/admin/AdminDashboard';
 import PropertiesPage from './components/properties/PropertiesPage';
 import RoleBasedCalendar from './components/calendar/RoleBasedCalendar';
-import MessagingMobile from './components/messaging/MessagingMobile';
+import TeamChat from './components/messaging/TeamChat';
 import HVACPage from './components/hvac/HVACpage';
 import TaskManagement from './components/tasks/TaskManagement';
 import ReportsPage from './components/reports/ReportsPage';
@@ -256,7 +256,7 @@ const renderCurrentView = () => {
 
     // ✅ NEW: Team Chat/Messaging System (ADDED WITHOUT REMOVING ANYTHING)
     case 'messaging':
-      return <MessagingMobile />;
+      return <TeamChat />;
     
       case 'tasks':
       return (

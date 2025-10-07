@@ -231,7 +231,7 @@ const PropertiesPage = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
+    <div className="min-h-screen bg-gray-50">
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div
@@ -239,47 +239,80 @@ const PropertiesPage = ({ onNavigate }) => {
           style={{ transform: `translateY(${Math.min(pullDistance, 80)}px)`, opacity: Math.min(pullDistance / 80, 1) }}
         >
           <div className="bg-white rounded-full p-2 shadow-lg">
-            <RefreshCw className={`w-5 h-5 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 text-dc-blue-500 ${isRefreshing ? 'animate-spin' : ''}`} />
           </div>
         </div>
       )}
 
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm transition-all duration-300">
-        {/* Stats Row */}
-        <div className={`px-4 py-3 overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 py-0' : 'max-h-32 opacity-100'}`}>
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <Building className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-blue-600">{propertyStats.totalProperties}</div>
-              <div className="text-xs text-gray-600">Properties</div>
+      {/* Header - desktop optimized */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Properties</h1>
+              <p className="text-sm text-gray-600 mt-1 hidden lg:block">Manage your property portfolio</p>
             </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-dc-blue-500 hover:bg-dc-blue-600 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl flex items-center gap-2 shadow-sm transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Add Property</span>
+            </button>
+          </div>
 
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <Users className="w-5 h-5 text-green-600 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-green-600">{propertyStats.totalSuites}</div>
-              <div className="text-xs text-gray-600">Suites</div>
-            </div>
+          {/* Stats Row - collapsible on mobile, always visible on desktop */}
+          <div className={`overflow-hidden transition-all duration-300 ${headerCollapsed ? 'max-h-0 opacity-0 lg:max-h-full lg:opacity-100' : 'max-h-32 opacity-100'}`}>
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4 mb-4">
+              <div className="bg-dc-blue-50 rounded-xl p-3 lg:p-4 text-center border border-dc-blue-100">
+                <Building className="w-5 h-5 lg:w-6 lg:h-6 text-dc-blue-500 mx-auto mb-1" />
+                <div className="text-xl lg:text-2xl font-bold text-dc-blue-600">{propertyStats.totalProperties}</div>
+                <div className="text-xs text-gray-600">Properties</div>
+              </div>
 
-            <div className="bg-purple-50 rounded-lg p-3 text-center">
-              <Zap className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-purple-600">{propertyStats.totalUnits}</div>
-              <div className="text-xs text-gray-600">Units</div>
+              <div className="bg-green-50 rounded-xl p-3 lg:p-4 text-center border border-green-100">
+                <Users className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 mx-auto mb-1" />
+                <div className="text-xl lg:text-2xl font-bold text-green-600">{propertyStats.totalSuites}</div>
+                <div className="text-xs text-gray-600">Suites</div>
+              </div>
+
+              <div className="bg-purple-50 rounded-xl p-3 lg:p-4 text-center border border-purple-100">
+                <Zap className="w-5 h-5 lg:w-6 lg:h-6 text-purple-600 mx-auto mb-1" />
+                <div className="text-xl lg:text-2xl font-bold text-purple-600">{propertyStats.totalUnits}</div>
+                <div className="text-xs text-gray-600">HVAC Units</div>
+              </div>
+
+              {/* Desktop-only stats */}
+              <div className="hidden lg:block bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
+                <MapPin className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-gray-700">{properties.filter(p => p.city).length}</div>
+                <div className="text-xs text-gray-600">Locations</div>
+              </div>
+
+              <div className="hidden lg:block bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
+                <Building className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-gray-700">{filteredAndSortedProperties.length}</div>
+                <div className="text-xs text-gray-600">Showing</div>
+              </div>
+
+              <div className="hidden lg:block bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
+                <ChevronRight className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-gray-700">{viewMode}</div>
+                <div className="text-xs text-gray-600">View Mode</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Search Bar & View Toggle */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 items-center">
+          {/* Search Bar & View Toggle */}
+          <div className="flex gap-2 lg:gap-4 items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
+              <Search className="absolute left-3 lg:left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 lg:w-6 lg:h-6 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search properties..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all"
+                className="w-full pl-12 lg:pl-14 pr-4 py-3 lg:py-4 text-base lg:text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 transition-all"
               />
             </div>
 
@@ -287,23 +320,23 @@ const PropertiesPage = ({ onNavigate }) => {
             <div className="flex items-center bg-gray-100 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-3 rounded-lg transition-colors ${
+                className={`p-2 lg:p-3 rounded-lg transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-white text-dc-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Grid3X3 className="w-6 h-6" />
+                <Grid3X3 className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-3 rounded-lg transition-colors ${
+                className={`p-2 lg:p-3 rounded-lg transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-white text-dc-blue-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <List className="w-6 h-6" />
+                <List className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
             </div>
           </div>
@@ -311,11 +344,11 @@ const PropertiesPage = ({ onNavigate }) => {
       </div>
 
       {/* Properties Content */}
-      <div className="p-4">
+      <div className="max-w-7xl mx-auto p-4 lg:p-8">
         {filteredAndSortedProperties.length === 0 ? (
           <div className="text-center py-16">
-            <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <Building className="w-16 h-16 lg:w-20 lg:h-20 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-2">
               {searchQuery ? 'No properties found' : 'No properties yet'}
             </h3>
             <p className="text-gray-600 mb-6">
@@ -327,7 +360,7 @@ const PropertiesPage = ({ onNavigate }) => {
             {!searchQuery && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-dc-blue-500 text-white rounded-xl font-semibold hover:bg-dc-blue-600 active:bg-dc-blue-700 transition-colors shadow-lg"
               >
                 <Plus className="w-5 h-5" />
                 Add Property
@@ -335,8 +368,8 @@ const PropertiesPage = ({ onNavigate }) => {
             )}
           </div>
         ) : viewMode === 'grid' ? (
-          // Grid View - Visual cards
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          // Grid View - Visual cards (2 cols mobile, 3 cols desktop, 4 cols wide)
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
             {filteredAndSortedProperties.map((property) => {
               const suiteCount = property.suites?.length || 0;
               const unitCount = property.suites?.reduce((sum, suite) =>

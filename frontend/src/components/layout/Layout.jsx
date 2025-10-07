@@ -363,9 +363,8 @@ const Layout = ({
           id: 'reports',
           label: 'Reports',
           icon: BarChart3,
-          description: 'Analytics and insights',
-          badge: 'SOON',
-          comingSoon: true
+          description: 'Export service data',
+          badge: 'NEW'
         },
         /* HIDDEN - May use later
         {

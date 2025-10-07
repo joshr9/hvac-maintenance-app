@@ -28,6 +28,7 @@ import RoleBasedCalendar from './components/calendar/RoleBasedCalendar';
 import MessagingPage from './components/messaging/MessagingPage';
 import HVACPage from './components/hvac/HVACpage';
 import TaskManagement from './components/tasks/TaskManagement';
+import ReportsPage from './components/reports/ReportsPage';
 
 
 
@@ -212,7 +213,7 @@ const renderCurrentView = () => {
 
     case 'hvac':
       return (
-        <HVACPage 
+        <HVACPage
           onNavigate={handleNavigate}
           onOpenModal={handleOpenModal}
           properties={properties}
@@ -220,6 +221,9 @@ const renderCurrentView = () => {
           onDataRefresh={handleDataRefresh}
         />
       );
+
+    case 'reports':
+      return <ReportsPage />;
 
     case 'calendar':
     case 'schedule':

@@ -1,22 +1,15 @@
-// TeamChat.jsx - iOS-Optimized Mobile Chat with Channels & DMs
-import React, { useState, useEffect, useRef } from 'react';
+// TeamChatNew.jsx - Responsive Team Chat with Desktop/Mobile layouts
+import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
-import {
-  MessageCircle,
-  Plus,
-  Hash,
-  Users,
-  Send,
-  ChevronLeft,
-  Search
-} from 'lucide-react';
+import ChatSidebar from './ChatSidebar';
+import ChatConversation from './ChatConversation';
 
 const TeamChat = () => {
   const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useAuth();
 
   // State
-  const [view, setView] = useState('list'); // 'list', 'channel', 'dm'
+  const [view, setView] = useState('list'); // 'list' for mobile sidebar, 'conversation' for mobile chat
   const [channels, setChannels] = useState([]);
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -29,15 +22,9 @@ const TeamChat = () => {
   const [activeTab, setActiveTab] = useState('channels'); // 'channels' or 'people'
   const [searchQuery, setSearchQuery] = useState('');
 
-  const messagesEndRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_URL || '';
 
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Load channels
+  // Load channels and users
   useEffect(() => {
     if (isSignedIn) {
       loadChannels();
@@ -73,15 +60,13 @@ const TeamChat = () => {
     try {
       console.log('Loading users... Current user ID:', user?.id);
 
-      // Fetch users from Clerk via backend endpoint
       const response = await fetch(`${apiUrl}/api/clerk/users`);
       if (response.ok) {
         const data = await response.json();
         console.log('Loaded users from Clerk:', data);
 
-        // Map Clerk users to our format with safe property access
         const mappedUsers = data
-          .filter(clerkUser => clerkUser && clerkUser.id) // Only valid users
+          .filter(clerkUser => clerkUser && clerkUser.id)
           .map(clerkUser => {
             const firstName = clerkUser.first_name || clerkUser.firstName || '';
             const lastName = clerkUser.last_name || clerkUser.lastName || '';
@@ -99,9 +84,6 @@ const TeamChat = () => {
             };
           });
 
-        console.log('Mapped users:', mappedUsers);
-
-        // Filter out current user
         const currentUserId = user?.id;
         const otherUsers = currentUserId
           ? mappedUsers.filter(u => u && u.id && u.id !== currentUserId)
@@ -217,21 +199,21 @@ const TeamChat = () => {
     }
   };
 
-  const openChannel = (channel) => {
+  const handleChannelClick = (channel) => {
     setCurrentChannel(channel);
     setCurrentDmUser(null);
-    setView('channel');
+    setView('conversation');
     setMessages([]);
   };
 
-  const openDM = (user) => {
+  const handleUserClick = (user) => {
     setCurrentDmUser(user);
     setCurrentChannel(null);
-    setView('dm');
+    setView('conversation');
     setMessages([]);
   };
 
-  const backToList = () => {
+  const handleBack = () => {
     setView('list');
     setCurrentChannel(null);
     setCurrentDmUser(null);
@@ -249,7 +231,6 @@ const TeamChat = () => {
 
   const getMessageAuthorName = (msg) => {
     if (msg.authorId === user?.id) return 'You';
-    // In a real app, fetch user details from Clerk
     return msg.authorId.substring(0, 8);
   };
 
@@ -263,15 +244,15 @@ const TeamChat = () => {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dc-blue-600"></div>
       </div>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Sign In Required</h3>
           <p className="text-gray-600">Please sign in to access team chat.</p>
@@ -280,239 +261,107 @@ const TeamChat = () => {
     );
   }
 
-  // List View - Channels & People
-  if (view === 'list') {
-    return (
-      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
-        {/* Header */}
-        <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-          <div className="px-4 py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Team Chat</h1>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex bg-gray-100 mx-4 rounded-xl p-1 mb-3">
-            <button
-              onClick={() => setActiveTab('channels')}
-              className={`flex-1 py-3 px-4 rounded-lg text-base font-medium transition-colors ${
-                activeTab === 'channels'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600'
-              }`}
-            >
-              <Hash className="w-5 h-5 inline mr-2" />
-              Channels
-            </button>
-            <button
-              onClick={() => setActiveTab('people')}
-              className={`flex-1 py-3 px-4 rounded-lg text-base font-medium transition-colors ${
-                activeTab === 'people'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600'
-              }`}
-            >
-              <Users className="w-5 h-5 inline mr-2" />
-              People
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="px-4 pb-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
-              <input
-                type="text"
-                placeholder={`Search ${activeTab}...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4">
-          {activeTab === 'channels' ? (
-            <div className="space-y-3">
-              {filteredChannels.length === 0 ? (
-                <div className="text-center py-16">
-                  <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-6">No channels yet</p>
-                  <button
-                    onClick={() => setShowCreateChannel(true)}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-lg"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Create Channel
-                  </button>
-                </div>
-              ) : (
-                filteredChannels.map((channel) => (
-                  <div
-                    key={channel.id}
-                    onClick={() => openChannel(channel)}
-                    className="bg-white rounded-2xl p-5 shadow-lg active:bg-gray-50 transition-colors flex items-center gap-4"
-                  >
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Hash className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">{channel.name}</h3>
-                      <p className="text-sm text-gray-600">{channel.description || 'No description'}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredUsers.length === 0 ? (
-                <div className="text-center py-16">
-                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-600">No users found</p>
-                </div>
-              ) : (
-                filteredUsers.map((person) => (
-                  <div
-                    key={person.id}
-                    onClick={() => openDM(person)}
-                    className="bg-white rounded-2xl p-5 shadow-lg active:bg-gray-50 transition-colors flex items-center gap-4"
-                  >
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-lg font-bold text-green-700">
-                        {getUserInitials(person.name || person.email)}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">{person.name || person.email}</h3>
-                      <p className="text-sm text-gray-600">{person.role || 'Team Member'}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Floating Add Button - Only for Channels */}
-        {activeTab === 'channels' && (
-          <button
-            onClick={() => setShowCreateChannel(true)}
-            className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 active:bg-blue-800 transition-all flex items-center justify-center z-20"
-            style={{ boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)' }}
-          >
-            <Plus className="w-7 h-7" />
-          </button>
-        )}
-
-        {/* Create Channel Modal */}
-        {showCreateChannel && (
-          <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-            <div className="bg-white rounded-t-3xl w-full max-w-lg p-6 pb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Create Channel</h3>
-              <input
-                type="text"
-                placeholder="Channel name"
-                value={newChannelName}
-                onChange={(e) => setNewChannelName(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl mb-4 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowCreateChannel(false);
-                    setNewChannelName('');
-                  }}
-                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={createChannel}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold"
-                >
-                  Create
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Chat View - Channel or DM
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-4 py-4 flex items-center gap-3">
-          <button onClick={backToList} className="p-2 hover:bg-gray-100 rounded-lg">
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold text-gray-900">
-              {currentChannel ? `# ${currentChannel.name}` : currentDmUser?.name || currentDmUser?.email}
-            </h2>
-          </div>
-        </div>
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
+      {/* Desktop: Two-column layout (sidebar always visible) */}
+      <div className="hidden lg:flex lg:w-80 xl:w-96">
+        <ChatSidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          filteredChannels={filteredChannels}
+          filteredUsers={filteredUsers}
+          onChannelClick={handleChannelClick}
+          onUserClick={handleUserClick}
+          onCreateChannel={() => setShowCreateChannel(true)}
+          getUserInitials={getUserInitials}
+          currentChannel={currentChannel}
+          currentDmUser={currentDmUser}
+        />
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center py-16">
-            <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No messages yet. Start the conversation!</p>
-          </div>
-        ) : (
-          messages.map((msg, idx) => {
-            const isOwnMessage = msg.authorId === user?.id;
-            return (
-              <div key={idx} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] ${isOwnMessage ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'} rounded-2xl px-4 py-3 shadow-md`}>
-                  {!isOwnMessage && (
-                    <p className="text-xs font-semibold mb-1 opacity-70">
-                      {getMessageAuthorName(msg)}
-                    </p>
-                  )}
-                  <p className="text-base">{msg.content}</p>
-                  <p className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500'}`}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+      <div className="hidden lg:flex lg:flex-1">
+        <ChatConversation
+          currentChannel={currentChannel}
+          currentDmUser={currentDmUser}
+          messages={messages}
+          messageContent={messageContent}
+          setMessageContent={setMessageContent}
+          sendMessage={sendMessage}
+          onBack={handleBack}
+          loading={loading}
+          user={user}
+          getUserInitials={getUserInitials}
+          getMessageAuthorName={getMessageAuthorName}
+          isMobile={false}
+        />
       </div>
 
-      {/* Message Input */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-        <div className="flex gap-2 items-end">
-          <input
-            type="text"
-            placeholder="Type a message..."
-            value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+      {/* Mobile: Single view (either sidebar or conversation) */}
+      <div className="flex-1 lg:hidden">
+        {view === 'list' ? (
+          <ChatSidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            filteredChannels={filteredChannels}
+            filteredUsers={filteredUsers}
+            onChannelClick={handleChannelClick}
+            onUserClick={handleUserClick}
+            onCreateChannel={() => setShowCreateChannel(true)}
+            getUserInitials={getUserInitials}
+            currentChannel={currentChannel}
+            currentDmUser={currentDmUser}
           />
-          <button
-            onClick={sendMessage}
-            disabled={!messageContent.trim()}
-            className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </div>
+        ) : (
+          <ChatConversation
+            currentChannel={currentChannel}
+            currentDmUser={currentDmUser}
+            messages={messages}
+            messageContent={messageContent}
+            setMessageContent={setMessageContent}
+            sendMessage={sendMessage}
+            onBack={handleBack}
+            loading={loading}
+            user={user}
+            getUserInitials={getUserInitials}
+            getMessageAuthorName={getMessageAuthorName}
+            isMobile={true}
+          />
+        )}
       </div>
+
+      {/* Create Channel Modal */}
+      {showCreateChannel && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Create Channel</h3>
+            <input
+              type="text"
+              value={newChannelName}
+              onChange={(e) => setNewChannelName(e.target.value)}
+              placeholder="Channel name..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreateChannel(false)}
+                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createChannel}
+                className="flex-1 px-4 py-3 bg-dc-blue-500 text-white rounded-xl font-medium hover:bg-dc-blue-600 transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

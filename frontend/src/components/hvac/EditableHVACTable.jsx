@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Trash, Wrench } from 'lucide-react';
+import { Trash, Wrench, Edit2, Calendar, Tag, FileText, X } from 'lucide-react';
 
 function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editRows, setEditRows] = useState([]);
 
   useEffect(() => {
@@ -24,6 +26,55 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
     setEditRows((rows) =>
       rows.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
     );
+  };
+
+  const handleOpenEdit = (unit) => {
+    setSelectedUnit(unit);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedUnit(null), 300); // Wait for animation
+  };
+
+  const handleSaveFromModal = async () => {
+    if (!selectedUnit) return;
+
+    setSelectedUnit({ ...selectedUnit, _status: "saving", _error: "" });
+
+    const payload = {
+      label: selectedUnit.label,
+      serialNumber: selectedUnit.serialNumber,
+      model: selectedUnit.model,
+      installDate: selectedUnit.installDate,
+      filterSize: selectedUnit.filterSize,
+      notes: selectedUnit.notes,
+    };
+
+    try {
+      const res = await fetch(`/api/hvac-units/${selectedUnit.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const updatedUnit = await res.json();
+        setEditRows((rows) =>
+          rows.map((row) =>
+            row.id === updatedUnit.id ? { ...updatedUnit, _status: "", _error: "" } : row
+          )
+        );
+        if (onUnitUpdate) onUnitUpdate(updatedUnit);
+        handleCloseModal();
+      } else {
+        const errMsg = (await res.json())?.message || "Error saving";
+        setSelectedUnit({ ...selectedUnit, _status: "error", _error: errMsg });
+      }
+    } catch {
+      setSelectedUnit({ ...selectedUnit, _status: "error", _error: "Network error" });
+    }
   };
 
   const handleSave = async (idx) => {
@@ -102,12 +153,59 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
         <span className="text-sm font-semibold text-gray-700">Edit HVAC Units for this Suite</span>
       </div>
 
-      {/* Mobile scroll hint */}
-      <div className="mb-2 text-xs text-gray-500 sm:hidden">
-        ← Scroll to see all columns →
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-3">
+        {editRows.map((unit) => (
+          <div key={unit.id} className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+            <div className="p-4">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {unit.label || 'Unnamed Unit'}
+                    </h4>
+                    <p className="text-sm text-gray-500">SN: {unit.serialNumber || 'N/A'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleOpenEdit(unit)}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors flex items-center gap-1"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+              </div>
+
+              {/* Quick Info */}
+              <div className="space-y-2 text-sm">
+                {unit.model && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Tag className="w-4 h-4" />
+                    <span>Model: {unit.model}</span>
+                  </div>
+                )}
+                {unit.installDate && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Calendar className="w-4 h-4" />
+                    <span>Installed: {new Date(unit.installDate).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {unit.filterSize && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <FileText className="w-4 h-4" />
+                    <span>Filter: {unit.filterSize}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2" style={{WebkitOverflowScrolling: 'touch'}}>
+      {/* Desktop Table View */}
+      <div className="hidden sm:block overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2" style={{WebkitOverflowScrolling: 'touch'}}>
         <div className="inline-block min-w-full align-middle">
           <div className="overflow-hidden shadow-sm rounded-xl">
             <table className="min-w-full border border-gray-200 bg-white text-xs sm:text-sm">
@@ -232,6 +330,180 @@ function EditableHVACTable({ hvacUnits = [], onUnitUpdate }) {
           </div>
         </div>
       </div>
+
+      {/* iOS-Style Modal Sheet */}
+      {isModalOpen && selectedUnit && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+            onClick={handleCloseModal}
+            style={{ animation: 'fadeIn 0.3s ease-out' }}
+          />
+
+          {/* Modal Sheet */}
+          <div
+            className="fixed inset-x-0 bottom-0 z-50 sm:hidden"
+            style={{ animation: 'slideUp 0.3s ease-out' }}
+          >
+            <div className="bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Swipe Handle */}
+              <div className="pt-3 pb-2 flex justify-center">
+                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+              </div>
+
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">Edit HVAC Unit</h3>
+                <button
+                  onClick={handleCloseModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="space-y-5">
+                  {/* Label/Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Label/Name
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedUnit.label || ''}
+                      onChange={(e) => setSelectedUnit({ ...selectedUnit, label: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                      placeholder="e.g., YORK, Main Unit"
+                    />
+                  </div>
+
+                  {/* Serial Number */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Serial Number
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedUnit.serialNumber || ''}
+                      onChange={(e) => setSelectedUnit({ ...selectedUnit, serialNumber: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                      placeholder="e.g., N1L"
+                    />
+                  </div>
+
+                  {/* Model */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Model
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedUnit.model || ''}
+                      onChange={(e) => setSelectedUnit({ ...selectedUnit, model: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                      placeholder="e.g., ZE0"
+                    />
+                  </div>
+
+                  {/* Install Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Install Date
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedUnit.installDate || ''}
+                      onChange={(e) => setSelectedUnit({ ...selectedUnit, installDate: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                    />
+                  </div>
+
+                  {/* Filter Size */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Filter Size
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedUnit.filterSize || ''}
+                      onChange={(e) => setSelectedUnit({ ...selectedUnit, filterSize: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                      placeholder="e.g., 16x20x1"
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notes
+                    </label>
+                    <textarea
+                      value={selectedUnit.notes || ''}
+                      onChange={(e) => setSelectedUnit({ ...selectedUnit, notes: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base resize-none"
+                      placeholder="Additional notes..."
+                    />
+                  </div>
+
+                  {/* Error Message */}
+                  {selectedUnit._error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                      <p className="text-sm text-red-600">{selectedUnit._error}</p>
+                    </div>
+                  )}
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => {
+                      handleCloseModal();
+                      handleDelete(selectedUnit.id);
+                    }}
+                    className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-medium hover:bg-red-100 active:bg-red-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash className="w-4 h-4" />
+                    Delete Unit
+                  </button>
+                </div>
+              </div>
+
+              {/* Footer with Action Buttons */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCloseModal}
+                    className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 active:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveFromModal}
+                    disabled={selectedUnit._status === 'saving'}
+                    className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50"
+                  >
+                    {selectedUnit._status === 'saving' ? 'Saving...' : 'Done'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

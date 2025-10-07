@@ -70,22 +70,42 @@ const TeamChat = () => {
 
   const loadUsers = async () => {
     try {
+      console.log('Loading users... Current user ID:', user?.id);
+
       // Fetch users from Clerk via backend endpoint
       const response = await fetch(`${apiUrl}/api/clerk/users`);
       if (response.ok) {
         const data = await response.json();
         console.log('Loaded users from Clerk:', data);
 
-        // Map Clerk users to our format
-        const mappedUsers = data.map(clerkUser => ({
-          id: clerkUser.id,
-          name: `${clerkUser.first_name || ''} ${clerkUser.last_name || ''}`.trim() || clerkUser.email_addresses[0]?.email_address,
-          email: clerkUser.email_addresses[0]?.email_address,
-          role: 'Team Member'
-        }));
+        // Map Clerk users to our format with safe property access
+        const mappedUsers = data
+          .filter(clerkUser => clerkUser && clerkUser.id) // Only valid users
+          .map(clerkUser => {
+            const firstName = clerkUser.first_name || clerkUser.firstName || '';
+            const lastName = clerkUser.last_name || clerkUser.lastName || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            const email = clerkUser.email_addresses?.[0]?.email_address ||
+                         clerkUser.emailAddresses?.[0]?.emailAddress ||
+                         clerkUser.primaryEmailAddress?.emailAddress ||
+                         'No email';
+
+            return {
+              id: clerkUser.id,
+              name: fullName || email,
+              email: email,
+              role: 'Team Member'
+            };
+          });
+
+        console.log('Mapped users:', mappedUsers);
 
         // Filter out current user
-        const otherUsers = mappedUsers.filter(u => u.id !== user?.id);
+        const currentUserId = user?.id;
+        const otherUsers = currentUserId
+          ? mappedUsers.filter(u => u && u.id && u.id !== currentUserId)
+          : mappedUsers;
+
         console.log('Other users (excluding current):', otherUsers);
         setUsers(otherUsers);
       } else {
@@ -94,7 +114,7 @@ const TeamChat = () => {
         setUsers([]);
       }
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('Error loading users:', error, error.stack);
       setUsers([]);
     }
   };

@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npx prisma migrate deploy && npx prisma generate && node -r dotenv/config index.js dotenv_config_path=.env.production",
+    "start": "node -r dotenv/config fix-migration.js dotenv_config_path=.env.production || true && npx prisma migrate deploy && npx prisma generate && node -r dotenv/config index.js dotenv_config_path=.env.production",
     "start:prod": "npx prisma migrate deploy && npx prisma generate && node scripts/seedZones.js && node scripts/importProperties.js && node -r dotenv/config index.js dotenv_config_path=.env.production",
     "dev": "node -r dotenv/config index.js dotenv_config_path=.env.local",
     "dev:watch": "nodemon -r dotenv/config index.js dotenv_config_path=.env.local",

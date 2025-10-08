@@ -47,7 +47,7 @@ const ChatConversation = ({
   }
 
   return (
-    <div className="flex flex-col w-full" style={{ height: isMobile ? '100dvh' : '100%' }}>
+    <div className="flex flex-col w-full overflow-hidden" style={{ height: isMobile ? '100dvh' : '100%', position: isMobile ? 'fixed' : 'relative', top: isMobile ? 0 : 'auto', left: isMobile ? 0 : 'auto', right: isMobile ? 0 : 'auto', bottom: isMobile ? 0 : 'auto' }}>
       {/* Conversation Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4">
         <div className="flex items-center gap-3">

@@ -389,6 +389,20 @@ const TeamChat = () => {
 
   const getMessageAuthorName = (msg) => {
     if (msg.authorId === user?.id) return 'You';
+
+    // If message has author info from backend
+    if (msg.author?.name) return msg.author.name;
+
+    // If it's a DM, try to get name from currentDmUser
+    if (currentDmUser && msg.authorId === currentDmUser.id) {
+      return currentDmUser.name;
+    }
+
+    // Try to find user in users list
+    const foundUser = users.find(u => u.id === msg.authorId);
+    if (foundUser?.name) return foundUser.name;
+
+    // Fallback to shortened ID
     return msg.authorId.substring(0, 8);
   };
 

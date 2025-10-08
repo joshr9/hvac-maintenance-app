@@ -561,38 +561,29 @@ exports.getDirectMessages = async (req, res) => {
     const { userId: otherUserId } = req.params;
     const userId = req.userId;
 
-    // Get or create direct message "channel"
-    let dmChannel = await prisma.channel.findFirst({
-      where: {
-        type: 'direct',
-        participants: {
-          path: '$',
-          array_contains: [userId, otherUserId]
-        }
-      }
-    });
+    console.log(`Loading DMs between ${userId} and ${otherUserId}`);
 
-    if (!dmChannel) {
-      // Create DM channel
-      dmChannel = await prisma.channel.create({
-        data: {
-          name: `DM-${userId}-${otherUserId}`,
-          type: 'direct',
-          participants: [userId, otherUserId]
-        }
-      });
-    }
-
-    // Get messages for this DM channel
+    // Get direct messages between these two users
     const messages = await prisma.message.findMany({
-      where: { channelId: dmChannel.id },
+      where: {
+        OR: [
+          {
+            authorId: userId,
+            directRecipientId: otherUserId
+          },
+          {
+            authorId: otherUserId,
+            directRecipientId: userId
+          }
+        ]
+      },
       include: {
         parent: {
           select: { id: true, content: true, authorId: true }
         }
       },
-      orderBy: { createdAt: 'desc' },
-      take: 50
+      orderBy: { createdAt: 'asc' },
+      take: 100
     });
 
     // Get user info from Clerk
@@ -624,8 +615,9 @@ exports.getDirectMessages = async (req, res) => {
       author: users[message.authorId]
     }));
 
+    console.log(`Found ${messagesWithUsers.length} direct messages`);
+
     res.json({
-      channel: dmChannel,
       messages: messagesWithUsers,
       users
     });

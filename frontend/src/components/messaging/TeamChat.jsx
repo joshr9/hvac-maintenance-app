@@ -41,22 +41,34 @@ const TeamChat = () => {
     }
   }, [currentChannel, currentDmUser]);
 
-  // Restore last conversation on mount
+  // Restore last conversation on mount (only if coming back to chat)
   useEffect(() => {
+    if (!isSignedIn) return;
+
     const savedConversation = sessionStorage.getItem('lastConversation');
-    if (savedConversation && !currentChannel && !currentDmUser) {
+    if (savedConversation && !currentChannel && !currentDmUser && channels.length > 0 && users.length > 0) {
       try {
         const { type, data } = JSON.parse(savedConversation);
-        if (type === 'channel') {
-          setCurrentChannel(data);
-        } else if (type === 'dm') {
-          setCurrentDmUser(data);
+        if (type === 'channel' && data) {
+          // Verify channel still exists
+          const channelExists = channels.find(c => c.id === data.id);
+          if (channelExists) {
+            setCurrentChannel(channelExists);
+            setView('conversation');
+          }
+        } else if (type === 'dm' && data) {
+          // Verify user still exists
+          const userExists = users.find(u => u.id === data.id);
+          if (userExists) {
+            setCurrentDmUser(userExists);
+            setView('conversation');
+          }
         }
       } catch (error) {
         console.error('Error restoring conversation:', error);
       }
     }
-  }, []);
+  }, [isSignedIn, channels, users]);
 
   // Save current conversation
   useEffect(() => {

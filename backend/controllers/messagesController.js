@@ -5,6 +5,7 @@
 
 const { PrismaClient } = require('@prisma/client');
 const { clerkClient } = require('@clerk/clerk-sdk-node');
+const messageEvents = require('../services/messageEvents');
 const prisma = new PrismaClient();
 
 // ==============================================
@@ -240,10 +241,15 @@ exports.createMessage = async (req, res) => {
       };
     }
 
-    res.status(201).json({
+    const messageWithAuthor = {
       ...message,
       author
-    });
+    };
+
+    // Emit event for real-time updates
+    messageEvents.emit('newMessage', messageWithAuthor);
+
+    res.status(201).json(messageWithAuthor);
 
   } catch (error) {
     console.error('Error creating message:', error);
@@ -669,6 +675,50 @@ exports.createChannel = async (req, res) => {
 };
 
 // ==============================================
+// GET /api/messages/events - SSE endpoint for real-time messages
+// ==============================================
+exports.subscribeToMessages = async (req, res) => {
+  const userId = req.userId; // From Clerk auth
+
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+  // Send initial connection success
+  res.write(`data: ${JSON.stringify({ type: 'connected', userId })}\n\n`);
+
+  // Handler for new messages
+  const messageHandler = (message) => {
+    // Only send messages relevant to this user
+    const isRelevant =
+      message.channelId || // Channel message (all users can see)
+      message.authorId === userId || // User sent it
+      message.directRecipientId === userId; // User is recipient
+
+    if (isRelevant) {
+      res.write(`data: ${JSON.stringify({ type: 'newMessage', message })}\n\n`);
+    }
+  };
+
+  // Register listener
+  messageEvents.on('newMessage', messageHandler);
+
+  // Send heartbeat every 30 seconds to keep connection alive
+  const heartbeat = setInterval(() => {
+    res.write(`: heartbeat\n\n`);
+  }, 30000);
+
+  // Clean up on client disconnect
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    messageEvents.removeListener('newMessage', messageHandler);
+    res.end();
+  });
+};
+
+// ==============================================
 // EXPORT ALL CONTROLLER FUNCTIONS
 // ==============================================
 module.exports = {
@@ -681,5 +731,6 @@ module.exports = {
   saveToProperty: exports.saveToProperty,
   getChannels: exports.getChannels,
   createChannel: exports.createChannel,
-  getDirectMessages: exports.getDirectMessages
+  getDirectMessages: exports.getDirectMessages,
+  subscribeToMessages: exports.subscribeToMessages
 };

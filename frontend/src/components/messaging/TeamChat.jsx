@@ -41,6 +41,88 @@ const TeamChat = () => {
     }
   }, [currentChannel, currentDmUser]);
 
+  // Real-time message updates via SSE
+  useEffect(() => {
+    if (!isSignedIn) return;
+
+    let eventSource;
+
+    const connectSSE = async () => {
+      try {
+        const token = await getToken();
+        // EventSource doesn't support custom headers, so we'll use a library or query param
+        // For now, using fetch with streaming
+        const response = await fetch(`${apiUrl}/api/messages/events`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        const readStream = async () => {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n');
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.substring(6));
+
+                    if (data.type === 'connected') {
+                      console.log('✅ Connected to real-time messages');
+                    } else if (data.type === 'newMessage') {
+                      const newMsg = data.message;
+
+                      // Only add if relevant to current conversation
+                      const isCurrentChannel = currentChannel && newMsg.channelId === currentChannel.id;
+                      const isCurrentDM = currentDmUser && (
+                        (newMsg.authorId === currentDmUser.id && newMsg.directRecipientId === user.id) ||
+                        (newMsg.authorId === user.id && newMsg.directRecipientId === currentDmUser.id)
+                      );
+
+                      if (isCurrentChannel || isCurrentDM) {
+                        setMessages(prev => {
+                          // Avoid duplicates
+                          if (prev.find(m => m.id === newMsg.id)) return prev;
+                          return [...prev, newMsg];
+                        });
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Error parsing SSE message:', err);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Stream reading error:', error);
+            // Reconnect after 5 seconds
+            setTimeout(connectSSE, 5000);
+          }
+        };
+
+        readStream();
+      } catch (error) {
+        console.error('Error connecting to SSE:', error);
+        // Reconnect after 5 seconds
+        setTimeout(connectSSE, 5000);
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      // Cleanup will happen when component unmounts
+    };
+  }, [isSignedIn, currentChannel, currentDmUser, user, getToken, apiUrl]);
+
   const loadChannels = async () => {
     try {
       const response = await fetch(`${apiUrl}/api/messages/channels`);

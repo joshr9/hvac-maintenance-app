@@ -1,5 +1,6 @@
 // CreateTaskMobile.jsx - iOS/Todoist-style mobile task creation
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import {
   X,
   ChevronDown,
@@ -10,7 +11,8 @@ import {
   Clock,
   AlertCircle,
   Flag,
-  CheckCircle
+  CheckCircle,
+  Users
 } from 'lucide-react';
 
 const CreateTaskMobile = ({
@@ -22,6 +24,8 @@ const CreateTaskMobile = ({
   fromMessage,
   apiCall
 }) => {
+  const { getToken } = useAuth();
+
   const [formData, setFormData] = useState({
     title: fromMessage ? `Task: ${fromMessage.content?.substring(0, 50)}...` : '',
     description: fromMessage ? fromMessage.content : '',
@@ -43,6 +47,29 @@ const CreateTaskMobile = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [availableUsers, setAvailableUsers] = useState([]);
+
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  // Fetch users from Clerk
+  useEffect(() => {
+    if (isOpen) {
+      loadUsers();
+    }
+  }, [isOpen]);
+
+  const loadUsers = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${apiUrl}/api/clerk/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setAvailableUsers(data || []);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -72,6 +99,7 @@ const CreateTaskMobile = ({
         estimatedTime: formData.estimatedTime ? parseInt(formData.estimatedTime) : null,
         linkedToJobId: formData.linkedToJobId ? parseInt(formData.linkedToJobId) : null,
         linkedToPropertyId: formData.linkedToPropertyId ? parseInt(formData.linkedToPropertyId) : null,
+        assignedTo: formData.assignedTo
       };
 
       const newTask = await apiCall('/tasks', {
@@ -254,6 +282,76 @@ const CreateTaskMobile = ({
                   min="1"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Assign Section */}
+          <button
+            onClick={() => toggleSection('assign')}
+            className="w-full px-4 py-4 flex items-center justify-between border-b border-gray-100 active:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Users className="w-5 h-5 text-gray-400" />
+              <span className="font-medium text-gray-900">Assign To</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {formData.assignedTo.length > 0 && (
+                <span className="text-sm text-gray-600">
+                  {formData.assignedTo.length} {formData.assignedTo.length === 1 ? 'person' : 'people'}
+                </span>
+              )}
+              {expandedSections.assign ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+          </button>
+          {expandedSections.assign && (
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 space-y-2">
+              {availableUsers.length === 0 ? (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  No users available
+                </div>
+              ) : (
+                availableUsers.map((user) => {
+                  const isSelected = formData.assignedTo.includes(user.id);
+                  const userName = user.firstName && user.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user.emailAddresses?.[0]?.emailAddress || user.id;
+
+                  return (
+                    <button
+                      key={user.id}
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          assignedTo: isSelected
+                            ? prev.assignedTo.filter(id => id !== user.id)
+                            : [...prev.assignedTo, user.id]
+                        }));
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl flex items-center justify-between transition-colors ${
+                        isSelected
+                          ? 'bg-dc-blue-50 border-2 border-dc-blue-500'
+                          : 'bg-white border-2 border-gray-200 active:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                          isSelected ? 'bg-dc-blue-500' : 'bg-gray-400'
+                        }`}>
+                          {userName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-gray-900">{userName}</span>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle className="w-5 h-5 text-dc-blue-600" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
           )}
 

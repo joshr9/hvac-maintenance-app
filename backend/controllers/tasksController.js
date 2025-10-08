@@ -20,15 +20,8 @@ exports.getTasks = async (req, res) => {
     const userId = req.userId; // From Clerk auth
     let whereClause = {};
 
-    // Filter based on user role
-    const userRole = req.userRole;
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      // Non-admin users only see their own tasks or tasks they created
-      whereClause.OR = [
-        { createdBy: userId },
-        { assignees: { some: { userId: userId } } }
-      ];
-    }
+    // All users can see all tasks (like Jobber)
+    // No role-based filtering - tasks are organization-wide
 
     if (status) whereClause.status = status;
     if (priority) whereClause.priority = priority;

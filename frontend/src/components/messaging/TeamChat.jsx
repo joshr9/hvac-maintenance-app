@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import ChatSidebar from './ChatSidebar';
 import ChatConversation from './ChatConversation';
+import { requestNotificationPermission, showMessageNotification } from '../../utils/notifications';
 
 const TeamChat = () => {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -29,6 +30,8 @@ const TeamChat = () => {
     if (isSignedIn) {
       loadChannels();
       loadUsers();
+      // Request notification permission on first load
+      requestNotificationPermission();
     }
   }, [isSignedIn]);
 
@@ -117,6 +120,25 @@ const TeamChat = () => {
                       console.log('✅ Connected to real-time messages');
                     } else if (data.type === 'newMessage') {
                       const newMsg = data.message;
+
+                      // Show notification if message is for current user (and not from them)
+                      if (newMsg.authorId !== user.id) {
+                        const isForMe = newMsg.directRecipientId === user.id || newMsg.channelId;
+                        if (isForMe) {
+                          const senderName = newMsg.author?.name || 'Someone';
+                          showMessageNotification(newMsg, senderName, () => {
+                            // Focus the conversation when notification is clicked
+                            if (newMsg.directRecipientId) {
+                              const sender = users.find(u => u.id === newMsg.authorId);
+                              if (sender) {
+                                setCurrentDmUser(sender);
+                                setCurrentChannel(null);
+                                setView('conversation');
+                              }
+                            }
+                          });
+                        }
+                      }
 
                       // Only add if relevant to current conversation
                       const isCurrentChannel = currentChannel && newMsg.channelId === currentChannel.id;

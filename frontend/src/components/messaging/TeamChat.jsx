@@ -213,11 +213,18 @@ const TeamChat = () => {
   const loadMessages = async (channelId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${apiUrl}/api/messages?channelId=${channelId}`);
+      const token = await getToken();
+      const response = await fetch(`${apiUrl}/api/messages?channelId=${channelId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
+        console.log('Loaded messages:', data.messages?.length || 0);
         setMessages(data.messages || []);
       } else {
+        console.error('Failed to load messages:', response.status);
         setMessages([]);
       }
     } catch (error) {
@@ -231,11 +238,18 @@ const TeamChat = () => {
   const loadDirectMessages = async (userId) => {
     try {
       setLoading(true);
-      const response = await fetch(`${apiUrl}/api/messages/direct/${userId}`);
+      const token = await getToken();
+      const response = await fetch(`${apiUrl}/api/messages/direct/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
+        console.log('Loaded direct messages:', data.messages?.length || 0);
         setMessages(data.messages || []);
       } else {
+        console.error('Failed to load direct messages:', response.status);
         setMessages([]);
       }
     } catch (error) {

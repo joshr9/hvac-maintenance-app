@@ -47,9 +47,9 @@ const ChatConversation = ({
   }
 
   return (
-    <div className="flex flex-col bg-white lg:bg-gray-50" style={{ height: isMobile ? '100dvh' : '100%' }}>
+    <div className="flex flex-col w-full" style={{ height: isMobile ? '100dvh' : '100%' }}>
       {/* Conversation Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-4 lg:py-5">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4">
         <div className="flex items-center gap-3">
           {/* Back button (mobile only) */}
           {isMobile && (
@@ -64,22 +64,22 @@ const ChatConversation = ({
           {/* Channel/User Info */}
           {currentChannel ? (
             <>
-              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-dc-blue-100 flex items-center justify-center">
-                <Hash className="w-5 h-5 lg:w-6 lg:h-6 text-dc-blue-600" />
+              <div className="w-10 h-10 rounded-xl bg-dc-blue-100 flex items-center justify-center">
+                <Hash className="w-5 h-5 text-dc-blue-600" />
               </div>
               <div>
-                <h2 className="text-lg lg:text-xl font-bold text-gray-900">{currentChannel.name}</h2>
-                <p className="text-xs lg:text-sm text-gray-600">Channel</p>
+                <h2 className="text-lg font-bold text-gray-900">{currentChannel.name}</h2>
+                <p className="text-xs text-gray-500">Channel</p>
               </div>
             </>
           ) : currentDmUser ? (
             <>
-              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-green-500 flex items-center justify-center text-white font-bold">
+              <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white font-bold text-sm">
                 {getUserInitials(currentDmUser.name)}
               </div>
               <div>
-                <h2 className="text-lg lg:text-xl font-bold text-gray-900">{currentDmUser.name}</h2>
-                <p className="text-xs lg:text-sm text-gray-600">{currentDmUser.email}</p>
+                <h2 className="text-lg font-bold text-gray-900">{currentDmUser.name}</h2>
+                <p className="text-xs text-gray-500">{currentDmUser.email}</p>
               </div>
             </>
           ) : null}
@@ -87,40 +87,41 @@ const ChatConversation = ({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dc-blue-600"></div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No messages yet. Start the conversation!
-          </div>
-        ) : (
-          messages.map((msg) => {
-            const isOwnMessage = msg.authorId === user?.id;
-            return (
-              <div
-                key={msg.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
-              >
-                <div className={`max-w-sm lg:max-w-md xl:max-w-lg ${isOwnMessage ? 'order-2' : 'order-1'} relative`}>
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div className="max-w-5xl mx-auto space-y-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dc-blue-600"></div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No messages yet. Start the conversation!
+            </div>
+          ) : (
+            messages.map((msg) => {
+              const isOwnMessage = msg.authorId === user?.id;
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
+                >
+                  <div className={`max-w-lg ${isOwnMessage ? 'order-2' : 'order-1'} relative`}>
                   {!isOwnMessage && (
                     <div className="text-xs text-gray-600 mb-1 ml-1">
                       {getMessageAuthorName(msg)}
                     </div>
                   )}
                   <div
-                    className={`rounded-2xl px-4 py-3 ${
+                    className={`rounded-2xl px-4 py-2.5 shadow-sm ${
                       isOwnMessage
                         ? 'bg-dc-blue-500 text-white'
                         : 'bg-white border border-gray-200 text-gray-900'
                     }`}
                   >
-                    <p className="text-sm lg:text-base whitespace-pre-wrap break-words">
+                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                       {msg.content}
                     </p>
-                    <div className={`text-xs mt-1 ${isOwnMessage ? 'text-dc-blue-100' : 'text-gray-500'}`}>
+                    <div className={`text-xs mt-1 ${isOwnMessage ? 'text-dc-blue-100' : 'text-gray-400'}`}>
                       {new Date(msg.createdAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -169,27 +170,28 @@ const ChatConversation = ({
             );
           })
         )}
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Message Input */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4 lg:p-6">
-        <div className="flex gap-3 items-end">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+        <div className="flex gap-3 items-end max-w-5xl mx-auto">
           <textarea
             value={messageContent}
             onChange={(e) => setMessageContent(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
             rows="1"
-            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 resize-none text-sm lg:text-base"
-            style={{ minHeight: '48px', maxHeight: '120px' }}
+            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-dc-blue-500 focus:border-dc-blue-500 resize-none text-sm"
+            style={{ minHeight: '44px', maxHeight: '120px' }}
           />
           <button
             onClick={sendMessage}
             disabled={!messageContent.trim()}
-            className="p-3 lg:p-4 bg-dc-blue-500 text-white rounded-xl hover:bg-dc-blue-600 active:bg-dc-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-3 bg-dc-blue-500 text-white rounded-xl hover:bg-dc-blue-600 active:bg-dc-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Send className="w-5 h-5 lg:w-6 lg:h-6" />
+            <Send className="w-5 h-5" />
           </button>
         </div>
       </div>

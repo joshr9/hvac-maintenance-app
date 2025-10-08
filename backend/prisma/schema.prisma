@@ -444,26 +444,27 @@ model Channel {
 }
 
 model Message {
-  id                Int      @id @default(autoincrement())
-  content           String?
-  authorId          String // Clerk user ID (string)
-  channelId         Int
-  parentId          Int?
-  attachments       Json?
-  reactions         Json?
-  location          Json?
-  savedToJobId      Int?
-  savedToPropertyId Int?
-  createdFromTaskId Int?
-  pinned            Boolean  @default(false)
-  edited            Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  content             String?
+  authorId            String // Clerk user ID (string)
+  channelId           Int?     // Optional for DMs
+  directRecipientId   String?  // Clerk user ID for direct messages
+  parentId            Int?
+  attachments         Json?
+  reactions           Json?
+  location            Json?
+  savedToJobId        Int?
+  savedToPropertyId   Int?
+  createdFromTaskId   Int?
+  pinned              Boolean  @default(false)
+  edited              Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   createdFromTask Task?  @relation("MessageToTask", fields: [createdFromTaskId], references: [id])
   createdTasks    Task[] @relation("TaskFromMessage")
 
-  channel         Channel   @relation(fields: [channelId], references: [id])
+  channel         Channel?  @relation(fields: [channelId], references: [id])
   parent          Message?  @relation("MessageReplies", fields: [parentId], references: [id])
   replies         Message[] @relation("MessageReplies")
   savedToJob      Job?      @relation(fields: [savedToJobId], references: [id])

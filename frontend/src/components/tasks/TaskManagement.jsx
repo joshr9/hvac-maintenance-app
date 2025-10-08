@@ -5,6 +5,7 @@ import { Plus, Search, CheckCircle, Clock, AlertTriangle, Filter, ChevronRight, 
 
 import TaskList from './TaskList';
 import CreateTaskModal from './CreateTaskModal';
+import CreateTaskMobile from './CreateTaskMobile';
 import TaskDetailModal from './TaskDetailModal';
 
 const TaskManagement = ({
@@ -402,17 +403,34 @@ const TaskManagement = ({
         <Plus className="w-7 h-7" />
       </button>
 
-      {/* Create Task Modal */}
+      {/* Create Task Modal - Mobile iOS style on small screens, Desktop modal on large */}
       {showCreateModal && (
-        <CreateTaskModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onTaskCreated={handleTaskCreated}
-          allProperties={allProperties}
-          globalJobsData={globalJobsData}
-          fromMessage={fromMessage}
-          apiCall={apiCall}
-        />
+        <>
+          {/* Mobile: Full-screen iOS style */}
+          <div className="lg:hidden">
+            <CreateTaskMobile
+              isOpen={showCreateModal}
+              onClose={() => setShowCreateModal(false)}
+              onTaskCreated={handleTaskCreated}
+              allProperties={allProperties}
+              globalJobsData={globalJobsData}
+              fromMessage={fromMessage}
+              apiCall={apiCall}
+            />
+          </div>
+          {/* Desktop: Modal */}
+          <div className="hidden lg:block">
+            <CreateTaskModal
+              isOpen={showCreateModal}
+              onClose={() => setShowCreateModal(false)}
+              onTaskCreated={handleTaskCreated}
+              allProperties={allProperties}
+              globalJobsData={globalJobsData}
+              fromMessage={fromMessage}
+              apiCall={apiCall}
+            />
+          </div>
+        </>
       )}
 
       {/* Task Detail Modal */}

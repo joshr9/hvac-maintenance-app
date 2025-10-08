@@ -118,6 +118,14 @@ const TeamChat = () => {
 
                     if (data.type === 'connected') {
                       console.log('✅ Connected to real-time messages');
+                    } else if (data.type === 'newChannel') {
+                      const newChannel = data.channel;
+                      console.log('New channel created:', newChannel);
+                      setChannels(prev => {
+                        // Avoid duplicates
+                        if (prev.find(c => c.id === newChannel.id)) return prev;
+                        return [...prev, newChannel];
+                      });
                     } else if (data.type === 'newMessage') {
                       const newMsg = data.message;
 
@@ -185,11 +193,19 @@ const TeamChat = () => {
 
   const loadChannels = async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/messages/channels`);
+      const token = await getToken();
+      const response = await fetch(`${apiUrl}/api/messages/channels`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
-        setChannels(data.channels || []);
+        console.log('Loaded channels:', data);
+        // Backend returns array directly, not wrapped in {channels: []}
+        setChannels(Array.isArray(data) ? data : []);
       } else {
+        console.error('Failed to load channels:', response.status);
         setChannels([]);
       }
     } catch (error) {

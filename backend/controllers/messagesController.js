@@ -658,6 +658,9 @@ exports.createChannel = async (req, res) => {
       }
     });
 
+    // Emit event for real-time updates
+    messageEvents.emit('newChannel', channel);
+
     res.json(channel);
 
   } catch (error) {
@@ -694,8 +697,14 @@ exports.subscribeToMessages = async (req, res) => {
     }
   };
 
-  // Register listener
+  // Handler for new channels (broadcast to all users)
+  const channelHandler = (channel) => {
+    res.write(`data: ${JSON.stringify({ type: 'newChannel', channel })}\n\n`);
+  };
+
+  // Register listeners
   messageEvents.on('newMessage', messageHandler);
+  messageEvents.on('newChannel', channelHandler);
 
   // Send heartbeat every 30 seconds to keep connection alive
   const heartbeat = setInterval(() => {
@@ -706,6 +715,7 @@ exports.subscribeToMessages = async (req, res) => {
   req.on('close', () => {
     clearInterval(heartbeat);
     messageEvents.removeListener('newMessage', messageHandler);
+    messageEvents.removeListener('newChannel', channelHandler);
     res.end();
   });
 };

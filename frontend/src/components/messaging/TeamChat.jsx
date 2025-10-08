@@ -480,14 +480,20 @@ const TeamChat = () => {
 
       {/* Create Channel Modal */}
       {showCreateChannel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-gray-900 mb-4">Create Channel</h3>
             <input
               type="text"
               value={newChannelName}
               onChange={(e) => setNewChannelName(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newChannelName.trim()) {
+                  createChannel();
+                }
+              }}
               placeholder="Channel name..."
+              autoFocus
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 mb-4"
             />
             <div className="flex gap-3">
@@ -499,7 +505,8 @@ const TeamChat = () => {
               </button>
               <button
                 onClick={createChannel}
-                className="flex-1 px-4 py-3 bg-dc-blue-500 text-white rounded-xl font-medium hover:bg-dc-blue-600 transition-colors"
+                disabled={!newChannelName.trim()}
+                className="flex-1 px-4 py-3 bg-dc-blue-500 text-white rounded-xl font-medium hover:bg-dc-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Create
               </button>

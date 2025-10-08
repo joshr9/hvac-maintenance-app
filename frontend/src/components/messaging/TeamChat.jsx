@@ -472,9 +472,9 @@ const TeamChat = () => {
   }
 
   return (
-    <div className="fixed inset-0 top-16 bg-gray-50 flex overflow-hidden">
+    <div className="h-full bg-gray-50 flex overflow-hidden">
       {/* Desktop: Two-column layout (sidebar always visible) */}
-      <div className="hidden lg:flex lg:w-80 xl:w-96">
+      <div className="hidden lg:flex lg:w-80 xl:w-96 border-r border-gray-200">
         <ChatSidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}

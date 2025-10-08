@@ -41,6 +41,32 @@ const TeamChat = () => {
     }
   }, [currentChannel, currentDmUser]);
 
+  // Restore last conversation on mount
+  useEffect(() => {
+    const savedConversation = sessionStorage.getItem('lastConversation');
+    if (savedConversation && !currentChannel && !currentDmUser) {
+      try {
+        const { type, data } = JSON.parse(savedConversation);
+        if (type === 'channel') {
+          setCurrentChannel(data);
+        } else if (type === 'dm') {
+          setCurrentDmUser(data);
+        }
+      } catch (error) {
+        console.error('Error restoring conversation:', error);
+      }
+    }
+  }, []);
+
+  // Save current conversation
+  useEffect(() => {
+    if (currentChannel) {
+      sessionStorage.setItem('lastConversation', JSON.stringify({ type: 'channel', data: currentChannel }));
+    } else if (currentDmUser) {
+      sessionStorage.setItem('lastConversation', JSON.stringify({ type: 'dm', data: currentDmUser }));
+    }
+  }, [currentChannel, currentDmUser]);
+
   // Real-time message updates via SSE
   useEffect(() => {
     if (!isSignedIn) return;
@@ -296,21 +322,21 @@ const TeamChat = () => {
     setCurrentChannel(channel);
     setCurrentDmUser(null);
     setView('conversation');
-    setMessages([]);
+    // Messages will load via useEffect
   };
 
   const handleUserClick = (user) => {
     setCurrentDmUser(user);
     setCurrentChannel(null);
     setView('conversation');
-    setMessages([]);
+    // Messages will load via useEffect
   };
 
   const handleBack = () => {
     setView('list');
     setCurrentChannel(null);
     setCurrentDmUser(null);
-    setMessages([]);
+    // Keep messages in state for when user returns
   };
 
   const getUserInitials = (name) => {

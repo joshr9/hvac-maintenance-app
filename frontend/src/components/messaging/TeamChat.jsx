@@ -273,7 +273,13 @@ const TeamChat = () => {
       if (response.ok) {
         const newMessage = await response.json();
         console.log('Message sent successfully:', newMessage);
-        setMessages(prev => [...prev, newMessage]);
+
+        // Add immediately for instant feedback (SSE duplicate check will prevent double-add)
+        setMessages(prev => {
+          // Avoid duplicates
+          if (prev.find(m => m.id === newMessage.id)) return prev;
+          return [...prev, newMessage];
+        });
         setMessageContent('');
       } else {
         const errorData = await response.json().catch(() => ({}));

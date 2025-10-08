@@ -446,12 +446,96 @@ const Layout = ({
     onOpenModal?.(modalType);
   };
 
-  // ✅ PRESERVED: Mock notifications (your existing logic)
-  const notifications = [
-    { id: 1, type: 'urgent', message: 'Job #1234 is overdue', time: '5 minutes ago' },
-    { id: 2, type: 'success', message: 'Maintenance completed for Oak Street', time: '2 hours ago' },
-    { id: 3, type: 'info', message: 'New property added: Elm Avenue', time: '1 day ago' }
-  ];
+  // Real notifications state
+  const [notifications, setNotifications] = useState([]);
+
+  // Load real notifications from recent activity
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+
+        // Fetch recent jobs and tasks
+        const [jobsRes, tasksRes] = await Promise.all([
+          fetch(`${apiUrl}/api/jobs?limit=5`),
+          fetch(`${apiUrl}/api/tasks?limit=5`)
+        ]);
+
+        const notifs = [];
+
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          const jobs = Array.isArray(jobsData) ? jobsData : jobsData.jobs || [];
+
+          jobs.forEach(job => {
+            const dueDate = job.dueDate ? new Date(job.dueDate) : null;
+            const isOverdue = dueDate && dueDate < new Date() && job.status !== 'COMPLETED';
+
+            if (isOverdue) {
+              notifs.push({
+                id: `job-${job.id}`,
+                type: 'urgent',
+                message: `Job #${job.jobNumber || job.id} is overdue: ${job.title}`,
+                time: getRelativeTime(job.updatedAt || job.createdAt)
+              });
+            } else if (job.status === 'COMPLETED') {
+              notifs.push({
+                id: `job-${job.id}`,
+                type: 'success',
+                message: `Job completed: ${job.title}`,
+                time: getRelativeTime(job.updatedAt || job.createdAt)
+              });
+            }
+          });
+        }
+
+        if (tasksRes.ok) {
+          const tasksData = await tasksRes.json();
+          const tasks = Array.isArray(tasksData) ? tasksData : tasksData.tasks || [];
+
+          tasks.forEach(task => {
+            if (task.status === 'COMPLETED') {
+              notifs.push({
+                id: `task-${task.id}`,
+                type: 'success',
+                message: `Task completed: ${task.title}`,
+                time: getRelativeTime(task.updatedAt || task.createdAt)
+              });
+            }
+          });
+        }
+
+        // Sort by most recent and take top 5
+        notifs.sort((a, b) => {
+          // Simple sort by type priority: urgent > success > info
+          const priority = { urgent: 0, success: 1, info: 2 };
+          return priority[a.type] - priority[b.type];
+        });
+
+        setNotifications(notifs.slice(0, 5));
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+        // Keep empty array on error
+      }
+    };
+
+    loadNotifications();
+    // Refresh notifications every 2 minutes
+    const interval = setInterval(loadNotifications, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return 'just now';
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return `${Math.floor(seconds / 86400)} days ago`;
+  };
 
   // ✅ PRESERVED: Navigation Item Component
   const NavItem = ({ item, isActive, isCollapsed }) => {

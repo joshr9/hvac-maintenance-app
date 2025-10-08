@@ -1,6 +1,6 @@
 // ChatConversation.jsx - Conversation view for channels and DMs
-import React, { useRef, useEffect } from 'react';
-import { ChevronLeft, Send, Hash, MessageCircle } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { ChevronLeft, Send, Hash, MessageCircle, MoreVertical, Building2, Briefcase } from 'lucide-react';
 
 const ChatConversation = ({
   currentChannel,
@@ -17,6 +17,10 @@ const ChatConversation = ({
   isMobile = false
 }) => {
   const messagesEndRef = useRef(null);
+  const [messageMenuOpen, setMessageMenuOpen] = useState(null);
+  const [showSaveToProperty, setShowSaveToProperty] = useState(false);
+  const [showCreateJob, setShowCreateJob] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -98,9 +102,9 @@ const ChatConversation = ({
             return (
               <div
                 key={msg.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
               >
-                <div className={`max-w-sm lg:max-w-md xl:max-w-lg ${isOwnMessage ? 'order-2' : 'order-1'}`}>
+                <div className={`max-w-sm lg:max-w-md xl:max-w-lg ${isOwnMessage ? 'order-2' : 'order-1'} relative`}>
                   {!isOwnMessage && (
                     <div className="text-xs text-gray-600 mb-1 ml-1">
                       {getMessageAuthorName(msg)}
@@ -123,6 +127,43 @@ const ChatConversation = ({
                       })}
                     </div>
                   </div>
+
+                  {/* Message Actions (appears on hover) */}
+                  <button
+                    onClick={() => {
+                      setSelectedMessage(msg);
+                      setMessageMenuOpen(messageMenuOpen === msg.id ? null : msg.id);
+                    }}
+                    className={`absolute top-0 ${isOwnMessage ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-gray-100`}
+                  >
+                    <MoreVertical className="w-4 h-4 text-gray-600" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {messageMenuOpen === msg.id && (
+                    <div className={`absolute z-10 mt-2 w-48 rounded-xl bg-white shadow-lg border border-gray-200 py-1 ${isOwnMessage ? 'right-0' : 'left-0'}`}>
+                      <button
+                        onClick={() => {
+                          setShowSaveToProperty(true);
+                          setMessageMenuOpen(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Building2 className="w-4 h-4" />
+                        Save to Property
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCreateJob(true);
+                          setMessageMenuOpen(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Briefcase className="w-4 h-4" />
+                        Create Job
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -149,6 +190,253 @@ const ChatConversation = ({
             className="p-3 lg:p-4 bg-dc-blue-500 text-white rounded-xl hover:bg-dc-blue-600 active:bg-dc-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="w-5 h-5 lg:w-6 lg:h-6" />
+          </button>
+        </div>
+      </div>
+
+      {/* Save to Property Modal */}
+      {showSaveToProperty && selectedMessage && (
+        <SaveToPropertyModal
+          message={selectedMessage}
+          onClose={() => {
+            setShowSaveToProperty(false);
+            setSelectedMessage(null);
+          }}
+        />
+      )}
+
+      {/* Create Job Modal */}
+      {showCreateJob && selectedMessage && (
+        <CreateJobFromMessageModal
+          message={selectedMessage}
+          onClose={() => {
+            setShowCreateJob(false);
+            setSelectedMessage(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Save to Property Modal Component
+const SaveToPropertyModal = ({ message, onClose }) => {
+  const [properties, setProperties] = useState([]);
+  const [selectedProperty, setSelectedProperty] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  useEffect(() => {
+    loadProperties();
+  }, []);
+
+  const loadProperties = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/properties`);
+      if (response.ok) {
+        const data = await response.json();
+        setProperties(data);
+      }
+    } catch (error) {
+      console.error('Error loading properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!selectedProperty) return;
+
+    try {
+      setSaving(true);
+      const response = await fetch(`${apiUrl}/api/messages/${message.id}/save-to-property`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId: parseInt(selectedProperty) })
+      });
+
+      if (response.ok) {
+        alert('Message saved to property successfully!');
+        onClose();
+      } else {
+        alert('Failed to save message to property');
+      }
+    } catch (error) {
+      console.error('Error saving message:', error);
+      alert('Failed to save message to property');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Save to Property</h3>
+
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+          "{message.content}"
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dc-blue-600"></div>
+          </div>
+        ) : (
+          <select
+            value={selectedProperty}
+            onChange={(e) => setSelectedProperty(e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 mb-4"
+          >
+            <option value="">Select a property...</option>
+            {properties.map((property) => (
+              <option key={property.id} value={property.id}>
+                {property.name} - {property.address}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!selectedProperty || saving}
+            className="flex-1 px-4 py-3 bg-dc-blue-500 text-white rounded-xl font-medium hover:bg-dc-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Create Job from Message Modal Component
+const CreateJobFromMessageModal = ({ message, onClose }) => {
+  const [properties, setProperties] = useState([]);
+  const [selectedProperty, setSelectedProperty] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  useEffect(() => {
+    loadProperties();
+    // Pre-fill job title with message content (first 50 chars)
+    setJobTitle(message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''));
+  }, []);
+
+  const loadProperties = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/properties`);
+      if (response.ok) {
+        const data = await response.json();
+        setProperties(data);
+      }
+    } catch (error) {
+      console.error('Error loading properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!selectedProperty || !jobTitle.trim()) return;
+
+    try {
+      setCreating(true);
+
+      // Create the job
+      const jobResponse = await fetch(`${apiUrl}/api/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: jobTitle.trim(),
+          description: message.content,
+          propertyId: parseInt(selectedProperty),
+          status: 'pending'
+        })
+      });
+
+      if (jobResponse.ok) {
+        const job = await jobResponse.json();
+
+        // Link message to job
+        await fetch(`${apiUrl}/api/messages/${message.id}/save-to-job`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: job.id })
+        });
+
+        alert('Job created successfully!');
+        onClose();
+      } else {
+        alert('Failed to create job');
+      }
+    } catch (error) {
+      console.error('Error creating job:', error);
+      alert('Failed to create job');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Create Job</h3>
+
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+          "{message.content}"
+        </div>
+
+        <input
+          type="text"
+          value={jobTitle}
+          onChange={(e) => setJobTitle(e.target.value)}
+          placeholder="Job title..."
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 mb-4"
+        />
+
+        {loading ? (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dc-blue-600"></div>
+          </div>
+        ) : (
+          <select
+            value={selectedProperty}
+            onChange={(e) => setSelectedProperty(e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-dc-blue-200 focus:border-dc-blue-500 mb-4"
+          >
+            <option value="">Select a property...</option>
+            {properties.map((property) => (
+              <option key={property.id} value={property.id}>
+                {property.name} - {property.address}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={!selectedProperty || !jobTitle.trim() || creating}
+            className="flex-1 px-4 py-3 bg-dc-blue-500 text-white rounded-xl font-medium hover:bg-dc-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {creating ? 'Creating...' : 'Create Job'}
           </button>
         </div>
       </div>

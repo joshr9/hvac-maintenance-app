@@ -30,13 +30,15 @@ const CreateTaskMobile = ({
     estimatedTime: '',
     linkedToJobId: '',
     linkedToPropertyId: '',
+    assignedTo: [] // Array of user IDs
   });
 
   const [expandedSections, setExpandedSections] = useState({
     details: false,
     priority: false,
     dueDate: false,
-    links: false
+    links: false,
+    assign: false
   });
 
   const [loading, setLoading] = useState(false);

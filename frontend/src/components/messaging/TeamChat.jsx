@@ -168,8 +168,7 @@ const TeamChat = () => {
     try {
       const token = await getToken();
       const body = {
-        content: messageContent.trim(),
-        authorId: user.id
+        content: messageContent.trim()
       };
 
       if (currentChannel) {

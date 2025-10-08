@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 
 // ✅ NEW: Clerk authentication imports
-import { useUser, SignOutButton } from '@clerk/clerk-react';
+import { useUser, SignOutButton, useAuth } from '@clerk/clerk-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 
 // Import Universal Search Bar
@@ -251,8 +251,9 @@ const Layout = ({
 }) => {
   // ✅ NEW: Auth integration
   const { user: clerkUser } = useUser();
+  const { getToken } = useAuth();
   const { user: authUser } = useAuthContext();
-  
+
   // Use auth user if available, fallback to clerk user
   const currentUser = authUser || clerkUser;
 
@@ -455,10 +456,20 @@ const Layout = ({
       try {
         const apiUrl = import.meta.env.VITE_API_URL || '';
 
-        // Fetch recent jobs and tasks
-        const [jobsRes, tasksRes] = await Promise.all([
+        // Fetch recent jobs, tasks, and messages
+        const [jobsRes, tasksRes, messagesRes] = await Promise.all([
           fetch(`${apiUrl}/api/jobs?limit=5`),
-          fetch(`${apiUrl}/api/tasks?limit=5`)
+          fetch(`${apiUrl}/api/tasks?limit=5`),
+          (async () => {
+            try {
+              const token = await getToken?.();
+              return fetch(`${apiUrl}/api/messages/recent?limit=5`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+              });
+            } catch {
+              return { ok: false };
+            }
+          })()
         ]);
 
         const notifs = [];
@@ -505,6 +516,25 @@ const Layout = ({
           });
         }
 
+        if (messagesRes.ok) {
+          const messagesData = await messagesRes.json();
+          const messages = Array.isArray(messagesData) ? messagesData : messagesData.messages || [];
+
+          messages.forEach(msg => {
+            // Skip your own messages
+            if (msg.authorId !== currentUser?.id) {
+              const authorName = msg.author?.name || msg.author?.email || 'Someone';
+              const preview = msg.content?.substring(0, 50) + (msg.content?.length > 50 ? '...' : '');
+              notifs.push({
+                id: `msg-${msg.id}`,
+                type: 'info',
+                message: `${authorName}: ${preview}`,
+                time: getRelativeTime(msg.createdAt)
+              });
+            }
+          });
+        }
+
         // Sort by most recent and take top 5
         notifs.sort((a, b) => {
           // Simple sort by type priority: urgent > success > info
@@ -523,7 +553,7 @@ const Layout = ({
     // Refresh notifications every 2 minutes
     const interval = setInterval(loadNotifications, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUser?.id]);
 
   const getRelativeTime = (dateString) => {
     if (!dateString) return 'just now';

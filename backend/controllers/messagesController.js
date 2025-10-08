@@ -723,6 +723,66 @@ exports.subscribeToMessages = async (req, res) => {
 // ==============================================
 // EXPORT ALL CONTROLLER FUNCTIONS
 // ==============================================
+// GET /api/messages/recent - Get recent messages for notifications
+// ==============================================
+exports.getRecentMessages = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { limit = 5 } = req.query;
+
+    // Get recent messages from channels and DMs (excluding user's own messages)
+    const messages = await prisma.message.findMany({
+      where: {
+        authorId: { not: userId }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: parseInt(limit),
+      include: {
+        author: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    // Fetch author details from Clerk for each message
+    const messagesWithAuthors = await Promise.all(
+      messages.map(async (msg) => {
+        try {
+          const clerkUser = await clerkClient.users.getUser(msg.authorId);
+          return {
+            ...msg,
+            author: {
+              id: clerkUser.id,
+              name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || clerkUser.emailAddresses[0]?.emailAddress,
+              email: clerkUser.emailAddresses[0]?.emailAddress
+            }
+          };
+        } catch (error) {
+          console.error(`Error fetching Clerk user ${msg.authorId}:`, error);
+          return {
+            ...msg,
+            author: {
+              id: msg.authorId,
+              name: msg.authorId.substring(0, 8),
+              email: null
+            }
+          };
+        }
+      })
+    );
+
+    res.json(messagesWithAuthors);
+  } catch (error) {
+    console.error('Error fetching recent messages:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ==============================================
 module.exports = {
   getMessages: exports.getMessages,
   createMessage: exports.createMessage,
@@ -734,5 +794,6 @@ module.exports = {
   getChannels: exports.getChannels,
   createChannel: exports.createChannel,
   getDirectMessages: exports.getDirectMessages,
-  subscribeToMessages: exports.subscribeToMessages
+  subscribeToMessages: exports.subscribeToMessages,
+  getRecentMessages: exports.getRecentMessages
 };

@@ -49,37 +49,35 @@ const ChatConversation = ({
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Conversation Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 w-full">
         <div className="flex items-center gap-3">
-          {/* Back button (mobile only) */}
-          {isMobile && (
-            <button
-              onClick={onBack}
-              className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-600" />
-            </button>
-          )}
+          {/* Back button - show on both mobile and desktop */}
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6 text-gray-600" />
+          </button>
 
           {/* Channel/User Info */}
           {currentChannel ? (
             <>
-              <div className="w-10 h-10 rounded-xl bg-dc-blue-100 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-dc-blue-100 flex items-center justify-center flex-shrink-0">
                 <Hash className="w-5 h-5 text-dc-blue-600" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">{currentChannel.name}</h2>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-gray-900 truncate">{currentChannel.name}</h2>
                 <p className="text-xs text-gray-500">Channel</p>
               </div>
             </>
           ) : currentDmUser ? (
             <>
-              <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white font-bold text-sm">
+              <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                 {getUserInitials(currentDmUser.name)}
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">{currentDmUser.name}</h2>
-                <p className="text-xs text-gray-500">{currentDmUser.email}</p>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-gray-900 truncate">{currentDmUser.name}</h2>
+                <p className="text-xs text-gray-500 truncate">{currentDmUser.email}</p>
               </div>
             </>
           ) : null}

@@ -799,12 +799,11 @@ const Layout = ({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto pb-16">
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
 
-        {/* ✅ PRESERVED: Always-Visible QuickStats at Bottom (hidden on HVAC page) */}
-        {currentView !== 'hvac' && <QuickStats stats={jobsStats} lastUpdated={lastDataUpdate} />}
+        {/* QuickStats removed per user request */}
       </div>
     </div>
   );

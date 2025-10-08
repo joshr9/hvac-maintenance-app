@@ -276,9 +276,13 @@ const TeamChat = () => {
     if (!newChannelName.trim()) return;
 
     try {
+      const token = await getToken();
       const response = await fetch(`${apiUrl}/api/messages/channels`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           name: newChannelName.trim(),
           type: 'channel'
@@ -287,12 +291,21 @@ const TeamChat = () => {
 
       if (response.ok) {
         const newChannel = await response.json();
+        console.log('Channel created:', newChannel);
         setChannels(prev => [...prev, newChannel]);
         setNewChannelName('');
         setShowCreateChannel(false);
+        // Auto-select the new channel
+        setCurrentChannel(newChannel);
+        setView('conversation');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to create channel:', response.status, errorData);
+        alert(`Failed to create channel: ${errorData.error || 'Server error'}`);
       }
     } catch (error) {
       console.error('Error creating channel:', error);
+      alert('Failed to create channel. Please try again.');
     }
   };
 

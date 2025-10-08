@@ -177,6 +177,8 @@ const TeamChat = () => {
         body.directRecipientId = currentDmUser.id;
       }
 
+      console.log('Sending message:', body);
+
       const response = await fetch(`${apiUrl}/api/messages`, {
         method: 'POST',
         headers: {
@@ -188,13 +190,17 @@ const TeamChat = () => {
 
       if (response.ok) {
         const newMessage = await response.json();
+        console.log('Message sent successfully:', newMessage);
         setMessages(prev => [...prev, newMessage]);
         setMessageContent('');
       } else {
-        console.error('Failed to send message:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to send message:', response.status, errorData);
+        alert(`Failed to send message: ${errorData.error || 'Server error'}`);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
     }
   };
 
@@ -298,7 +304,7 @@ const TeamChat = () => {
       </div>
 
       {/* Mobile: Single view (either sidebar or conversation) */}
-      <div className="flex-1 lg:hidden">
+      <div className="flex-1 lg:hidden h-full">
         {view === 'list' ? (
           <ChatSidebar
             activeTab={activeTab}

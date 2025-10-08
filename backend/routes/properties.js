@@ -8,4 +8,9 @@ router.post('/', controller.createProperty)
 router.put('/:id', controller.updateProperty)
 router.delete('/:id', controller.deleteProperty)
 
+// Suite routes
+router.post('/:id/suites', controller.addSuite)
+router.put('/:propertyId/suites/:suiteId', controller.updateSuite)
+router.delete('/:propertyId/suites/:suiteId', controller.deleteSuite)
+
 module.exports = router

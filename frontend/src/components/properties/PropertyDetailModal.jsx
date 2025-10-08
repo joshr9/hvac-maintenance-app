@@ -21,13 +21,23 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
   const [propertyJobs, setPropertyJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [showAddSuite, setShowAddSuite] = useState(false);
+  const [showEditSuite, setShowEditSuite] = useState(false);
+  const [selectedSuite, setSelectedSuite] = useState(null);
+  const [localProperty, setLocalProperty] = useState(property);
+
+  // Update local property when prop changes
+  useEffect(() => {
+    if (property) {
+      setLocalProperty(property);
+    }
+  }, [property]);
 
   // Load jobs for this property when modal opens
   useEffect(() => {
-    if (isOpen && property) {
+    if (isOpen && localProperty) {
       loadPropertyJobs();
     }
-  }, [isOpen, property]);
+  }, [isOpen, localProperty]);
 
   const loadPropertyJobs = async () => {
     if (!property?.id) return;
@@ -49,11 +59,26 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
     }
   };
 
-  if (!isOpen || !property) return null;
+  const refreshProperty = async () => {
+    if (!localProperty?.id) return;
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/properties/${localProperty.id}`);
+      if (response.ok) {
+        const updatedProperty = await response.json();
+        setLocalProperty(updatedProperty);
+      }
+    } catch (error) {
+      console.error('Error refreshing property:', error);
+    }
+  };
+
+  if (!isOpen || !localProperty) return null;
 
   // Calculate property metrics
-  const suiteCount = property.suites?.length || 0;
-  const unitCount = property.suites?.reduce((sum, suite) => sum + (suite.hvacUnits?.length || 0), 0) || 0;
+  const suiteCount = localProperty.suites?.length || 0;
+  const unitCount = localProperty.suites?.reduce((sum, suite) => sum + (suite.hvacUnits?.length || 0), 0) || 0;
   const jobCount = propertyJobs.length;
   
   const formatDate = (dateString) => {
@@ -67,26 +92,48 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
 
   const handleAction = (action) => {
     onClose();
-    action(property);
+    action(localProperty);
   };
 
   const handleNavigateToJobs = () => {
     onClose();
-    onNavigate('jobs', { propertyFilter: property.id });
+    onNavigate('jobs', { propertyFilter: localProperty.id });
   };
 
   const handleScheduleMaintenance = () => {
     onClose();
-    onNavigate('maintenance', { selectedProperty: property });
+    onNavigate('maintenance', { selectedProperty: localProperty });
   };
 
   const handleEditProperty = () => {
     onClose();
-    onEdit(property);
+    onEdit(localProperty);
   };
 
   const handleAddSuite = () => {
     setShowAddSuite(true);
+  };
+
+  const handleEditSuite = (suite) => {
+    setSelectedSuite(suite);
+    setShowEditSuite(true);
+  };
+
+  const handleDeleteSuite = async (suite) => {
+    if (window.confirm(`Are you sure you want to delete "${suite.name}"?`)) {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        const response = await fetch(`${apiUrl}/api/properties/${localProperty.id}/suites/${suite.id}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          await refreshProperty();
+        }
+      } catch (error) {
+        console.error('Error deleting suite:', error);
+      }
+    }
   };
 
   return (
@@ -100,11 +147,11 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {property.name || `Property ${property.id}`}
+                {localProperty.name || `Property ${localProperty.id}`}
               </h2>
               <div className="flex items-center gap-2 text-gray-600 mt-1">
                 <MapPin className="w-4 h-4" />
-                <span>{property.address}</span>
+                <span>{localProperty.address}</span>
               </div>
             </div>
           </div>
@@ -194,19 +241,19 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
-                    <p className="text-gray-900">{property.address}</p>
+                    <p className="text-gray-900">{localProperty.address}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Nickname</label>
-                    <p className="text-gray-900">{property.name || 'No nickname set'}</p>
+                    <p className="text-gray-900">{localProperty.name || 'No nickname set'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Created</label>
-                    <p className="text-gray-900">{formatDate(property.createdAt)}</p>
+                    <p className="text-gray-900">{formatDate(localProperty.createdAt)}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
-                    <p className="text-gray-900">{formatDate(property.updatedAt)}</p>
+                    <p className="text-gray-900">{formatDate(localProperty.updatedAt)}</p>
                   </div>
                 </div>
               </div>
@@ -269,17 +316,31 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {property.suites?.map((suite) => (
+                  {localProperty.suites?.map((suite) => (
                     <div key={suite.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-gray-900">
                           {suite.name || `Suite ${suite.id}`}
                         </h4>
-                        <span className="text-sm text-gray-500">
-                          {suite.hvacUnits?.length || 0} HVAC {(suite.hvacUnits?.length || 0) === 1 ? 'unit' : 'units'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">
+                            {suite.hvacUnits?.length || 0} HVAC {(suite.hvacUnits?.length || 0) === 1 ? 'unit' : 'units'}
+                          </span>
+                          <button
+                            onClick={() => handleEditSuite(suite)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSuite(suite)}
+                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      
+
                       {suite.hvacUnits?.length > 0 ? (
                         <div className="space-y-2">
                           {suite.hvacUnits.map((unit) => (
@@ -402,17 +463,33 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
         </div>
       </div>
 
-      {/* Add Suite Modal Placeholder */}
+      {/* Add Suite Modal */}
       {showAddSuite && (
         <AddSuiteModal
           isOpen={showAddSuite}
           onClose={() => setShowAddSuite(false)}
-          property={property}
-          onSuiteAdded={(newSuite) => {
-            // Handle suite added - you'll need to refresh the property data
-            console.log('Suite added:', newSuite);
+          property={localProperty}
+          onSuiteAdded={async (newSuite) => {
             setShowAddSuite(false);
-            // TODO: Refresh property data or update local state
+            await refreshProperty();
+          }}
+        />
+      )}
+
+      {/* Edit Suite Modal */}
+      {showEditSuite && selectedSuite && (
+        <EditSuiteModal
+          isOpen={showEditSuite}
+          onClose={() => {
+            setShowEditSuite(false);
+            setSelectedSuite(null);
+          }}
+          property={localProperty}
+          suite={selectedSuite}
+          onSuiteUpdated={async () => {
+            setShowEditSuite(false);
+            setSelectedSuite(null);
+            await refreshProperty();
           }}
         />
       )}
@@ -442,7 +519,8 @@ const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
     setError('');
 
     try {
-      const response = await fetch(`/api/properties/${property.id}/suites`, {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/properties/${property.id}/suites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -518,6 +596,119 @@ const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {isSubmitting ? 'Adding...' : 'Add Suite'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Edit Suite Modal Component
+const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) => {
+  const [suiteData, setSuiteData] = useState({
+    name: suite?.name || '',
+    description: suite?.description || ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  if (!isOpen || !suite) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!suiteData.name.trim()) {
+      setError('Suite name is required');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/properties/${property.id}/suites/${suite.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: suiteData.name.trim(),
+          description: suiteData.description.trim()
+        })
+      });
+
+      if (response.ok) {
+        onSuiteUpdated();
+      } else {
+        throw new Error('Failed to update suite');
+      }
+    } catch (error) {
+      setError('Failed to update suite. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">Edit Suite</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Suite Name *
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., Suite 101, RTU #1, etc."
+              value={suiteData.name}
+              onChange={(e) => setSuiteData(prev => ({ ...prev, name: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Additional details about this suite..."
+              rows="3"
+              value={suiteData.description}
+              onChange={(e) => setSuiteData(prev => ({ ...prev, description: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
             <button
               type="button"

@@ -28,7 +28,13 @@ exports.getPropertyById = async (req, res) => {
   try {
     const property = await prisma.property.findUnique({
       where: { id },
-      include: { hvacUnits: true },
+      include: {
+        suites: {
+          include: {
+            hvacUnits: true
+          }
+        }
+      }
     })
     res.json(property)
   } catch (err) {
@@ -68,6 +74,65 @@ exports.deleteProperty = async (req, res) => {
     await prisma.property.delete({ where: { id } })
     res.json({ message: 'Property deleted' })
   } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+// Suite CRUD operations
+exports.addSuite = async (req, res) => {
+  const propertyId = parseInt(req.params.id)
+  const { name, description } = req.body
+
+  try {
+    const newSuite = await prisma.suite.create({
+      data: {
+        name,
+        description,
+        propertyId
+      },
+      include: {
+        hvacUnits: true
+      }
+    })
+    res.status(201).json(newSuite)
+  } catch (err) {
+    console.error('Error creating suite:', err)
+    res.status(500).json({ error: err.message })
+  }
+}
+
+exports.updateSuite = async (req, res) => {
+  const suiteId = parseInt(req.params.suiteId)
+  const { name, description } = req.body
+
+  try {
+    const updatedSuite = await prisma.suite.update({
+      where: { id: suiteId },
+      data: {
+        name,
+        description
+      },
+      include: {
+        hvacUnits: true
+      }
+    })
+    res.json(updatedSuite)
+  } catch (err) {
+    console.error('Error updating suite:', err)
+    res.status(500).json({ error: err.message })
+  }
+}
+
+exports.deleteSuite = async (req, res) => {
+  const suiteId = parseInt(req.params.suiteId)
+
+  try {
+    await prisma.suite.delete({
+      where: { id: suiteId }
+    })
+    res.json({ message: 'Suite deleted' })
+  } catch (err) {
+    console.error('Error deleting suite:', err)
     res.status(500).json({ error: err.message })
   }
 }

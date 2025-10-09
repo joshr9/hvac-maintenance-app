@@ -78,6 +78,14 @@ export const UnreadMessagesProvider = ({ children }) => {
                     if (data.type === 'newMessage') {
                       const newMsg = data.message;
 
+                      console.log('📬 SSE newMessage received:', {
+                        authorId: newMsg.authorId,
+                        currentUserId: user?.id,
+                        directRecipientId: newMsg.directRecipientId,
+                        channelId: newMsg.channelId,
+                        isFromMe: newMsg.authorId === user?.id
+                      });
+
                       // Increment unread if message is not from current user
                       if (newMsg.authorId !== user?.id) {
                         // Notify for:
@@ -86,9 +94,16 @@ export const UnreadMessagesProvider = ({ children }) => {
                         const isDirectToMe = newMsg.directRecipientId === user?.id;
                         const isChannelMessage = newMsg.channelId && !newMsg.directRecipientId;
 
+                        console.log('📬 Notification check:', {
+                          isDirectToMe,
+                          isChannelMessage,
+                          willNotify: isDirectToMe || isChannelMessage
+                        });
+
                         if (isDirectToMe || isChannelMessage) {
                           setUnreadCount(prev => prev + 1);
                           setHasUnread(true);
+                          console.log('✅ Notification triggered!');
                         }
                       }
                     }

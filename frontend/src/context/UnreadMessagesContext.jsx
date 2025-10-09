@@ -79,8 +79,13 @@ export const UnreadMessagesProvider = ({ children }) => {
 
                       // Increment unread if message is not from current user
                       if (newMsg.authorId !== user?.id) {
-                        const isForMe = newMsg.directRecipientId === user?.id || newMsg.channelId;
-                        if (isForMe) {
+                        // Notify for:
+                        // 1. Direct messages to me
+                        // 2. ANY channel message (all users should be notified)
+                        const isDirectToMe = newMsg.directRecipientId === user?.id;
+                        const isChannelMessage = newMsg.channelId && !newMsg.directRecipientId;
+
+                        if (isDirectToMe || isChannelMessage) {
                           setUnreadCount(prev => prev + 1);
                           setHasUnread(true);
                         }

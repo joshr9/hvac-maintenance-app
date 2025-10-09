@@ -158,4 +158,4 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM. Shutting down gracefully...');
   process.exit(0);
-});
+});// Rebuild trigger Wed Oct  8 18:58:27 MDT 2025

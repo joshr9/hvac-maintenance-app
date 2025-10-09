@@ -7,31 +7,18 @@ const path = require("path"); // for photos
 // Middleware
 const app = express();
 
-// Enhanced CORS configuration for SSE and API endpoints
+// CORS configuration for SSE and API endpoints
 app.use(cors({
-  origin: function(origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://app.deancallanm.com',
-      'https://front-end-production-3ed1.up.railway.app',
-      'https://hvac-maintenance-app-production.up.railway.app'
-    ];
-
-    // Allow requests with no origin (mobile apps, curl, etc)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      callback(null, false);
-    }
-  },
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://app.deancallanm.com',
+    'https://front-end-production-3ed1.up.railway.app',
+    'https://hvac-maintenance-app-production.up.railway.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());

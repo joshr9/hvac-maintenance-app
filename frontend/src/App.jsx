@@ -13,6 +13,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 // ✅ EXISTING: Your current timer contexts (100% PRESERVED)
 import { TimerProvider } from './contexts/TimerContext';
 import { OfflineQueueProvider } from './contexts/OfflineQueueContext';
+import { UnreadMessagesProvider } from './context/UnreadMessagesContext';
 
 // ✅ EXISTING: ALL your current layout and core components (100% PRESERVED)
 import Layout from './components/layout/Layout';
@@ -319,7 +320,8 @@ const renderCurrentView = () => {
   const AppContent = () => (
     <TimerProvider technicianName="Default User">
       <OfflineQueueProvider>
-        <div className="min-h-screen bg-gray-50">
+        <UnreadMessagesProvider>
+          <div className="min-h-screen bg-gray-50">
           {/* ✅ EXISTING: Offline Status Indicator (100% PRESERVED) */}
           <OfflineIndicator className="fixed top-4 left-4 z-40" />
           
@@ -352,7 +354,8 @@ const renderCurrentView = () => {
           )}
 
           {/* Add other modals as needed */}
-        </div>
+          </div>
+        </UnreadMessagesProvider>
       </OfflineQueueProvider>
     </TimerProvider>
   );

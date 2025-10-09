@@ -795,5 +795,44 @@ module.exports = {
   createChannel: exports.createChannel,
   getDirectMessages: exports.getDirectMessages,
   subscribeToMessages: exports.subscribeToMessages,
-  getRecentMessages: exports.getRecentMessages
+  getRecentMessages: exports.getRecentMessages,
+  getUnreadCount: exports.getUnreadCount
+};
+
+// ==============================================
+// GET /api/messages/unread-count - Get unread message count
+// ==============================================
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.userId; // From Clerk auth middleware
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Count unread messages:
+    // 1. Direct messages where user is recipient and message was sent after they last read
+    // 2. Channel messages sent after user last read channel
+
+    // For simplicity, count messages where user is NOT the author
+    // This is a basic implementation - a full version would track read timestamps per conversation
+
+    const unreadCount = await prisma.message.count({
+      where: {
+        authorId: { not: userId },
+        OR: [
+          { directRecipientId: userId }, // Direct messages to user
+          { channelId: { not: null } }   // Channel messages (user has access via role)
+        ],
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+        }
+      }
+    });
+
+    res.json({ count: unreadCount });
+  } catch (error) {
+    console.error('Error getting unread count:', error);
+    res.status(500).json({ error: error.message });
+  }
 };

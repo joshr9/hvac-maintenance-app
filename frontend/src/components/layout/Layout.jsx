@@ -37,6 +37,7 @@ import {
 // ✅ NEW: Clerk authentication imports
 import { useUser, SignOutButton, useAuth } from '@clerk/clerk-react';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { useUnreadMessages } from '../../context/UnreadMessagesContext';
 
 // Import Universal Search Bar
 import UniversalSearchBar from '../common/UniversalSearchBar';
@@ -257,6 +258,9 @@ const Layout = ({
   // Use auth user if available, fallback to clerk user
   const currentUser = authUser || clerkUser;
 
+  // ✅ NEW: Unread messages tracking
+  const { unreadCount, hasUnread, markAsRead } = useUnreadMessages();
+
   // ✅ PRESERVED: All existing state management
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
@@ -310,7 +314,8 @@ const Layout = ({
           label: 'Team Chat',
           icon: MessageSquare,
           description: 'Team communication & messages',
-          badge: null
+          badge: hasUnread ? unreadCount : null,
+          badgeColor: 'bg-blue-500'
         },
         {
           id: 'tasks',
@@ -599,10 +604,10 @@ const Layout = ({
                   {item.badge && (
                     <span className={`
                       inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                      ${item.badge === 'NEW' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                      }
+                      ${item.badgeColor || (item.badge === 'NEW'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800')
+                      } ${item.badgeColor ? 'text-white' : ''}
                     `}>
                       {item.badge}
                     </span>
@@ -758,8 +763,8 @@ const Layout = ({
                   className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
                 >
                   <Bell className="w-5 h-5 text-gray-600" />
-                  {notifications.some(n => n.type === 'urgent') && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                  {(notifications.some(n => n.type === 'urgent') || hasUnread) && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                   )}
                 </button>
 

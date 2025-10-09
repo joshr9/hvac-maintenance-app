@@ -10,6 +10,9 @@ router.get('/events', messagesController.subscribeToMessages);
 // GET /api/messages/recent - Get recent messages for notifications (MUST be before /:id)
 router.get('/recent', messagesController.getRecentMessages);
 
+// GET /api/messages/unread-count - Get unread message count (MUST be before /:id)
+router.get('/unread-count', messagesController.getUnreadCount);
+
 // GET /api/messages/channels - Get available channels (MUST be before /:id)
 router.get('/channels', messagesController.getChannels);
 

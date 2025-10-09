@@ -4,10 +4,12 @@ import { useUser, useAuth } from '@clerk/clerk-react';
 import ChatSidebar from './ChatSidebar';
 import ChatConversation from './ChatConversation';
 import { requestNotificationPermission, showMessageNotification } from '../../utils/notifications';
+import { useUnreadMessages } from '../../context/UnreadMessagesContext';
 
 const TeamChat = () => {
   const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useAuth();
+  const { markAsRead } = useUnreadMessages();
 
   // State
   const [view, setView] = useState('list'); // 'list' for mobile sidebar, 'conversation' for mobile chat
@@ -32,6 +34,8 @@ const TeamChat = () => {
       loadUsers();
       // Request notification permission on first load
       requestNotificationPermission();
+      // Mark messages as read when entering chat
+      markAsRead();
     }
   }, [isSignedIn]);
 

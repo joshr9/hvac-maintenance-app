@@ -643,8 +643,34 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showAddHvacUnit, setShowAddHvacUnit] = useState(false);
+  const [localSuite, setLocalSuite] = useState(suite);
 
-  if (!isOpen || !suite) return null;
+  // Update local suite when prop changes
+  useEffect(() => {
+    if (suite) {
+      setLocalSuite(suite);
+      setSuiteData({ name: suite.name || '' });
+    }
+  }, [suite]);
+
+  if (!isOpen || !localSuite) return null;
+
+  const refreshSuite = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/properties/${property.id}`);
+      if (response.ok) {
+        const updatedProperty = await response.json();
+        const updatedSuite = updatedProperty.suites?.find(s => s.id === localSuite.id);
+        if (updatedSuite) {
+          setLocalSuite(updatedSuite);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing suite:', error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -658,7 +684,7 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/properties/${property.id}/suites/${suite.id}`, {
+      const response = await fetch(`${apiUrl}/api/properties/${property.id}/suites/${localSuite.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -667,7 +693,8 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
       });
 
       if (response.ok) {
-        onSuiteUpdated();
+        await refreshSuite();
+        setError('');
       } else {
         throw new Error('Failed to update suite');
       }
@@ -678,59 +705,135 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
     }
   };
 
+  const handleDeleteHvacUnit = async (unit) => {
+    if (window.confirm(`Are you sure you want to delete "${unit.label || unit.serialNumber}"?`)) {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        const response = await fetch(`${apiUrl}/api/hvac-units/${unit.id}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          await refreshSuite();
+        }
+      } catch (error) {
+        console.error('Error deleting HVAC unit:', error);
+      }
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Edit Suite</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Suite Name *
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Suite 101, RTU #1, etc."
-              value={suiteData.name}
-              onChange={(e) => setSuiteData(prev => ({ ...prev, name: e.target.value }))}
-              disabled={isSubmitting}
-            />
+    <>
+      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Edit Suite</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Suite Name *
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Suite 101, RTU #1, etc."
+                value={suiteData.name}
+                onChange={(e) => setSuiteData(prev => ({ ...prev, name: e.target.value }))}
+                disabled={isSubmitting}
+              />
             </div>
-          )}
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+            {/* HVAC Units Section */}
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-gray-900">HVAC Units</h4>
+                <button
+                  type="button"
+                  onClick={() => setShowAddHvacUnit(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Unit
+                </button>
+              </div>
+
+              {localSuite.hvacUnits?.length > 0 ? (
+                <div className="space-y-2">
+                  {localSuite.hvacUnits.map((unit) => (
+                    <div key={unit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Zap className="w-4 h-4 text-purple-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {unit.label || unit.serialNumber}
+                          </p>
+                          <p className="text-xs text-gray-500">{unit.model}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteHvacUnit(unit)}
+                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic py-2">No HVAC units yet</p>
+              )}
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSuiteUpdated();
+                  onClose();
+                }}
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+
+      {/* Add HVAC Unit Modal within Edit Suite Modal */}
+      {showAddHvacUnit && (
+        <AddHvacUnitModal
+          isOpen={showAddHvacUnit}
+          onClose={() => setShowAddHvacUnit(false)}
+          suite={localSuite}
+          onHvacUnitAdded={async () => {
+            setShowAddHvacUnit(false);
+            await refreshSuite();
+          }}
+        />
+      )}
+    </>
   );
 };
 

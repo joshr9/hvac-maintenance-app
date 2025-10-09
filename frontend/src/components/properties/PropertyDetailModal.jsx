@@ -23,6 +23,8 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
   const [showAddSuite, setShowAddSuite] = useState(false);
   const [showEditSuite, setShowEditSuite] = useState(false);
   const [selectedSuite, setSelectedSuite] = useState(null);
+  const [showAddHvacUnit, setShowAddHvacUnit] = useState(false);
+  const [selectedSuiteForHvac, setSelectedSuiteForHvac] = useState(null);
   const [localProperty, setLocalProperty] = useState(property);
 
   // Update local property when prop changes
@@ -134,6 +136,11 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
         console.error('Error deleting suite:', error);
       }
     }
+  };
+
+  const handleAddHvacUnit = (suite) => {
+    setSelectedSuiteForHvac(suite);
+    setShowAddHvacUnit(true);
   };
 
   return (
@@ -344,16 +351,31 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
                       {suite.hvacUnits?.length > 0 ? (
                         <div className="space-y-2">
                           {suite.hvacUnits.map((unit) => (
-                            <div key={unit.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
-                              <Zap className="w-4 h-4 text-purple-600" />
-                              <span className="text-sm text-gray-700">
-                                {unit.label || unit.serialNumber || `Unit ${unit.id}`}
-                              </span>
+                            <div key={unit.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                              <div className="flex items-center gap-3">
+                                <Zap className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm text-gray-700">
+                                  {unit.label || unit.serialNumber || `Unit ${unit.id}`}
+                                </span>
+                              </div>
                             </div>
                           ))}
+                          <button
+                            onClick={() => handleAddHvacUnit(suite)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors w-full justify-center"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add HVAC Unit
+                          </button>
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-500 italic">No HVAC units</p>
+                        <button
+                          onClick={() => handleAddHvacUnit(suite)}
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors w-full justify-center"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add First HVAC Unit
+                        </button>
                       )}
                     </div>
                   ))}
@@ -489,6 +511,23 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
           onSuiteUpdated={async () => {
             setShowEditSuite(false);
             setSelectedSuite(null);
+            await refreshProperty();
+          }}
+        />
+      )}
+
+      {/* Add HVAC Unit Modal */}
+      {showAddHvacUnit && selectedSuiteForHvac && (
+        <AddHvacUnitModal
+          isOpen={showAddHvacUnit}
+          onClose={() => {
+            setShowAddHvacUnit(false);
+            setSelectedSuiteForHvac(null);
+          }}
+          suite={selectedSuiteForHvac}
+          onHvacUnitAdded={async () => {
+            setShowAddHvacUnit(false);
+            setSelectedSuiteForHvac(null);
             await refreshProperty();
           }}
         />
@@ -679,6 +718,200 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Add HVAC Unit Modal Component
+const AddHvacUnitModal = ({ isOpen, onClose, suite, onHvacUnitAdded }) => {
+  const [hvacData, setHvacData] = useState({
+    label: '',
+    serialNumber: '',
+    model: '',
+    installDate: '',
+    filterSize: '',
+    notes: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  if (!isOpen || !suite) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!hvacData.serialNumber.trim() || !hvacData.model.trim() || !hvacData.installDate) {
+      setError('Serial number, model, and install date are required');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError('');
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/hvac-units`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: hvacData.label.trim() || null,
+          serialNumber: hvacData.serialNumber.trim(),
+          model: hvacData.model.trim(),
+          installDate: hvacData.installDate,
+          filterSize: hvacData.filterSize.trim() || null,
+          notes: hvacData.notes.trim() || null,
+          suiteId: suite.id
+        })
+      });
+
+      if (response.ok) {
+        onHvacUnitAdded();
+        setHvacData({
+          label: '',
+          serialNumber: '',
+          model: '',
+          installDate: '',
+          filterSize: '',
+          notes: ''
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add HVAC unit');
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to add HVAC unit. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">Add HVAC Unit</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+          <p className="text-sm text-purple-700">
+            Adding HVAC unit to: <span className="font-semibold">{suite.name}</span>
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Label (Optional)
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., RTU #1, Main AC"
+              value={hvacData.label}
+              onChange={(e) => setHvacData(prev => ({ ...prev, label: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Serial Number *
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., ABC123456"
+              value={hvacData.serialNumber}
+              onChange={(e) => setHvacData(prev => ({ ...prev, serialNumber: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Model *
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., Carrier 58MVC080"
+              value={hvacData.model}
+              onChange={(e) => setHvacData(prev => ({ ...prev, model: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Install Date *
+            </label>
+            <input
+              type="date"
+              required
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              value={hvacData.installDate}
+              onChange={(e) => setHvacData(prev => ({ ...prev, installDate: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter Size (Optional)
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="e.g., 20x25x1"
+              value={hvacData.filterSize}
+              onChange={(e) => setHvacData(prev => ({ ...prev, filterSize: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Notes (Optional)
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Additional notes about this unit..."
+              rows="3"
+              value={hvacData.notes}
+              onChange={(e) => setHvacData(prev => ({ ...prev, notes: e.target.value }))}
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+            >
+              {isSubmitting ? 'Adding...' : 'Add HVAC Unit'}
             </button>
             <button
               type="button"

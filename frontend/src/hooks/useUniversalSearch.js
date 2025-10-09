@@ -51,11 +51,13 @@ export const useUniversalSearch = (currentView = 'dashboard') => {
     setSearchResults(prev => ({ ...prev, isLoading: true, hasSearched: true }));
 
     try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+
       // Search all systems in parallel
       const [propertiesRes, jobsRes, servicesRes] = await Promise.all([
-        fetch(`/api/properties?search=${encodeURIComponent(query)}`).catch(() => ({ json: () => [] })),
-        fetch(`/api/jobs?search=${encodeURIComponent(query)}`).catch(() => ({ json: () => ({ jobs: [] }) })),
-        fetch(`/api/services?search=${encodeURIComponent(query)}&active=true`).catch(() => ({ json: () => [] }))
+        fetch(`${apiUrl}/api/properties?search=${encodeURIComponent(query)}`).catch(() => ({ json: () => [] })),
+        fetch(`${apiUrl}/api/jobs?search=${encodeURIComponent(query)}`).catch(() => ({ json: () => ({ jobs: [] }) })),
+        fetch(`${apiUrl}/api/services?search=${encodeURIComponent(query)}&active=true`).catch(() => ({ json: () => [] }))
       ]);
 
       const [properties, jobsData, services] = await Promise.all([

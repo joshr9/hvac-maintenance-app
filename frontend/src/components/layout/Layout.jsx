@@ -770,25 +770,31 @@ const Layout = ({
 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="font-semibold text-gray-900">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <div key={notification.id} className="p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-2 h-2 rounded-full mt-2 ${
-                              notification.type === 'urgent' ? 'bg-red-500' :
-                              notification.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                            }`}></div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900">{notification.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                      {notifications.length > 0 ? (
+                        notifications.map((notification) => (
+                          <div key={notification.id} className="p-4 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+                            <div className="flex items-start gap-3">
+                              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                                notification.type === 'urgent' ? 'bg-red-500' :
+                                notification.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
+                              }`}></div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900">{notification.message}</p>
+                                <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                              </div>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center">
+                          <p className="text-sm text-gray-500">No notifications</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 )}

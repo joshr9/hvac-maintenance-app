@@ -52,12 +52,24 @@ export const UnreadMessagesProvider = ({ children }) => {
     const connectSSE = async () => {
       try {
         const token = await getToken();
+        if (!token) {
+          console.log('⚠️ No auth token available, skipping SSE connection');
+          return;
+        }
+
+        console.log('🔌 Connecting to SSE endpoint...');
         const response = await fetch(`${apiUrl}/api/messages/events`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
+        if (!response.ok) {
+          console.error('❌ SSE connection failed:', response.status, response.statusText);
+          return;
+        }
+
+        console.log('✅ SSE connected successfully');
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 

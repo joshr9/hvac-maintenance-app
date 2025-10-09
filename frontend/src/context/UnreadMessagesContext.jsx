@@ -19,11 +19,12 @@ export const UnreadMessagesProvider = ({ children }) => {
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
 
-  // Load initial unread count
-  useEffect(() => {
-    if (!isSignedIn) return;
-    loadUnreadCount();
-  }, [isSignedIn]);
+  // Don't load initial unread count from backend - it counts all messages from last 24h
+  // Instead, rely on real-time SSE notifications for accurate unread tracking
+  // useEffect(() => {
+  //   if (!isSignedIn) return;
+  //   loadUnreadCount();
+  // }, [isSignedIn]);
 
   const loadUnreadCount = async () => {
     try {

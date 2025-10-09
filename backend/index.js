@@ -8,7 +8,7 @@ const path = require("path"); // for photos
 const app = express();
 
 // CORS configuration for SSE and API endpoints
-app.use(cors({
+const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
@@ -17,9 +17,15 @@ app.use(cors({
     'https://hvac-maintenance-app-production.up.railway.app'
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight for all routes
 
 app.use(express.json());
 

@@ -13,6 +13,7 @@ const corsOptions = {
     'http://localhost:3000',
     'http://localhost:5173',
     'https://app.deancallanm.com',
+    'https://app.deancallanpm.com',
     'https://front-end-production-3ed1.up.railway.app',
     'https://hvac-maintenance-app-production.up.railway.app'
   ],

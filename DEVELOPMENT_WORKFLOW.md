@@ -36,8 +36,8 @@ npm run dev
 **Backend:**
 ```bash
 cd backend
-npm start
-# API runs on http://localhost:3001
+npm run dev  # Uses .env.local for local database
+# API runs on http://localhost:3000
 ```
 
 ### 3. Deploying to Production

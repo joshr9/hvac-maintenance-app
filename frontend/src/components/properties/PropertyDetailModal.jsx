@@ -500,8 +500,7 @@ const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNa
 // Quick Add Suite Modal Component
 const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
   const [suiteData, setSuiteData] = useState({
-    name: '',
-    description: ''
+    name: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -524,15 +523,14 @@ const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: suiteData.name.trim(),
-          description: suiteData.description.trim()
+          name: suiteData.name.trim()
         })
       });
 
       if (response.ok) {
         const newSuite = await response.json();
         onSuiteAdded(newSuite);
-        setSuiteData({ name: '', description: '' });
+        setSuiteData({ name: '' });
       } else {
         throw new Error('Failed to add suite');
       }
@@ -569,19 +567,6 @@ const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description (Optional)
-            </label>
-            <textarea
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Additional details about this suite..."
-              rows="3"
-              value={suiteData.description}
-              onChange={(e) => setSuiteData(prev => ({ ...prev, description: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -615,8 +600,7 @@ const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
 // Edit Suite Modal Component
 const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) => {
   const [suiteData, setSuiteData] = useState({
-    name: suite?.name || '',
-    description: suite?.description || ''
+    name: suite?.name || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -639,8 +623,7 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: suiteData.name.trim(),
-          description: suiteData.description.trim()
+          name: suiteData.name.trim()
         })
       });
 
@@ -682,19 +665,6 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description (Optional)
-            </label>
-            <textarea
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Additional details about this suite..."
-              rows="3"
-              value={suiteData.description}
-              onChange={(e) => setSuiteData(prev => ({ ...prev, description: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">

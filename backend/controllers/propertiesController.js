@@ -81,13 +81,12 @@ exports.deleteProperty = async (req, res) => {
 // Suite CRUD operations
 exports.addSuite = async (req, res) => {
   const propertyId = parseInt(req.params.id)
-  const { name, description } = req.body
+  const { name } = req.body
 
   try {
     const newSuite = await prisma.suite.create({
       data: {
         name,
-        description,
         propertyId
       },
       include: {
@@ -103,14 +102,13 @@ exports.addSuite = async (req, res) => {
 
 exports.updateSuite = async (req, res) => {
   const suiteId = parseInt(req.params.suiteId)
-  const { name, description } = req.body
+  const { name } = req.body
 
   try {
     const updatedSuite = await prisma.suite.update({
       where: { id: suiteId },
       data: {
-        name,
-        description
+        name
       },
       include: {
         hvacUnits: true

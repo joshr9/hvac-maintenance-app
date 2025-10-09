@@ -6,7 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npx prisma db push --accept-data-loss --skip-generate && npx prisma generate && node -r dotenv/config index.js dotenv_config_path=.env.production",
     "start:prod": "npx prisma migrate deploy && npx prisma generate && node scripts/seedZones.js && node scripts/importProperties.js && node -r dotenv/config index.js dotenv_config_path=.env.production",
-    "dev": "node -r dotenv/config index.js dotenv_config_path=.env.local",
+    "dev": "npx dotenv-cli -e .env.local -- npx prisma db push --accept-data-loss --skip-generate && npx dotenv-cli -e .env.local -- npx prisma generate && node -r dotenv/config index.js dotenv_config_path=.env.local",
     "dev:watch": "nodemon -r dotenv/config index.js dotenv_config_path=.env.local",
     "migrate:local": "npx dotenv-cli -e .env.local -- npx prisma migrate dev",
     "migrate:prod": "npx dotenv-cli -e .env.production -- npx prisma migrate deploy",

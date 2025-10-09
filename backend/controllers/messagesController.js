@@ -783,23 +783,6 @@ exports.getRecentMessages = async (req, res) => {
 };
 
 // ==============================================
-module.exports = {
-  getMessages: exports.getMessages,
-  createMessage: exports.createMessage,
-  updateMessage: exports.updateMessage,
-  deleteMessage: exports.deleteMessage,
-  toggleReaction: exports.toggleReaction,
-  saveToJob: exports.saveToJob,
-  saveToProperty: exports.saveToProperty,
-  getChannels: exports.getChannels,
-  createChannel: exports.createChannel,
-  getDirectMessages: exports.getDirectMessages,
-  subscribeToMessages: exports.subscribeToMessages,
-  getRecentMessages: exports.getRecentMessages,
-  getUnreadCount: exports.getUnreadCount
-};
-
-// ==============================================
 // GET /api/messages/unread-count - Get unread message count
 // ==============================================
 exports.getUnreadCount = async (req, res) => {
@@ -835,4 +818,21 @@ exports.getUnreadCount = async (req, res) => {
     console.error('Error getting unread count:', error);
     res.status(500).json({ error: error.message });
   }
+};
+
+// ==============================================
+module.exports = {
+  getMessages: exports.getMessages,
+  createMessage: exports.createMessage,
+  updateMessage: exports.updateMessage,
+  deleteMessage: exports.deleteMessage,
+  toggleReaction: exports.toggleReaction,
+  saveToJob: exports.saveToJob,
+  saveToProperty: exports.saveToProperty,
+  getChannels: exports.getChannels,
+  createChannel: exports.createChannel,
+  getDirectMessages: exports.getDirectMessages,
+  subscribeToMessages: exports.subscribeToMessages,
+  getRecentMessages: exports.getRecentMessages,
+  getUnreadCount: exports.getUnreadCount
 };

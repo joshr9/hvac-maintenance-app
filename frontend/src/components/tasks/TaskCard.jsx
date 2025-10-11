@@ -18,23 +18,24 @@ const TaskCard = ({ task, onClick, onUpdate, apiCall }) => {
 
   // Priority colors
   const priorityColors = {
-    low: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800'
+    LOW: 'bg-green-100 text-green-800',
+    MEDIUM: 'bg-yellow-100 text-yellow-800',
+    HIGH: 'bg-red-100 text-red-800',
+    URGENT: 'bg-red-100 text-red-900'
   };
 
   // Status colors
   const statusColors = {
-    pending: 'text-gray-600',
-    'in-progress': 'text-blue-600',
-    completed: 'text-green-600'
+    PENDING: 'text-gray-600',
+    IN_PROGRESS: 'text-blue-600',
+    COMPLETED: 'text-green-600'
   };
 
   // Quick status toggle
   const toggleStatus = async (e) => {
     e.stopPropagation();
-    
-    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+
+    const newStatus = task.status === 'COMPLETED' ? 'PENDING' : 'COMPLETED';
     
     try {
       setUpdating(true);
@@ -73,7 +74,7 @@ const TaskCard = ({ task, onClick, onUpdate, apiCall }) => {
   };
 
   const dueInfo = formatDueDate(task.dueDate);
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'COMPLETED';
 
   return (
     <div 
@@ -89,18 +90,18 @@ const TaskCard = ({ task, onClick, onUpdate, apiCall }) => {
             onClick={toggleStatus}
             disabled={updating}
             className={`flex-shrink-0 transition-colors ${
-              task.status === 'completed' ? statusColors.completed : statusColors[task.status]
+              task.status === 'COMPLETED' ? statusColors.COMPLETED : statusColors[task.status]
             }`}
           >
-            {task.status === 'completed' ? (
+            {task.status === 'COMPLETED' ? (
               <CheckCircle className="w-5 h-5" />
             ) : (
               <Circle className="w-5 h-5" />
             )}
           </button>
-          
+
           <h3 className={`font-semibold text-gray-900 line-clamp-2 ${
-            task.status === 'completed' ? 'line-through opacity-60' : ''
+            task.status === 'COMPLETED' ? 'line-through opacity-60' : ''
           }`}>
             {task.title}
           </h3>
@@ -108,7 +109,7 @@ const TaskCard = ({ task, onClick, onUpdate, apiCall }) => {
 
         <div className="flex items-center gap-2">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            priorityColors[task.priority] || priorityColors.medium
+            priorityColors[task.priority] || priorityColors.MEDIUM
           }`}>
             {task.priority}
           </span>

@@ -28,7 +28,7 @@ import PropertiesPage from './components/properties/PropertiesPage';
 import RoleBasedCalendar from './components/calendar/RoleBasedCalendar';
 import TeamChat from './components/messaging/TeamChat';
 import HVACPage from './components/hvac/HVACpage';
-import TaskManagement from './components/tasks/TaskManagement';
+import TaskManagementTodoist from './components/tasks/TaskManagementTodoist';
 import ReportsPage from './components/reports/ReportsPage';
 
 
@@ -57,10 +57,11 @@ function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [activeModal, setActiveModal] = useState(null);
   const [properties, setProperties] = useState([]);
-  
+  const [tasks, setTasks] = useState([]);
+
   // Navigation state for passing data between pages
   const [navigationData, setNavigationData] = useState(null);
-  
+
   // Shared state for real-time job updates across all components
   const [jobsRefreshTrigger, setJobsRefreshTrigger] = useState(0);
   const [globalJobsData, setGlobalJobsData] = useState({
@@ -261,10 +262,11 @@ const renderCurrentView = () => {
     
       case 'tasks':
       return (
-        <TaskManagement 
+        <TaskManagementTodoist
           allProperties={properties}
           globalJobsData={globalJobsData}
-          onNavigate={handleNavigate}
+          tasks={tasks}
+          setTasks={setTasks}
         />
       );
 

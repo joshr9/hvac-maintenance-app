@@ -30,7 +30,7 @@ const TaskList = ({
 
   // Group tasks by status
   const groupedTasks = tasks.reduce((groups, task) => {
-    const status = task.status || 'pending';
+    const status = task.status || 'PENDING';
     if (!groups[status]) {
       groups[status] = [];
     }
@@ -38,11 +38,11 @@ const TaskList = ({
     return groups;
   }, {});
 
-  const statusOrder = ['pending', 'in-progress', 'completed'];
+  const statusOrder = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
   const statusLabels = {
-    'pending': 'To Do',
-    'in-progress': 'In Progress', 
-    'completed': 'Completed'
+    'PENDING': 'To Do',
+    'IN_PROGRESS': 'In Progress',
+    'COMPLETED': 'Completed'
   };
 
   return (

@@ -1,20 +1,22 @@
 // components/layout/Layout.jsx - Enhanced with Sign-Out Functionality
 import React, { useState, useEffect } from 'react';
-import { 
-  Menu, 
-  Bell, 
-  User, 
-  Settings, 
-  LogOut, 
+import {
+  Menu,
+  Bell,
+  User,
+  Settings,
+  LogOut,
   ChevronDown,
   X,
-  Home, 
-  Briefcase, 
-  Calendar, 
-  Building, 
-  FileText, 
-  DollarSign, 
-  Clock, 
+  Home,
+  Briefcase,
+  Calendar,
+  CalendarDays,
+  Inbox,
+  Building,
+  FileText,
+  DollarSign,
+  Clock,
   BarChart3,
   Wrench,
   Plus,
@@ -293,7 +295,6 @@ const Layout = ({
           description: 'Overview & quick stats',
           badge: null
         },
-        /* HIDDEN - May use later
         {
           id: 'jobs',
           label: 'Jobs',
@@ -308,7 +309,6 @@ const Layout = ({
           description: 'View and manage schedule',
           badge: null
         },
-        */
         {
           id: 'messaging',
           label: 'Team Chat',
@@ -572,10 +572,10 @@ const Layout = ({
     return `${Math.floor(seconds / 86400)} days ago`;
   };
 
-  // ✅ PRESERVED: Navigation Item Component
+  // ✅ ELEGANT: Navigation Item Component with 2025 styling
   const NavItem = ({ item, isActive, isCollapsed }) => {
     const isHovered = hoveredNavItem === item.id;
-    
+
     return (
       <li>
         <button
@@ -583,19 +583,19 @@ const Layout = ({
           onMouseEnter={() => setHoveredNavItem(item.id)}
           onMouseLeave={() => setHoveredNavItem(null)}
           className={`
-            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200
-            ${isActive 
-              ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-              : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+            w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200
+            ${isActive
+              ? 'bg-white/15 text-white font-medium shadow-lg shadow-dc-blue-500/20'
+              : 'text-dc-blue-100/80 hover:bg-white/10 hover:text-white'
             }
             ${item.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}
-            ${item.isAction ? 'border border-blue-200 hover:border-blue-300 hover:bg-blue-50' : ''}
+            ${item.isAction ? 'border border-white/20 hover:border-white/30' : ''}
             ${isCollapsed ? 'justify-center px-3' : ''}
           `}
           disabled={item.comingSoon}
         >
           <item.icon className={`flex-shrink-0 ${isCollapsed ? 'w-5 h-5' : 'w-5 h-5'}`} />
-          
+
           {!isCollapsed && (
             <>
               <div className="flex-1 min-w-0">
@@ -605,27 +605,29 @@ const Layout = ({
                     <span className={`
                       inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                       ${item.badgeColor || (item.badge === 'NEW'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800')
+                        ? 'bg-green-500/20 text-green-300'
+                        : 'bg-red-500/20 text-red-300')
                       } ${item.badgeColor ? 'text-white' : ''}
                     `}>
                       {item.badge}
                     </span>
                   )}
                   {item.comingSoon && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/10 text-dc-blue-200">
                       Soon
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                {!isActive && (
+                  <p className="text-xs text-dc-blue-300/60 truncate">{item.description}</p>
+                )}
               </div>
             </>
           )}
-          
+
           {/* Tooltip for collapsed state */}
           {isCollapsed && isHovered && (
-            <div className="fixed left-20 bg-gray-900 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap z-50 shadow-lg">
+            <div className="fixed left-20 bg-gray-900 text-white px-3 py-2 rounded-xl text-sm whitespace-nowrap z-50 shadow-xl">
               {item.label}
               <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
             </div>
@@ -639,21 +641,21 @@ const Layout = ({
   const sidebarContent = (
     <>
       {/* Header */}
-      <div className={`flex items-center gap-3 p-4 border-b border-gray-200 ${
+      <div className={`flex items-center gap-3 p-6 border-b border-dc-blue-700/20 ${
         isDesktopSidebarCollapsed ? 'justify-center' : ''
       }`}>
         <div className={`flex items-center ${isDesktopSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-          <img 
-            src="/DeanCallan.png" 
-            alt="Dean Callan PM" 
+          <img
+            src="/DeanCallan.png"
+            alt="Dean Callan PM"
             className={`object-contain transition-all duration-300 ${
               isDesktopSidebarCollapsed ? 'w-8 h-8' : 'w-10 h-10'
             }`}
           />
           {!isDesktopSidebarCollapsed && (
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Dean Callan PM</h1>
-              <p className="text-sm text-gray-600">Property Management</p>
+              <h1 className="text-lg font-bold text-white">Dean Callan PM</h1>
+              <p className="text-sm text-dc-blue-200">Property Management</p>
             </div>
           )}
         </div>
@@ -666,15 +668,15 @@ const Layout = ({
         {navigationSections.map((section) => (
           <div key={section.title}>
             {!isDesktopSidebarCollapsed && (
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+              <h3 className="text-xs font-semibold text-dc-blue-400 uppercase tracking-wider mb-3 px-2">
                 {section.title}
               </h3>
             )}
             <ul className={isDesktopSidebarCollapsed ? 'space-y-3' : 'space-y-1'}>
               {section.items.map((item) => (
-                <NavItem 
-                  key={item.id} 
-                  item={item} 
+                <NavItem
+                  key={item.id}
+                  item={item}
                   isActive={currentView === item.id}
                   isCollapsed={isDesktopSidebarCollapsed}
                 />
@@ -682,21 +684,84 @@ const Layout = ({
             </ul>
           </div>
         ))}
+
+        {/* Task Views - Only show on mobile when Tasks is active */}
+        {currentView === 'tasks' && !isDesktopSidebarCollapsed && (
+          <div className="lg:hidden border-t border-dc-blue-700/20 pt-4">
+            <h3 className="text-xs font-semibold text-dc-blue-400 uppercase tracking-wider mb-3 px-2">
+              TASK VIEWS
+            </h3>
+            <ul className="space-y-1">
+              <li>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('taskViewChange', { detail: 'inbox' });
+                    window.dispatchEvent(event);
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
+                >
+                  <Inbox className="w-5 h-5" />
+                  <span className="font-medium text-sm truncate">Inbox</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('taskViewChange', { detail: 'today' });
+                    window.dispatchEvent(event);
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span className="font-medium text-sm truncate">Today</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('taskViewChange', { detail: 'upcoming' });
+                    window.dispatchEvent(event);
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
+                >
+                  <CalendarDays className="w-5 h-5" />
+                  <span className="font-medium text-sm truncate">Upcoming</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => {
+                    const event = new CustomEvent('taskViewChange', { detail: 'my-tasks' });
+                    window.dispatchEvent(event);
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="font-medium text-sm truncate">My Tasks</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Footer */}
       {!isDesktopSidebarCollapsed && (
-        <div className="p-4 border-t border-gray-200">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+        <div className="p-4 border-t border-dc-blue-700/20">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Wrench className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">System Status</p>
-                <p className="text-xs text-gray-600">All systems operational</p>
+                <p className="text-sm font-medium text-white">System Status</p>
+                <p className="text-xs text-dc-blue-200">All systems operational</p>
               </div>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
             </div>
           </div>
         </div>
@@ -707,7 +772,7 @@ const Layout = ({
   return (
     <div className="h-screen flex bg-gray-50">
       {/* Desktop Sidebar */}
-      <div className={`hidden lg:flex flex-col bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ${
+      <div className={`hidden lg:flex flex-col bg-gradient-to-b from-dc-blue-900 to-dc-blue-800 border-r border-dc-blue-700/20 shadow-xl transition-all duration-300 ${
         isDesktopSidebarCollapsed ? 'w-16' : 'w-64'
       }`}>
         {sidebarContent}
@@ -717,7 +782,7 @@ const Layout = ({
       {isSidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsSidebarOpen(false)} />
-          <div className="relative flex flex-col w-64 bg-white shadow-xl">
+          <div className="relative flex flex-col w-64 bg-gradient-to-b from-dc-blue-900 to-dc-blue-800 shadow-xl">
             {sidebarContent}
           </div>
         </div>

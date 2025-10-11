@@ -30,6 +30,15 @@ app.options('*', cors(corsOptions)); // Handle preflight for all routes
 
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path} (originalUrl: ${req.originalUrl})`);
+  if (req.method === 'POST') {
+    console.log('Body:', req.body);
+  }
+  next();
+});
+
 // uploading photos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -72,7 +81,23 @@ const messagesRoutes = require('./routes/messages');
 app.use('/api/messages', clerkAuth, authenticateUser, messagesRoutes);
 
 const tasksRoutes = require('./routes/tasks');
-app.use('/api/tasks', clerkAuth, authenticateUser, tasksRoutes);
+// Original tasks endpoint
+app.use('/api/tasks', (req, res, next) => {
+  console.log('⚡⚡⚡ TASKS ROUTE HIT! ⚡⚡⚡');
+  console.log('Method:', req.method);
+  console.log('Path:', req.path);
+  console.log('URL:', req.url);
+  console.log('OriginalUrl:', req.originalUrl);
+  console.log('BaseUrl:', req.baseUrl);
+  console.log('⚡ About to call clerkAuth...');
+  next();
+}, clerkAuth, (req, res, next) => {
+  console.log('⚡ After clerkAuth, req.auth:', req.auth);
+  next();
+}, authenticateUser, tasksRoutes);
+
+// WORKAROUND: Alternate endpoint name to bypass browser/firewall block
+app.use('/api/task-items', clerkAuth, authenticateUser, tasksRoutes);
 
 const clerkRoutes = require('./routes/clerk');
 app.use('/api/clerk', clerkRoutes);
@@ -123,6 +148,12 @@ app.post('/api/admin/generate-jobs', async (req, res) => {
 // Root Route
 app.get("/", (req, res) => {
   res.send("HVAC Maintenance API is running ✅");
+});
+
+// Test POST endpoint without auth
+app.post("/api/test-post", (req, res) => {
+  console.log('🧪 Test POST received!', req.body);
+  res.json({ success: true, message: "POST works!", received: req.body });
 });
 
 const PORT = process.env.PORT || 3000;

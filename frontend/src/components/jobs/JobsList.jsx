@@ -337,78 +337,86 @@ const JobsList = ({
   }
 
   return (
-    <div className="min-h-screen" style={{background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)'}}>
-      <div className="p-6 space-y-6">
-        {/* Header */}
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Header - Mobile & Desktop optimized */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Jobs Management</h1>
-            <p className="text-gray-600 mt-1">Manage and track all maintenance jobs</p>
-          </div>
-          <button 
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Jobs</h1>
+          <button
             onClick={handleCreateJobClick}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" />
-            Create Job
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Create Job</span>
           </button>
         </div>
 
-        {/* Stats Component - Now uses API data with late jobs */}
-        <JobStats 
-          stats={stats} 
-          showRecurring={true}
-          showAlert={true}
-          onLateJobsClick={handleLateJobsClick}
-          onViewLateJobs={handleViewLateJobs}
-        />
-
-        {/* Filters Component */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 mb-6">
-          <JobFilters
-            statusFilter={statusFilter}
-            priorityFilter={priorityFilter}
-            technicianFilter={technicianFilter}
-            propertyFilter={propertyFilter}
-            searchTerm={searchTerm}
-            onStatusChange={setStatusFilter}
-            onPriorityChange={setPriorityFilter}
-            onTechnicianChange={setTechnicianFilter}
-            onPropertyChange={setPropertyFilter}
-            onSearchChange={setSearchTerm}
-            jobs={jobs}
-            properties={properties}
-          />
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700">{error}</p>
-            <button 
-              onClick={loadData}
-              className="mt-2 text-red-600 hover:text-red-800 underline"
-            >
-              Try Again
-            </button>
+        {/* Simplified Stats - Mobile friendly */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-blue-50 rounded-lg p-3">
+            <p className="text-xs sm:text-sm text-blue-600 font-medium">Today</p>
+            <p className="text-lg sm:text-2xl font-bold text-blue-900">{stats.scheduledJobs || 0}</p>
           </div>
-        )}
-
-        {/* Jobs Grid */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6">
-          <JobGrid
-            jobs={filteredJobs}
-            onView={handleJobView}
-            onEdit={handleJobEdit}
-            onDelete={handleJobDelete}
-            onDuplicate={handleJobDuplicate}
-            onReschedule={handleReschedule}
-            onAssignTechnician={handleAssignTechnician}
-            onStatusUpdate={handleStatusUpdate}
-            onTimerUpdate={handleTimerUpdate} // ✅ NEW: Timer handler
-            hasFilters={hasFilters}
-          />
+          <div className="bg-green-50 rounded-lg p-3">
+            <p className="text-xs sm:text-sm text-green-600 font-medium">Active</p>
+            <p className="text-lg sm:text-2xl font-bold text-green-900">{stats.totalJobs || 0}</p>
+          </div>
+          <div className="bg-red-50 rounded-lg p-3">
+            <p className="text-xs sm:text-sm text-red-600 font-medium">Overdue</p>
+            <p className="text-lg sm:text-2xl font-bold text-red-900">{stats.lateJobs || 0}</p>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-3">
+            <p className="text-xs sm:text-sm text-purple-600 font-medium">Completed</p>
+            <p className="text-lg sm:text-2xl font-bold text-purple-900">{stats.completedJobs || 0}</p>
+          </div>
         </div>
+      </div>
+
+      {/* Filters - Collapsible on mobile */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6">
+        <JobFilters
+          statusFilter={statusFilter}
+          priorityFilter={priorityFilter}
+          technicianFilter={technicianFilter}
+          propertyFilter={propertyFilter}
+          searchTerm={searchTerm}
+          onStatusChange={setStatusFilter}
+          onPriorityChange={setPriorityFilter}
+          onTechnicianChange={setTechnicianFilter}
+          onPropertyChange={setPropertyFilter}
+          onSearchChange={setSearchTerm}
+          jobs={jobs}
+          properties={properties}
+        />
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mx-4 mt-4">
+          <p className="text-red-700 text-sm sm:text-base">{error}</p>
+          <button
+            onClick={loadData}
+            className="mt-2 text-red-600 hover:text-red-800 underline text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Jobs Grid - Scrollable */}
+      <div className="flex-1 overflow-auto px-4 py-4 sm:px-6">
+        <JobGrid
+          jobs={filteredJobs}
+          onView={handleJobView}
+          onEdit={handleJobEdit}
+          onDelete={handleJobDelete}
+          onDuplicate={handleJobDuplicate}
+          onReschedule={handleReschedule}
+          onAssignTechnician={handleAssignTechnician}
+          onStatusUpdate={handleStatusUpdate}
+          onTimerUpdate={handleTimerUpdate}
+          hasFilters={hasFilters}
+        />
       </div>
 
       {/* MODALS */}

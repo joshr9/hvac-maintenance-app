@@ -97,11 +97,16 @@ exports.getTasks = async (req, res) => {
 
 // POST /api/tasks - Create a new task with auth
 exports.createTask = async (req, res) => {
+  console.log('📝 createTask called');
+  console.log('Request body:', req.body);
+  console.log('User ID:', req.userId);
+
   try {
     const {
       title,
       description,
-      priority = 'medium',
+      status,
+      priority = 'MEDIUM',
       assignedTo = [],
       dueDate,
       estimatedTime,
@@ -112,12 +117,16 @@ exports.createTask = async (req, res) => {
 
     const createdBy = req.userId; // From Clerk auth
 
+    console.log('🔍 Extracted data:', { title, status, priority, assignedTo, createdBy });
+
     const task = await prisma.$transaction(async (tx) => {
+      console.log('🏁 Starting transaction');
       // Create the task
       const newTask = await tx.task.create({
         data: {
           title,
           description,
+          ...(status && { status }),
           priority,
           dueDate: dueDate ? new Date(dueDate) : null,
           estimatedTime: estimatedTime ? parseInt(estimatedTime) : null,
@@ -126,9 +135,11 @@ exports.createTask = async (req, res) => {
           createdBy
         }
       });
+      console.log('✅ Task created:', newTask.id);
 
       // Add assignees (convert Clerk user IDs to your user system)
       if (assignedTo.length > 0) {
+        console.log('👥 Adding assignees:', assignedTo);
         await tx.taskAssignee.createMany({
           data: assignedTo.map(userId => ({
             taskId: newTask.id,
@@ -139,6 +150,7 @@ exports.createTask = async (req, res) => {
 
       // Add subtasks
       if (subtasks.length > 0) {
+        console.log('📋 Adding subtasks:', subtasks);
         await tx.subtask.createMany({
           data: subtasks.map((subtask, index) => ({
             taskId: newTask.id,
@@ -148,9 +160,11 @@ exports.createTask = async (req, res) => {
         });
       }
 
+      console.log('✅ Transaction complete');
       return newTask;
     });
 
+    console.log('🔍 Fetching complete task');
     // Fetch the complete task with relations
     const completeTask = await prisma.task.findUnique({
       where: { id: task.id },
@@ -166,6 +180,7 @@ exports.createTask = async (req, res) => {
       }
     });
 
+    console.log('✅ Sending response');
     res.status(201).json(completeTask);
   } catch (error) {
     console.error('Error creating task:', error);
@@ -180,7 +195,7 @@ exports.createFromMessage = async (req, res) => {
       messageId,
       title,
       description,
-      priority = 'medium',
+      priority = 'MEDIUM',
       assignedTo = [],
       dueDate,
       estimatedTime,
@@ -412,6 +427,60 @@ async function addComment(req, res) {
   }
 }
 
+// POST /api/tasks/:id/assignees - Add a single assignee
+async function addAssignee(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Check if already assigned
+    const existing = await prisma.taskAssignee.findFirst({
+      where: { taskId: id, userId }
+    });
+
+    if (!existing) {
+      await prisma.taskAssignee.create({
+        data: { taskId: id, userId }
+      });
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: { assignees: true }
+    });
+
+    return res.json(task);
+  } catch (e) {
+    console.error('Error addAssignee:', e);
+    return res.status(500).json({ error: e.message });
+  }
+}
+
+// DELETE /api/tasks/:id/assignees - Remove all assignees
+async function deleteAllAssignees(req, res) {
+  try {
+    const id = parseInt(req.params.id);
+
+    await prisma.taskAssignee.deleteMany({
+      where: { taskId: id }
+    });
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: { assignees: true }
+    });
+
+    return res.json(task);
+  } catch (e) {
+    console.error('Error deleteAllAssignees:', e);
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 module.exports = {
   getTasks: exports.getTasks,
   createTask: exports.createTask,
@@ -422,4 +491,6 @@ module.exports = {
   deleteTask,
   assignTask,
   addComment,
+  addAssignee,
+  deleteAllAssignees,
 };

@@ -26,6 +26,12 @@ router.post('/:id/comments', tasksController.addComment);
 // PUT /api/tasks/:id/progress - Update task progress
 router.put('/:id/progress', tasksController.updateProgress);
 
+// POST /api/tasks/:id/assignees - Add assignee to task
+router.post('/:id/assignees', tasksController.addAssignee);
+
+// DELETE /api/tasks/:id/assignees - Remove all assignees from task
+router.delete('/:id/assignees', tasksController.deleteAllAssignees);
+
 // POST /api/tasks/from-message - Create task from message
 router.post('/from-message', tasksController.createFromMessage);
 

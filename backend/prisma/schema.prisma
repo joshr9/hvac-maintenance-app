@@ -474,11 +474,11 @@ model Message {
 }
 
 model Task {
-  id                   Int       @id @default(autoincrement())
+  id                   Int        @id @default(autoincrement())
   title                String
   description          String?
-  status               String    @default("pending")
-  priority             String    @default("medium")
+  status               TaskStatus @default(PENDING)
+  priority             TaskPriority @default(MEDIUM)
   progress             Int       @default(0)
   estimatedTime        Int?
   dueDate              DateTime?
@@ -487,6 +487,7 @@ model Task {
   linkedToJobId        Int?
   linkedToPropertyId   Int?
   createdBy            String // Clerk user ID (string)
+  labels               String[]  @default([]) // Array of label names
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -621,7 +622,7 @@ enum ServiceCategory {
   OTHER
 }
 
-// RecurrenceFrequency for jobs 
+// RecurrenceFrequency for jobs
 enum RecurrenceFrequency {
   DAILY
   WEEKLY
@@ -629,4 +630,19 @@ enum RecurrenceFrequency {
   MONTHLY
   QUARTERLY
   YEARLY
+}
+
+// Task Status enum
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Task Priority enum
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

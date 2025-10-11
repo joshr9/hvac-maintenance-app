@@ -33,8 +33,8 @@ const TaskDetailModal = ({
   const [editData, setEditData] = useState({
     title: task?.title || '',
     description: task?.description || '',
-    priority: task?.priority || 'medium',
-    status: task?.status || 'pending',
+    priority: task?.priority || 'MEDIUM',
+    status: task?.status || 'PENDING',
     progress: task?.progress || 0,
     dueDate: task?.dueDate ? task.dueDate.split('T')[0] : '',
     estimatedTime: task?.estimatedTime || '',
@@ -102,9 +102,9 @@ const TaskDetailModal = ({
     try {
       const updatedTask = await apiCall(`/tasks/${task.id}/progress`, {
         method: 'PUT',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           progress: newProgress,
-          status: newProgress === 100 ? 'completed' : 'in-progress'
+          status: newProgress === 100 ? 'COMPLETED' : 'IN_PROGRESS'
         })
       });
       onTaskUpdated(updatedTask);
@@ -114,15 +114,16 @@ const TaskDetailModal = ({
   };
 
   const priorityColors = {
-    low: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800'
+    LOW: 'bg-green-100 text-green-800',
+    MEDIUM: 'bg-yellow-100 text-yellow-800',
+    HIGH: 'bg-red-100 text-red-800',
+    URGENT: 'bg-red-100 text-red-900'
   };
 
   const statusColors = {
-    pending: 'bg-gray-100 text-gray-800',
-    'in-progress': 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800'
+    PENDING: 'bg-gray-100 text-gray-800',
+    IN_PROGRESS: 'bg-blue-100 text-blue-800',
+    COMPLETED: 'bg-green-100 text-green-800'
   };
 
   return (
@@ -190,19 +191,19 @@ const TaskDetailModal = ({
                     onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
                     className="px-3 py-1 rounded-full text-sm font-medium border border-gray-300 focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
                   </select>
                 ) : (
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    statusColors[task.status] || statusColors.pending
+                    statusColors[task.status] || statusColors.PENDING
                   }`}>
-                    {task.status?.replace('-', ' ') || 'Pending'}
+                    {task.status?.replace('_', ' ') || 'Pending'}
                   </span>
                 )}
               </div>
-              
+
               <div>
                 {editing ? (
                   <select
@@ -210,13 +211,14 @@ const TaskDetailModal = ({
                     onChange={(e) => setEditData(prev => ({ ...prev, priority: e.target.value }))}
                     className="px-3 py-1 rounded-full text-sm font-medium border border-gray-300 focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
+                    <option value="LOW">Low Priority</option>
+                    <option value="MEDIUM">Medium Priority</option>
+                    <option value="HIGH">High Priority</option>
+                    <option value="URGENT">Urgent Priority</option>
                   </select>
                 ) : (
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    priorityColors[task.priority] || priorityColors.medium
+                    priorityColors[task.priority] || priorityColors.MEDIUM
                   }`}>
                     {task.priority} priority
                   </span>

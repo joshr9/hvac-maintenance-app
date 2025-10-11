@@ -25,7 +25,7 @@ const CreateTaskModal = ({
   const [formData, setFormData] = useState({
     title: fromMessage ? `Task: ${fromMessage.content?.substring(0, 50)}...` : '',
     description: fromMessage ? fromMessage.content : '',
-    priority: 'medium',
+    priority: 'MEDIUM',
     dueDate: '',
     estimatedTime: '',
     assignedTo: [],
@@ -167,9 +167,10 @@ const CreateTaskModal = ({
                   onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
                 </select>
               </div>
 

@@ -1,7 +1,46 @@
 // components/jobs/hooks/useJobFormOptions.js
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 
 export const useJobFormOptions = () => {
+  const { getToken } = useAuth();
+  const [technicianOptions, setTechnicianOptions] = useState([]);
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  // Fetch real users from Clerk API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = await getToken();
+        const response = await fetch(`${apiUrl}/api/clerk/users`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (response.ok) {
+          const users = await response.json();
+          // Filter for technicians and format for dropdown
+          const technicians = users
+            .filter(user =>
+              user.publicMetadata?.role === 'technician' ||
+              user.publicMetadata?.role === 'admin'
+            )
+            .map(user => ({
+              value: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.emailAddresses[0]?.emailAddress,
+              label: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.emailAddresses[0]?.emailAddress
+            }));
+
+          setTechnicianOptions(technicians);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        // Fallback to empty array
+        setTechnicianOptions([]);
+      }
+    };
+
+    fetchUsers();
+  }, [getToken, apiUrl]);
+
   const workTypeOptions = useMemo(() => [
     { value: 'HVAC_MAINTENANCE', label: 'HVAC Maintenance' },
     { value: 'HVAC_REPAIR', label: 'HVAC Repair' },
@@ -39,13 +78,6 @@ export const useJobFormOptions = () => {
     { value: 5, label: 'Friday' },
     { value: 6, label: 'Saturday' },
     { value: 7, label: 'Sunday' }
-  ], []);
-
-  const technicianOptions = useMemo(() => [
-    { value: 'Mario Escobar', label: 'Mario Escobar (HVAC)' },
-    { value: 'Mike Johnson', label: 'Mike Johnson' },
-    { value: 'Sarah Wilson', label: 'Sarah Wilson' },
-    { value: 'Alex Howard', label: 'Alex Howard' }
   ], []);
 
   return {

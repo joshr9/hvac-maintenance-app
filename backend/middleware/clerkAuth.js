@@ -5,8 +5,14 @@ const clerkAuth = ClerkExpressWithAuth({
 });
 
 const authenticateUser = async (req, res, next) => {
+  console.log('🔐 authenticateUser middleware called');
+  console.log('Authorization header:', req.headers.authorization?.substring(0, 50) + '...');
+  console.log('req.auth:', req.auth);
+
   try {
     if (!req.auth?.userId) {
+      console.log('❌ No userId in req.auth');
+      console.log('Sending 401 response...');
       // Set CORS headers even on auth failure
       const origin = req.headers.origin;
       const allowedOrigins = [
@@ -23,12 +29,14 @@ const authenticateUser = async (req, res, next) => {
         res.setHeader('Access-Control-Allow-Credentials', 'true');
       }
 
+      console.log('401 response sent');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     req.userId = req.auth.userId;
     req.userRole = req.auth?.sessionClaims?.role || 'technician';
 
+    console.log('✅ Auth successful, userId:', req.userId);
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

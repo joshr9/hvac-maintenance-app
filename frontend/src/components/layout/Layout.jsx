@@ -605,12 +605,17 @@ const Layout = ({
           {children}
         </main>
 
-        {/* iOS Bottom Tab Bar — mobile only */}
+        {/* iOS Bottom Tab Bar — mobile only, frosted glass */}
         <nav
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-gray-200"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          <div className="flex">
+          {/* Blur layer — no border, ultra-thin material */}
+          <div
+            className="absolute inset-0 backdrop-blur-2xl"
+            style={{ background: 'rgba(242,242,247,0.55)' }}
+          />
+          <div className="relative flex">
             {navigationSections[0].items.map(item => {
               const isActive = currentView === item.id ||
                 (item.id === 'hvac' && currentView === 'maintenance');
@@ -618,16 +623,18 @@ const Layout = ({
                 <button
                   key={item.id}
                   onClick={() => handleNavigation(item.id)}
-                  className={`relative flex-1 flex flex-col items-center gap-1 py-2.5 transition-colors ${
-                    isActive ? '' : 'text-gray-400'
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all ${
+                    isActive ? '' : 'text-gray-400/70'
                   }`}
                   style={isActive ? { color: '#101d40' } : {}}
                 >
-                  <item.icon className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                  <span className="text-[10px] font-semibold tracking-wide">{item.label}</span>
-                  {isActive && (
-                    <span className="absolute bottom-0 w-10 h-0.5 rounded-full" style={{ backgroundColor: '#101d40' }} />
-                  )}
+                  {/* Active: icon on a subtle pill */}
+                  <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-[#101d40]/10' : ''}`}>
+                    <item.icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                  </div>
+                  <span className={`text-[10px] tracking-wide transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                    {item.label}
+                  </span>
                 </button>
               );
             })}

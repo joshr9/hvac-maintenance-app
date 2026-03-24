@@ -20,6 +20,7 @@ const MAINTENANCE_TYPE_LABELS = {
 const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [localProperties, setLocalProperties] = useState([]);
+  const [expandedProperties, setExpandedProperties] = useState(new Set());
   const [historyState, setHistoryState] = useState({});
   const [historyData, setHistoryData] = useState({});
   const [expandedUnits, setExpandedUnits] = useState(new Set());
@@ -31,24 +32,22 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
   }, [properties]);
 
   const groupedProperties = useMemo(() => {
-    return localProperties
-      .map(property => {
-        const units = [];
-        (property.suites || []).forEach(suite => {
-          (suite.hvacUnits || []).forEach(unit => {
-            units.push({
-              ...unit,
-              suiteId: suite.id,
-              suiteName: suite.name || `Suite ${suite.id}`,
-              suiteData: suite,
-              propertyData: property,
-              propertyName: property.name || property.address,
-            });
+    return localProperties.map(property => {
+      const units = [];
+      (property.suites || []).forEach(suite => {
+        (suite.hvacUnits || []).forEach(unit => {
+          units.push({
+            ...unit,
+            suiteId: suite.id,
+            suiteName: suite.name || `Suite ${suite.id}`,
+            suiteData: suite,
+            propertyData: property,
+            propertyName: property.name || property.address,
           });
         });
-        return { property, units };
-      })
-      .filter(g => g.units.length > 0);
+      });
+      return { property, units };
+    });
   }, [localProperties]);
 
   const filteredGroups = useMemo(() => {
@@ -63,9 +62,20 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
           u.suiteName?.toLowerCase().includes(q) ||
           (u.label || u.serialNumber || '').toLowerCase().includes(q)
         ),
+        _propertyMatch:
+          g.property.name?.toLowerCase().includes(q) ||
+          g.property.address?.toLowerCase().includes(q),
       }))
-      .filter(g => g.units.length > 0);
+      .filter(g => g._propertyMatch || g.units.length > 0);
   }, [groupedProperties, searchQuery]);
+
+  const toggleProperty = useCallback((propertyId) => {
+    setExpandedProperties(prev => {
+      const next = new Set(prev);
+      next.has(propertyId) ? next.delete(propertyId) : next.add(propertyId);
+      return next;
+    });
+  }, []);
 
   const fetchHistory = useCallback(async (unitId) => {
     setHistoryState(prev => ({ ...prev, [unitId]: 'loading' }));
@@ -145,50 +155,84 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
         </div>
       </div>
 
-      {/* Property groups */}
-      <div className="py-4 space-y-6">
+      {/* Property accordion list */}
+      <div className="px-4 py-4 space-y-2.5">
         {filteredGroups.length === 0 ? (
           <div className="text-center py-20">
             <Zap className="w-14 h-14 text-gray-200 mx-auto mb-3" />
-            <p className="font-semibold text-gray-500">No units found</p>
-            {searchQuery
-              ? <p className="text-sm text-gray-400 mt-1">Try a different search</p>
-              : <p className="text-sm text-gray-400 mt-1">Tap + to add a unit</p>
-            }
+            <p className="font-semibold text-gray-500">No properties found</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {searchQuery ? 'Try a different search' : 'Tap + to add a unit'}
+            </p>
           </div>
         ) : (
-          filteredGroups.map(({ property, units }) => (
-            <div key={property.id}>
-              {/* Sticky property header */}
-              <div className="sticky top-0 z-10 bg-[#F2F2F7] px-4 py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Building className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide truncate">
-                    {property.name || property.address}
-                  </span>
-                </div>
-                <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{units.length} units</span>
-              </div>
+          filteredGroups.map(({ property, units }) => {
+            const isOpen = expandedProperties.has(property.id);
+            return (
+              <div key={property.id} className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
 
-              {/* Units */}
-              <div className="px-4 space-y-2">
-                {units.map(unit => (
-                  <UnitCard
-                    key={unit.id}
-                    unit={unit}
-                    onLogWork={handleLogWork}
-                    isExpanded={expandedUnits.has(unit.id)}
-                    onToggleHistory={() => toggleHistory(unit.id)}
-                    historyStatus={historyState[unit.id]}
-                    history={historyData[unit.id] || []}
-                  />
-                ))}
+                {/* Property row — tap to expand */}
+                <button
+                  className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors"
+                  onClick={() => toggleProperty(property.id)}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#101d40' }}>
+                      <Building className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-semibold text-gray-900 leading-tight truncate">
+                        {property.name || property.address}
+                      </p>
+                      {property.name && property.address && (
+                        <p className="text-[12px] text-gray-400 truncate">{property.address}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    <span className="text-[12px] text-gray-400">
+                      {units.length} {units.length === 1 ? 'unit' : 'units'}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {/* Expanded units */}
+                {isOpen && (
+                  <div className="border-t border-gray-100">
+                    {units.length === 0 ? (
+                      <div className="px-4 py-5 text-center">
+                        <p className="text-sm text-gray-400">No units yet</p>
+                        <button
+                          onClick={() => setShowAddUnit(true)}
+                          className="mt-2 text-sm font-semibold active:opacity-60"
+                          style={{ color: '#101d40' }}
+                        >
+                          + Add Unit
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3 space-y-2">
+                        {units.map(unit => (
+                          <UnitCard
+                            key={unit.id}
+                            unit={unit}
+                            onLogWork={handleLogWork}
+                            isExpanded={expandedUnits.has(unit.id)}
+                            onToggleHistory={() => toggleHistory(unit.id)}
+                            historyStatus={historyState[unit.id]}
+                            history={historyData[unit.id] || []}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
-        {/* Bottom padding for FAB */}
-        <div className="h-20" />
+        <div className="h-28" />
       </div>
 
       {/* Add Unit FAB — raised above iOS tab bar on mobile */}

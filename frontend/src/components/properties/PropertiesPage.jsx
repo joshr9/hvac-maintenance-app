@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Building, Plus, Search, Users, Zap, MapPin, Edit3, Trash2, ChevronRight } from 'lucide-react';
-import AddPropertyModal from './AddPropertyModal';
+import AddPropertyScreen from './AddPropertyScreen';
 import EditPropertyModal from './EditPropertyModal';
 import PropertyDetailModal from './PropertyDetailModal';
 
@@ -176,7 +176,12 @@ const PropertiesPage = ({ onNavigate }) => {
       </button>
 
       {/* Modals */}
-      <AddPropertyModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onPropertyAdded={handlePropertyAdded} />
+      {showAddModal && (
+        <AddPropertyScreen
+          onClose={() => setShowAddModal(false)}
+          onPropertyAdded={p => { handlePropertyAdded(p); setShowAddModal(false); }}
+        />
+      )}
       <EditPropertyModal
         isOpen={showEditModal}
         onClose={() => { setShowEditModal(false); setSelectedProperty(null); }}

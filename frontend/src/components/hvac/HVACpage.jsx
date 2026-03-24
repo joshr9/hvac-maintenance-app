@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import AddPropertyScreen from '../properties/AddPropertyScreen';
 import {
   Wrench, Search, Building, Zap, Clock, ChevronDown, ChevronUp,
   Filter, Camera, ClipboardList, AlertCircle, Plus, X, Check,
@@ -219,6 +220,7 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
   const [selectedSuite, setSelectedSuite] = useState(null);
   const [propertySearch, setPropertySearch] = useState('');
   const [propertyAddress, setPropertyAddress] = useState('');
+  const [showAddProperty, setShowAddProperty] = useState(false);
   const [newSuiteName, setNewSuiteName] = useState('');
   const [showNewSuite, setShowNewSuite] = useState(false);
   const [unitForm, setUnitForm] = useState({ label: '', filterSize: '', serialNumber: '' });
@@ -392,35 +394,16 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
               </button>
             ))}
 
-            {/* New property creation — only when search text typed */}
-            {propertySearch.trim() && (
-              <div className="mt-4 bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-4 pt-4 pb-2">
-                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-3">
-                    New Property
-                  </p>
-                  <p className="text-[15px] font-semibold text-gray-900 mb-3">"{propertySearch}"</p>
-                  <input
-                    type="text"
-                    placeholder="Street address *"
-                    value={propertyAddress}
-                    onChange={e => setPropertyAddress(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && propertyAddress.trim() && handleCreateProperty()}
-                    className="w-full px-4 py-3 text-[15px] bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                  />
-                </div>
-                <div className="px-4 pb-4 pt-2">
-                  <button
-                    onClick={handleCreateProperty}
-                    disabled={saving || !propertyAddress.trim()}
-                    className="w-full py-3.5 rounded-xl text-[15px] font-bold text-white disabled:opacity-40 active:scale-[0.98] transition-transform"
-                    style={{ backgroundColor: '#101d40' }}
-                  >
-                    {saving ? 'Creating…' : 'Create Property'}
-                  </button>
-                </div>
+            {/* Add new property — opens full-screen */}
+            <button
+              onClick={() => setShowAddProperty(true)}
+              className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm active:scale-[0.98] transition-transform text-left mt-2"
+            >
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#101d40' }}>
+                <Plus className="w-4 h-4 text-white" />
               </div>
-            )}
+              <span className="text-[15px] font-medium text-gray-700">Add New Property</span>
+            </button>
           </>
         )}
 
@@ -517,6 +500,20 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
             {saving ? 'Saving…' : 'Add Unit'}
           </button>
         </div>
+      )}
+
+      {/* Add Property full-screen — z above this screen */}
+      {showAddProperty && (
+        <AddPropertyScreen
+          initialName={propertySearch}
+          onClose={() => setShowAddProperty(false)}
+          onPropertyAdded={(property) => {
+            setShowAddProperty(false);
+            setSelectedProperty(property);
+            setError('');
+            setStep(2);
+          }}
+        />
       )}
     </div>
   );

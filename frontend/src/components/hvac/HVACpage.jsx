@@ -246,7 +246,7 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
       const res = await fetch(`${apiUrl}/api/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: propertySearch.trim(), address: propertySearch.trim() }),
+        body: JSON.stringify({ name: propertySearch.trim() }),
       });
       if (!res.ok) throw new Error('Failed to create property');
       const property = await res.json();
@@ -365,39 +365,41 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
                 <input
                   autoFocus
                   type="text"
-                  placeholder="Search properties…"
+                  placeholder="Search or type a new property name…"
                   value={propertySearch}
                   onChange={e => setPropertySearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="space-y-1.5">
-                {filteredProperties.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => handleSelectProperty(p)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl hover:bg-gray-100 active:scale-[0.98] transition-all text-left"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{p.name || p.address}</p>
-                      {p.name && p.address && <p className="text-xs text-gray-400 mt-0.5">{p.address}</p>}
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  </button>
-                ))}
 
-                {/* Create new property if search text doesn't match anything exactly */}
-                {propertySearch.trim() && (
-                  <button
-                    onClick={handleCreateProperty}
-                    disabled={saving}
-                    className="w-full flex items-center gap-2 px-4 py-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    <Plus className="w-4 h-4 flex-shrink-0" />
-                    <span>Create <span className="font-medium text-gray-700">"{propertySearch}"</span> as new property</span>
-                  </button>
-                )}
-              </div>
+              {/* Create button right under search — always visible above keyboard */}
+              {propertySearch.trim() && (
+                <button
+                  onClick={handleCreateProperty}
+                  disabled={saving}
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 active:scale-[0.98] transition-transform"
+                  style={{ backgroundColor: '#101d40' }}
+                >
+                  <Plus className="w-4 h-4 flex-shrink-0" />
+                  {saving ? 'Creating…' : <>Create <span className="font-bold">"{propertySearch}"</span></>}
+                </button>
+              )}
+
+              {/* Existing properties below */}
+              {filteredProperties.length > 0 && (
+                <div className="space-y-1.5">
+                  {filteredProperties.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleSelectProperty(p)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl active:scale-[0.98] transition-all text-left"
+                    >
+                      <p className="text-sm font-medium text-gray-900">{p.name || p.address}</p>
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

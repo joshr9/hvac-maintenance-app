@@ -605,34 +605,41 @@ const Layout = ({
           {children}
         </main>
 
-        {/* iOS Bottom Tab Bar — mobile only, frosted glass */}
+        {/* iOS 26 Liquid Glass Tab Bar — floating pill, mobile only */}
         <nav
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-30"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none"
+          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}
         >
-          {/* Blur layer — no border, ultra-thin material */}
           <div
-            className="absolute inset-0 backdrop-blur-2xl"
-            style={{ background: 'rgba(242,242,247,0.55)' }}
-          />
-          <div className="relative flex">
-            {navigationSections[0].items.map(item => {
+            className="pointer-events-auto flex rounded-2xl overflow-hidden"
+            style={{
+              background: 'rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(40px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+              boxShadow: '0 0 0 0.5px rgba(255,255,255,0.6) inset, 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+              minWidth: 200,
+            }}
+          >
+            {navigationSections[0].items.map((item, idx) => {
               const isActive = currentView === item.id ||
                 (item.id === 'hvac' && currentView === 'maintenance');
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNavigation(item.id)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all ${
-                    isActive ? '' : 'text-gray-400/70'
-                  }`}
+                  className={`relative flex flex-col items-center gap-0.5 px-10 py-2.5 transition-all ${
+                    idx > 0 ? 'border-l border-white/20' : ''
+                  } ${isActive ? '' : 'text-gray-500/80'}`}
                   style={isActive ? { color: '#101d40' } : {}}
                 >
-                  {/* Active: icon on a subtle pill */}
-                  <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-[#101d40]/10' : ''}`}>
-                    <item.icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                  </div>
-                  <span className={`text-[10px] tracking-wide transition-all ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                  {isActive && (
+                    <span
+                      className="absolute inset-0"
+                      style={{ background: 'rgba(16,29,64,0.07)' }}
+                    />
+                  )}
+                  <item.icon className={`relative w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                  <span className={`relative text-[10px] tracking-wide ${isActive ? 'font-semibold' : 'font-medium'}`}>
                     {item.label}
                   </span>
                 </button>

@@ -190,10 +190,10 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
         <div className="h-20" />
       </div>
 
-      {/* Add Unit FAB */}
+      {/* Add Unit FAB — raised above iOS tab bar on mobile */}
       <button
         onClick={() => setShowAddUnit(true)}
-        className="fixed bottom-6 right-5 w-14 h-14 bg-[#101d40] text-white rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform z-20"
+        className="fixed bottom-24 lg:bottom-6 right-5 w-14 h-14 bg-[#101d40] text-white rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform z-20"
         style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
       >
         <Plus className="w-6 h-6" />

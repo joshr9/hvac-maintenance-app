@@ -4,17 +4,18 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Wind, Droplets, ClipboardCheck, Wrench, Zap, Snowflake, MoreHorizontal,
-  Camera, ImageIcon, X, ChevronDown,
+  Camera, ImageIcon, X, ChevronDown, ShieldCheck,
 } from 'lucide-react';
 
 const WORK_TYPES = [
-  { value: 'FILTER_CHANGE',  label: 'Filter Change', Icon: Wind },
-  { value: 'COIL_CLEANING',  label: 'Coil Clean',    Icon: Droplets },
-  { value: 'INSPECTION',     label: 'Inspection',    Icon: ClipboardCheck },
-  { value: 'REPAIR',         label: 'Repair',        Icon: Wrench },
-  { value: 'FULL_SERVICE',   label: 'Full Service',  Icon: Zap },
-  { value: 'REFRIGERANT',    label: 'Refrigerant',   Icon: Snowflake },
-  { value: 'OTHER',          label: 'Other',         Icon: MoreHorizontal },
+  { value: 'PREVENTIVE_MAINTENANCE', label: 'PM',           Icon: ShieldCheck },
+  { value: 'FILTER_CHANGE',          label: 'Filter Change', Icon: Wind },
+  { value: 'COIL_CLEANING',          label: 'Coil Clean',    Icon: Droplets },
+  { value: 'INSPECTION',             label: 'Inspection',    Icon: ClipboardCheck },
+  { value: 'REPAIR',                 label: 'Repair',        Icon: Wrench },
+  { value: 'FULL_SERVICE',           label: 'Full Service',  Icon: Zap },
+  { value: 'REFRIGERANT',            label: 'Refrigerant',   Icon: Snowflake },
+  { value: 'OTHER',                  label: 'Other',         Icon: MoreHorizontal },
 ];
 
 const formatDateLabel = (dateStr) => {

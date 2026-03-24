@@ -218,6 +218,7 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [selectedSuite, setSelectedSuite] = useState(null);
   const [propertySearch, setPropertySearch] = useState('');
+  const [propertyAddress, setPropertyAddress] = useState('');
   const [newSuiteName, setNewSuiteName] = useState('');
   const [showNewSuite, setShowNewSuite] = useState(false);
   const [unitForm, setUnitForm] = useState({ label: '', filterSize: '', serialNumber: '' });
@@ -234,6 +235,7 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
 
   const handleSelectProperty = (property) => {
     setSelectedProperty(property);
+    setPropertyAddress('');
     setStep(2);
   };
 
@@ -246,7 +248,7 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
       const res = await fetch(`${apiUrl}/api/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: propertySearch.trim() }),
+        body: JSON.stringify({ name: propertySearch.trim(), address: propertyAddress.trim() || propertySearch.trim() }),
       });
       if (!res.ok) throw new Error('Failed to create property');
       const property = await res.json();
@@ -372,17 +374,26 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
                 />
               </div>
 
-              {/* Create button right under search — always visible above keyboard */}
+              {/* Create form — always visible above keyboard when name is typed */}
               {propertySearch.trim() && (
-                <button
-                  onClick={handleCreateProperty}
-                  disabled={saving}
-                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 active:scale-[0.98] transition-transform"
-                  style={{ backgroundColor: '#101d40' }}
-                >
-                  <Plus className="w-4 h-4 flex-shrink-0" />
-                  {saving ? 'Creating…' : <>Create <span className="font-bold">"{propertySearch}"</span></>}
-                </button>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Address (e.g. 123 Main St)"
+                    value={propertyAddress}
+                    onChange={e => setPropertyAddress(e.target.value)}
+                    className="w-full px-4 py-2.5 text-sm bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={handleCreateProperty}
+                    disabled={saving || !propertyAddress.trim()}
+                    className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-40 active:scale-[0.98] transition-transform"
+                    style={{ backgroundColor: '#101d40' }}
+                  >
+                    <Plus className="w-4 h-4 flex-shrink-0" />
+                    {saving ? 'Creating…' : <>Create <span className="font-bold">"{propertySearch}"</span></>}
+                  </button>
+                </div>
               )}
 
               {/* Existing properties below */}
@@ -614,9 +625,9 @@ const HistoryPanel = ({ status, logs }) => {
 };
 
 const MAINTENANCE_LABELS = {
-  FILTER_CHANGE: 'Filter Change', COIL_CLEANING: 'Coil Clean', INSPECTION: 'Inspection',
-  REPAIR: 'Repair', FULL_SERVICE: 'Full Service', REFRIGERANT: 'Refrigerant',
-  FULL_INSPECTION_CHECKLIST: 'Full Checklist', OTHER: 'Other',
+  PREVENTIVE_MAINTENANCE: 'PM', FILTER_CHANGE: 'Filter Change', COIL_CLEANING: 'Coil Clean',
+  INSPECTION: 'Inspection', REPAIR: 'Repair', FULL_SERVICE: 'Full Service',
+  REFRIGERANT: 'Refrigerant', FULL_INSPECTION_CHECKLIST: 'Full Checklist', OTHER: 'Other',
 };
 
 const LogRow = ({ log }) => {

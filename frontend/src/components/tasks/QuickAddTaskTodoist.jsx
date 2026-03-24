@@ -3,9 +3,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Calendar, Flag, User, X } from 'lucide-react';
 import { useUser, useOrganization } from '@clerk/clerk-react';
 
-const QuickAddTaskTodoist = ({ onTaskCreated, apiCall }) => {
+const QuickAddTaskTodoist = ({ onTaskCreated, apiCall, autoFocus, onFocused }) => {
   const { user } = useUser();
   const { organization } = useOrganization();
+  const inputRef = useRef(null);
 
   const [title, setTitle] = useState('');
   const [showOptions, setShowOptions] = useState(false);
@@ -23,6 +24,14 @@ const QuickAddTaskTodoist = ({ onTaskCreated, apiCall }) => {
 
   // Get organization members (Clerk users)
   const [orgMembers, setOrgMembers] = useState([]);
+
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
+      setShowOptions(true);
+      if (onFocused) onFocused();
+    }
+  }, [autoFocus]);
 
   useEffect(() => {
     if (organization) {
@@ -141,6 +150,7 @@ const QuickAddTaskTodoist = ({ onTaskCreated, apiCall }) => {
             className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-400 hover:border-red-500 transition-colors"
           />
           <input
+            ref={inputRef}
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}

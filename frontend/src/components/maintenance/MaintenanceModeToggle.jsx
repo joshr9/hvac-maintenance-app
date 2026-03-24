@@ -1,37 +1,36 @@
-import React from 'react';
+// MaintenanceModeToggle.jsx — iOS-style segment control
+
 import { Wrench, ClipboardList } from 'lucide-react';
 
-const MaintenanceModeToggle = ({ mode, setMode }) => {
-  return (
-    <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-lg">
-      <button
-        type="button"
-        onClick={() => setMode('quick')}
-        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
-          mode === 'quick' 
-            ? 'text-white shadow-sm' 
-            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-        }`}
-        style={mode === 'quick' ? {backgroundColor: '#2a3a91'} : {}}
-      >
-        <Wrench className="w-4 h-4" />
-        Quick Maintenance
-      </button>
-      <button
-        type="button"
-        onClick={() => setMode('checklist')}
-        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold transition-all ${
-          mode === 'checklist' 
-            ? 'text-white shadow-sm' 
-            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-        }`}
-        style={mode === 'checklist' ? {backgroundColor: '#2a3a91'} : {}}
-      >
-        <ClipboardList className="w-4 h-4" />
-        Full Inspection Checklist
-      </button>
-    </div>
-  );
-};
+const MaintenanceModeToggle = ({ mode, setMode }) => (
+  <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+    <button
+      type="button"
+      onClick={() => setMode('quick')}
+      className={[
+        'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[10px] text-[14px] font-semibold transition-all duration-200',
+        mode === 'quick'
+          ? 'bg-white text-gray-900 shadow-sm'
+          : 'text-gray-500 hover:text-gray-700',
+      ].join(' ')}
+    >
+      <Wrench className="w-4 h-4" />
+      Quick Log
+    </button>
+    <button
+      type="button"
+      onClick={() => setMode('checklist')}
+      className={[
+        'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[10px] text-[14px] font-semibold transition-all duration-200',
+        mode === 'checklist'
+          ? 'bg-white text-gray-900 shadow-sm'
+          : 'text-gray-500 hover:text-gray-700',
+      ].join(' ')}
+    >
+      <ClipboardList className="w-4 h-4" />
+      Full Checklist
+    </button>
+  </div>
+);
 
 export default MaintenanceModeToggle;

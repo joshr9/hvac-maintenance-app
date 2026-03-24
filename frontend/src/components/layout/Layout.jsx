@@ -283,161 +283,50 @@ const Layout = ({
     }
   };
 
-  // ✅ STREAMLINED: HVAC-focused navigation (keeping unused items for future)
+  // Focused navigation — Properties & HVAC only
+  // All other sections preserved in code, not shown in UI
   const navigationSections = [
     {
-      title: "MAIN",
+      title: "HVAC",
       items: [
         {
-          id: 'dashboard',
-          label: 'Dashboard',
-          icon: Home,
-          description: 'Overview & quick stats',
-          badge: null
-        },
-        {
-          id: 'jobs',
-          label: 'Jobs',
-          icon: Briefcase,
-          description: 'Manage work orders',
-          badge: jobsStats.lateJobs ? `${jobsStats.lateJobs} late` : null
-        },
-        {
-          id: 'calendar',
-          label: 'Schedule',
-          icon: Calendar,
-          description: 'View and manage schedule',
-          badge: null
-        },
-        {
-          id: 'messaging',
-          label: 'Team Chat',
-          icon: MessageSquare,
-          description: 'Team communication & messages',
-          badge: hasUnread ? unreadCount : null,
-          badgeColor: 'bg-blue-500'
-        },
-        {
-          id: 'tasks',
-          label: 'Tasks',
-          icon: CheckSquare,
-          description: 'Organize and track team tasks',
+          id: 'hvac',
+          label: 'HVAC Systems',
+          icon: Zap,
+          description: 'Units, properties & maintenance',
           badge: null
         },
         {
           id: 'properties',
           label: 'Properties',
           icon: Building,
-          description: 'Manage properties & locations',
+          description: 'Manage properties & suites',
           badge: null
-        }
-      ]
-    },
-    {
-      title: "SERVICES & TOOLS",
-      items: [
-        /* HIDDEN - May use later
-        {
-          id: 'services',
-          label: 'Service Catalog',
-          icon: Tag,
-          description: 'Manage services',
-          badge: null
-        },
-        */
-        {
-          id: 'hvac',
-          label: 'HVAC Systems',
-          icon: Wrench,
-          description: 'HVAC management & maintenance',
-          badge: null
-        },
-        {
-          id: 'maintenance',
-          label: 'Quick Entry',
-          icon: Plus,
-          description: 'Add maintenance record',
-          badge: null,
-          isAction: true
-        }
-      ]
-    },
-    {
-      title: "BUSINESS & ANALYTICS",
-      items: [
-        {
-          id: 'reports',
-          label: 'Reports',
-          icon: BarChart3,
-          description: 'Export service data',
-          badge: 'NEW'
-        },
-        /* HIDDEN - May use later
-        {
-          id: 'invoices',
-          label: 'Invoicing',
-          icon: Receipt,
-          description: 'Manage billing',
-          badge: null,
-          comingSoon: true
-        },
-        */
-        {
-          id: 'timeHistory',
-          label: 'Timesheets',
-          icon: Clock,
-          description: 'Time tracking & history',
-          badge: 'NEW'
-        }
-        /* HIDDEN - May use later
-        {
-          id: 'expenses',
-          label: 'Expenses',
-          icon: DollarSign,
-          description: 'Expense tracking',
-          badge: null,
-          comingSoon: true
-        }
-        */
-      ]
-    }
-    /* HIDDEN - System Management section
-    {
-      title: "System Management",
-      items: [
-        {
-          id: 'admin',
-          label: 'Admin Dashboard',
-          icon: Shield,
-          description: 'System management',
-          badge: 'NEW'
-        },
-        {
-          id: 'team',
-          label: 'Team',
-          icon: Users,
-          description: 'Team management',
-          badge: null,
-          comingSoon: true
         }
       ]
     }
-    */
   ];
+
+  /* Hidden sections — restore when needed
+  const hiddenSections = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'jobs', label: 'Jobs', icon: Briefcase },
+    { id: 'calendar', label: 'Schedule', icon: Calendar },
+    { id: 'messaging', label: 'Team Chat', icon: MessageSquare },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+    { id: 'maintenance', label: 'Quick Entry', icon: Plus, isAction: true },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'timeHistory', label: 'Timesheets', icon: Clock },
+    { id: 'admin', label: 'Admin', icon: Shield },
+  ];
+  */
 
   // ✅ PRESERVED: All existing utility functions
   const getPageTitle = () => {
     const viewTitles = {
-      dashboard: 'Dashboard',
-      jobs: 'Jobs Management',
-      calendar: 'Schedule & Calendar',
-      properties: 'Properties Management',
-      services: 'Service Catalog',
-      hvac: 'HVAC Systems', 
-      reports: 'Reports & Analytics',
-      admin: 'Admin Dashboard',
-      maintenance: 'Quick Maintenance Entry',
-      timeHistory: 'Timesheets & Time Tracking'
+      hvac: 'HVAC Systems',
+      properties: 'Properties',
+      maintenance: 'Log Work',
     };
     return viewTitles[currentView] || 'Dean Callan PM';
   };
@@ -455,110 +344,8 @@ const Layout = ({
   // Real notifications state
   const [notifications, setNotifications] = useState([]);
 
-  // Load real notifications from recent activity
-  useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || '';
-
-        // Fetch recent jobs, tasks, and messages
-        const [jobsRes, tasksRes, messagesRes] = await Promise.all([
-          fetch(`${apiUrl}/api/jobs?limit=5`),
-          fetch(`${apiUrl}/api/tasks?limit=5`),
-          (async () => {
-            try {
-              const token = await getToken?.();
-              return fetch(`${apiUrl}/api/messages/recent?limit=5`, {
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-              });
-            } catch {
-              return { ok: false };
-            }
-          })()
-        ]);
-
-        const notifs = [];
-
-        if (jobsRes.ok) {
-          const jobsData = await jobsRes.json();
-          const jobs = Array.isArray(jobsData) ? jobsData : jobsData.jobs || [];
-
-          jobs.forEach(job => {
-            const dueDate = job.dueDate ? new Date(job.dueDate) : null;
-            const isOverdue = dueDate && dueDate < new Date() && job.status !== 'COMPLETED';
-
-            if (isOverdue) {
-              notifs.push({
-                id: `job-${job.id}`,
-                type: 'urgent',
-                message: `Job #${job.jobNumber || job.id} is overdue: ${job.title}`,
-                time: getRelativeTime(job.updatedAt || job.createdAt)
-              });
-            } else if (job.status === 'COMPLETED') {
-              notifs.push({
-                id: `job-${job.id}`,
-                type: 'success',
-                message: `Job completed: ${job.title}`,
-                time: getRelativeTime(job.updatedAt || job.createdAt)
-              });
-            }
-          });
-        }
-
-        if (tasksRes.ok) {
-          const tasksData = await tasksRes.json();
-          const tasks = Array.isArray(tasksData) ? tasksData : tasksData.tasks || [];
-
-          tasks.forEach(task => {
-            if (task.status === 'COMPLETED') {
-              notifs.push({
-                id: `task-${task.id}`,
-                type: 'success',
-                message: `Task completed: ${task.title}`,
-                time: getRelativeTime(task.updatedAt || task.createdAt)
-              });
-            }
-          });
-        }
-
-        if (messagesRes.ok) {
-          const messagesData = await messagesRes.json();
-          const messages = Array.isArray(messagesData) ? messagesData : messagesData.messages || [];
-
-          messages.forEach(msg => {
-            // Skip your own messages
-            if (msg.authorId !== currentUser?.id) {
-              const authorName = msg.author?.name || msg.author?.email || 'Someone';
-              const preview = msg.content?.substring(0, 50) + (msg.content?.length > 50 ? '...' : '');
-              notifs.push({
-                id: `msg-${msg.id}`,
-                type: 'info',
-                message: `${authorName}: ${preview}`,
-                time: getRelativeTime(msg.createdAt)
-              });
-            }
-          });
-        }
-
-        // Sort by most recent and take top 5
-        notifs.sort((a, b) => {
-          // Simple sort by type priority: urgent > success > info
-          const priority = { urgent: 0, success: 1, info: 2 };
-          return priority[a.type] - priority[b.type];
-        });
-
-        setNotifications(notifs.slice(0, 5));
-      } catch (error) {
-        console.error('Error loading notifications:', error);
-        // Keep empty array on error
-      }
-    };
-
-    loadNotifications();
-    // Refresh notifications every 2 minutes
-    const interval = setInterval(loadNotifications, 120000);
-    return () => clearInterval(interval);
-  }, [currentUser?.id]);
+  // Notifications paused — only HVAC & Properties are active views
+  // Restore when jobs/messaging/tasks are re-enabled
 
   const getRelativeTime = (dateString) => {
     if (!dateString) return 'just now';
@@ -585,7 +372,7 @@ const Layout = ({
           className={`
             w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200
             ${isActive
-              ? 'bg-white/15 text-white font-medium shadow-lg shadow-dc-blue-500/20'
+              ? 'bg-blue-500 text-white font-semibold shadow-lg shadow-blue-500/30'
               : 'text-dc-blue-100/80 hover:bg-white/10 hover:text-white'
             }
             ${item.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}
@@ -685,68 +472,7 @@ const Layout = ({
           </div>
         ))}
 
-        {/* Task Views - Only show on mobile when Tasks is active */}
-        {currentView === 'tasks' && !isDesktopSidebarCollapsed && (
-          <div className="lg:hidden border-t border-dc-blue-700/20 pt-4">
-            <h3 className="text-xs font-semibold text-dc-blue-400 uppercase tracking-wider mb-3 px-2">
-              TASK VIEWS
-            </h3>
-            <ul className="space-y-1">
-              <li>
-                <button
-                  onClick={() => {
-                    const event = new CustomEvent('taskViewChange', { detail: 'inbox' });
-                    window.dispatchEvent(event);
-                    setIsSidebarOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
-                >
-                  <Inbox className="w-5 h-5" />
-                  <span className="font-medium text-sm truncate">Inbox</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => {
-                    const event = new CustomEvent('taskViewChange', { detail: 'today' });
-                    window.dispatchEvent(event);
-                    setIsSidebarOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
-                >
-                  <Calendar className="w-5 h-5" />
-                  <span className="font-medium text-sm truncate">Today</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => {
-                    const event = new CustomEvent('taskViewChange', { detail: 'upcoming' });
-                    window.dispatchEvent(event);
-                    setIsSidebarOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
-                >
-                  <CalendarDays className="w-5 h-5" />
-                  <span className="font-medium text-sm truncate">Upcoming</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => {
-                    const event = new CustomEvent('taskViewChange', { detail: 'my-tasks' });
-                    window.dispatchEvent(event);
-                    setIsSidebarOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200 text-dc-blue-100/80 hover:bg-white/10 hover:text-white"
-                >
-                  <User className="w-5 h-5" />
-                  <span className="font-medium text-sm truncate">My Tasks</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-        )}
+        {/* Task sub-nav hidden — restore when tasks view is re-enabled */}
       </nav>
 
       {/* Footer */}
@@ -802,10 +528,10 @@ const Layout = ({
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
 
-              {/* Mobile Hamburger Menu */}
+              {/* Mobile Hamburger Menu — hidden on mobile, replaced by bottom tab bar */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
@@ -828,7 +554,7 @@ const Layout = ({
                   className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
                 >
                   <Bell className="w-5 h-5 text-gray-600" />
-                  {(notifications.some(n => n.type === 'urgent') || hasUnread) && (
+                  {notifications.some(n => n.type === 'urgent') && (
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                   )}
                 </button>
@@ -875,9 +601,38 @@ const Layout = ({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-16 lg:pb-0">
           {children}
         </main>
+
+        {/* iOS Bottom Tab Bar — mobile only */}
+        <nav
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-gray-200"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="flex">
+            {navigationSections[0].items.map(item => {
+              const isActive = currentView === item.id ||
+                (item.id === 'hvac' && currentView === 'maintenance');
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigation(item.id)}
+                  className={`relative flex-1 flex flex-col items-center gap-1 py-2.5 transition-colors ${
+                    isActive ? '' : 'text-gray-400'
+                  }`}
+                  style={isActive ? { color: '#101d40' } : {}}
+                >
+                  <item.icon className={`w-6 h-6 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                  <span className="text-[10px] font-semibold tracking-wide">{item.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 w-10 h-0.5 rounded-full" style={{ backgroundColor: '#101d40' }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
         {/* QuickStats removed per user request */}
       </div>

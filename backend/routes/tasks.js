@@ -8,6 +8,9 @@ router.get('/', tasksController.getTasks);
 // POST /api/tasks - Create a new task
 router.post('/', tasksController.createTask);
 
+// POST /api/tasks/from-message - Create task from message (must be before /:id)
+router.post('/from-message', tasksController.createFromMessage);
+
 // GET /api/tasks/:id - Get specific task
 router.get('/:id', tasksController.getTask);
 
@@ -31,8 +34,5 @@ router.post('/:id/assignees', tasksController.addAssignee);
 
 // DELETE /api/tasks/:id/assignees - Remove all assignees from task
 router.delete('/:id/assignees', tasksController.deleteAllAssignees);
-
-// POST /api/tasks/from-message - Create task from message
-router.post('/from-message', tasksController.createFromMessage);
 
 module.exports = router;

@@ -54,7 +54,7 @@ const authEnabled = !!clerkPubKey
 
 function App() {
   // ✅ EXISTING: ALL your current state (100% PRESERVED)
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState('hvac');
   const [activeModal, setActiveModal] = useState(null);
   const [properties, setProperties] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -189,30 +189,6 @@ const loadGlobalJobsData = useCallback(async () => {
   // ✅ EXISTING: Your complete render view logic (100% PRESERVED with optional auth enhancement)
 const renderCurrentView = () => {
   switch (currentView) {
-    case 'jobs':
-      return (
-        <JobsList 
-          onNavigate={handleNavigate}
-          onOpenModal={handleOpenModal}
-          jobsData={globalJobsData.jobs}
-          onDataRefresh={handleDataRefresh}
-        />
-      );
-
-    case 'properties':
-      return (
-        <PropertiesPage 
-          onNavigate={handleNavigate}
-        />
-      );
-
-    case 'services':
-      return (
-        <ServiceCatalog 
-          onNavigate={handleNavigate}
-        />
-      );
-
     case 'hvac':
       return (
         <HVACPage
@@ -224,98 +200,44 @@ const renderCurrentView = () => {
         />
       );
 
-    case 'reports':
-      return <ReportsPage />;
-
-    case 'calendar':
-    case 'schedule':
+    case 'properties':
       return (
-        // ✅ ENHANCED: Optional auth protection (your calendar works with or without)
-        authEnabled ? (
-          <ProtectedRoute requiredPermissions={['canViewSchedules']}>
-            <RoleBasedCalendar
-              jobsRefreshTrigger={jobsRefreshTrigger}
-              onJobCreated={handleJobCreated}
-              allProperties={properties}
-              onNavigate={handleNavigate}        // ✅ Preserved
-              onOpenModal={handleOpenModal}      // ✅ Preserved
-              navigationData={navigationData}    // ✅ Preserved
-              currentUser={currentUser}          // ✅ Enhanced with auth
-            />
-          </ProtectedRoute>
-        ) : (
-          <RoleBasedCalendar
-            jobsRefreshTrigger={jobsRefreshTrigger}
-            onJobCreated={handleJobCreated}
-            allProperties={properties}
-            onNavigate={handleNavigate}        
-            onOpenModal={handleOpenModal}      
-            navigationData={navigationData}    
-            currentUser={currentUser}          
-          />
-        )
-      );
-
-    // ✅ NEW: Team Chat/Messaging System (ADDED WITHOUT REMOVING ANYTHING)
-    case 'messaging':
-      return <TeamChat />;
-    
-      case 'tasks':
-      return (
-        <TaskManagementTodoist
-          allProperties={properties}
-          globalJobsData={globalJobsData}
-          tasks={tasks}
-          setTasks={setTasks}
+        <PropertiesPage
+          onNavigate={handleNavigate}
         />
       );
 
-
     case 'maintenance':
       return (
-        <MaintenanceForm 
+        <MaintenanceForm
           onNavigate={handleNavigate}
           navigationData={navigationData}
         />
       );
 
-    case 'admin':
-      return (
-        // ✅ ENHANCED: Optional admin protection
-        authEnabled ? (
-          <ProtectedRoute requiredRole="admin">
-            <AdminDashboard 
-              onNavigate={handleNavigate}
-              globalJobsData={globalJobsData}
-            />
-          </ProtectedRoute>
-        ) : (
-          <AdminDashboard 
-            onNavigate={handleNavigate}
-            globalJobsData={globalJobsData}
-          />
-        )
-      );
-
-    // ✅ EXISTING: Time History Page (100% PRESERVED)
-    case 'timeHistory':
-      return (
-        <TimeHistoryPage 
-          onNavigate={handleNavigate}
-          technicianName="Default User"
-        />
-      );
-
     default:
       return (
-        <Homepage 
+        <HVACPage
           onNavigate={handleNavigate}
           onOpenModal={handleOpenModal}
-          dashboardStats={globalJobsData.stats}
-          lastDataUpdate={globalJobsData.lastUpdated}
+          properties={properties}
+          navigationData={navigationData}
+          onDataRefresh={handleDataRefresh}
         />
       );
   }
+
+  /* Hidden views — restore by adding case above
+  case 'jobs': <JobsList />
+  case 'services': <ServiceCatalog />
+  case 'reports': <ReportsPage />
+  case 'calendar': <RoleBasedCalendar />
+  case 'messaging': <TeamChat />
+  case 'tasks': <TaskManagementTodoist />
+  case 'admin': <AdminDashboard />
+  case 'timeHistory': <TimeHistoryPage />
+  case 'dashboard': <Homepage />
+  */
 };
 
   // ✅ EXISTING: Your complete app structure (100% PRESERVED with optional auth enhancement)

@@ -1,11 +1,11 @@
-// MaintenanceForm.jsx - Updated to accept pre-selected property/suite/unit from HVAC dashboard
+// MaintenanceForm.jsx — orchestrates the full maintenance logging flow
+// When navigated from HVAC page: native full-screen quick log
+// When navigated manually: 3-step wizard (property → suite → form)
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import MaintenanceHeader from './MaintenanceHeader';
+import { ArrowLeft, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 import MaintenanceSteps from './MaintenanceSteps';
-import PropertyBreadcrumb from './PropertyBreadcrumb';
-import MaintenanceActions from './MaintenanceActions';
 import PropertySearchStep from '../properties/PropertySearchStep';
 import SuiteSelectionStep from '../properties/SuiteSelectionStep';
 import MaintenanceRecordForm from './MaintenanceRecordForm';
@@ -15,78 +15,62 @@ import ManageHVACUnitsSection from '../hvac/ManageHVACUnitsSection';
 import AddHVACModal from '../hvac/AddHVACModal';
 import MaintenanceModeToggle from './MaintenanceModeToggle';
 import Card from '../common/Card';
-import { ArrowLeft, Wrench, Building, MapPin } from 'lucide-react';
+import PropertyBreadcrumb from './PropertyBreadcrumb';
 
-// ✅ UPDATED: Accept navigationData prop to pre-populate selections
 const MaintenanceForm = ({ onNavigate, navigationData }) => {
   const { user: clerkUser } = useUser();
+
   const [properties, setProperties] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
   const [maintenanceNote, setMaintenanceNote] = useState('');
   const [maintenanceType, setMaintenanceType] = useState('');
-  const [submitStatus, setSubmitStatus] = useState('');
-  const [submitError, setSubmitError] = useState('');
+  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedSuite, setSelectedSuite] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState('');
-  const [serviceDate, setServiceDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const [submitStatus, setSubmitStatus] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [formError, setFormError] = useState('');
+
   const [maintenanceLogs, setMaintenanceLogs] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [showAddHVAC, setShowAddHVAC] = useState(false);
-  const [newUnit, setNewUnit] = useState({
-    name: "",
-    serialNumber: "",
-    model: "",
-    installDate: "",
-    filterSize: "",
-    notes: "",
-  });
-  const [addHVACStatus, setAddHVACStatus] = useState("");
+  const [newUnit, setNewUnit] = useState({ name: '', serialNumber: '', model: '', installDate: '', filterSize: '', notes: '' });
+  const [addHVACStatus, setAddHVACStatus] = useState('');
   const [mode, setMode] = useState('quick');
 
-  // Photo upload state
   const [photoFiles, setPhotoFiles] = useState([]);
-  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploadStatus, setUploadStatus] = useState('');
 
-  // ✅ NEW: Check if we have pre-selected data from HVAC dashboard
+  // Pre-selection from HVAC dashboard
   const skipWizard = navigationData?.skipPropertySelection === true;
-  const hasPreselectedData = skipWizard && navigationData?.selectedProperty && navigationData?.selectedSuite;
+  const hasPreselectedData = skipWizard && !!navigationData?.selectedProperty && !!navigationData?.selectedSuite;
   const preselectedUnit = navigationData?.selectedUnit;
   const openPhotoSection = navigationData?.openPhotoSection === true;
 
-  // ✅ DEBUG: Log the values
-  console.log('🔍 MaintenanceForm render:', {
-    skipWizard,
-    hasPreselectedData,
-    navigationData,
-    selectedProperty,
-    selectedSuite
-  });
-
-  // Fetch properties from backend
+  // Apply pre-selected data from HVAC page navigation
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-    fetch(`${apiUrl}/api/properties`)
-      .then(res => res.json())
-      .then(data => {
-        setProperties(data);
-      })
-      .catch(err => console.error("Failed to fetch properties", err));
-  }, []);
-
-  // ✅ NEW: Separate effect to handle pre-selected data
-  useEffect(() => {
-    if (skipWizard && navigationData?.selectedProperty && navigationData?.selectedSuite) {
-      console.log('✅ Setting pre-selected data:', navigationData);
+    if (hasPreselectedData) {
       setSelectedProperty(navigationData.selectedProperty);
       setSelectedSuite(navigationData.selectedSuite);
       if (navigationData.selectedUnit) {
         setSelectedUnit(navigationData.selectedUnit.toString());
       }
     }
-  }, [skipWizard, navigationData]);
+  }, [hasPreselectedData, navigationData]);
 
-  // Fetch maintenance logs for selected suite
+  // Load all properties for wizard mode
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/properties`)
+      .then(res => res.json())
+      .then(data => setProperties(data))
+      .catch(err => console.error('Failed to fetch properties', err));
+  }, []);
+
+  // Load maintenance logs when suite is selected
   useEffect(() => {
     if (!selectedSuite) {
       setMaintenanceLogs([]);
@@ -95,22 +79,17 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
     const apiUrl = import.meta.env.VITE_API_URL || '';
     fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
       .then(res => res.json())
-      .then(data => {
-        const logsWithPhotos = Array.isArray(data)
-          ? data.map(log => ({
-              ...log,
-              photos: Array.isArray(log.photos) ? log.photos : [],
-            }))
-          : [];
-        setMaintenanceLogs(logsWithPhotos);
-      })
+      .then(data => setMaintenanceLogs(
+        Array.isArray(data)
+          ? data.map(log => ({ ...log, photos: Array.isArray(log.photos) ? log.photos : [] }))
+          : []
+      ))
       .catch(() => setMaintenanceLogs([]));
   }, [selectedSuite]);
 
-  // Filter properties based on search
-  const filteredProperties = properties.filter(property =>
-    property.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    property.address?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProperties = properties.filter(p =>
+    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.address?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handlePropertySelect = (property) => {
@@ -124,353 +103,359 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
     setSelectedUnit('');
   };
 
-  // Get or create technician in database from Clerk user
-  const getTechnicianId = async () => {
-    if (!clerkUser) {
-      throw new Error('User not logged in');
-    }
-
+  const refreshLogs = () => {
+    if (!selectedSuite) return;
     const apiUrl = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
+      .then(res => res.json())
+      .then(data => setMaintenanceLogs(
+        Array.isArray(data)
+          ? data.map(log => ({ ...log, photos: Array.isArray(log.photos) ? log.photos : [] }))
+          : []
+      ))
+      .catch(() => {});
+  };
 
-    // Try to find existing user by email
+  // Resolve Clerk user → DB technician id (create if new)
+  const getTechnicianId = async () => {
+    if (!clerkUser) throw new Error('User not logged in');
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     const response = await fetch(`${apiUrl}/api/team-members`);
     const technicians = await response.json();
-
-    const existingTech = technicians.find(t =>
-      t.email === clerkUser.primaryEmailAddress?.emailAddress
-    );
-
-    if (existingTech) {
-      return existingTech.id;
-    }
-
-    // If not found, create new technician
-    const createResponse = await fetch(`${apiUrl}/api/team-members`, {
+    const existing = technicians.find(t => t.email === clerkUser.primaryEmailAddress?.emailAddress);
+    if (existing) return existing.id;
+    const created = await fetch(`${apiUrl}/api/team-members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: clerkUser.fullName || `${clerkUser.firstName} ${clerkUser.lastName}`,
         email: clerkUser.primaryEmailAddress?.emailAddress,
-        role: 'TECHNICIAN'
-      })
-    });
-
-    const newTech = await createResponse.json();
-    return newTech.id;
+        role: 'TECHNICIAN',
+      }),
+    }).then(r => r.json());
+    return created.id;
   };
 
-  // Save maintenance record
+  const handlePhotoUpload = async (logId) => {
+    if (!photoFiles.length || !logId) return;
+    setUploadStatus('Uploading photos...');
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    for (const file of photoFiles) {
+      const formData = new FormData();
+      formData.append('photo', file);
+      await fetch(`${apiUrl}/api/maintenance-logs/${logId}/photos`, {
+        method: 'POST',
+        body: formData,
+      });
+    }
+    setUploadStatus('Photos uploaded');
+    setPhotoFiles([]);
+    setTimeout(() => setUploadStatus(''), 2000);
+    refreshLogs();
+  };
+
   const handleMaintenanceSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
+    setSubmitError('');
+
     if (!selectedUnit) {
       setFormError('Please select an HVAC unit.');
-      return;
-    }
-    if (!maintenanceNote.trim()) {
-      setFormError('Please enter maintenance notes.');
       return;
     }
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-
-      // Get technician ID from logged-in Clerk user
       const technicianId = await getTechnicianId();
 
       const response = await fetch(`${apiUrl}/api/maintenance-logs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           hvacUnitId: Number(selectedUnit),
-          technicianId: technicianId,
-          notes: maintenanceNote,
+          technicianId,
+          notes: maintenanceNote || '',
           maintenanceType: maintenanceType || 'MAINTENANCE',
+          status: 'COMPLETED',
           createdAt: serviceDate,
         }),
       });
 
       if (response.ok) {
         const newLog = await response.json();
-        setSubmitStatus("Maintenance record saved successfully!");
-        setSubmitError('');
-        setMaintenanceNote("");
-        setMaintenanceType("");
+        setSubmitStatus('Logged successfully');
+        setMaintenanceNote('');
+        setMaintenanceType('');
 
         if (photoFiles.length > 0) {
           await handlePhotoUpload(newLog.id);
         }
 
-        fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
-          .then(res => res.json())
-          .then(data => setMaintenanceLogs(Array.isArray(data) ? data : []))
-          .catch(() => setMaintenanceLogs([]));
-        setPhotoFiles([]);
-        setUploadStatus("");
+        refreshLogs();
+
+        setTimeout(() => setSubmitStatus(''), 4000);
       } else {
         const err = await response.json();
-        setSubmitError(err?.error || 'Error saving maintenance record.');
-        setSubmitStatus('');
+        setSubmitError(err?.error || 'Error saving record. Please try again.');
       }
     } catch (err) {
-      setSubmitError('Network error saving maintenance record.');
-      setSubmitStatus('');
+      setSubmitError('Network error. Check your connection.');
       console.error(err);
     }
-    setTimeout(() => {
-      setSubmitStatus('');
-      setSubmitError('');
-    }, 3000);
   };
 
-  const handlePhotoUpload = async (logId) => {
-    console.log('📸 handlePhotoUpload called with logId:', logId);
-    console.log('📸 photoFiles:', photoFiles);
-
-    if (!photoFiles.length || !logId) {
-      console.log('⚠️ No photos or logId, skipping upload');
-      return;
-    }
-
-    setUploadStatus("Uploading...");
-    const apiUrl = import.meta.env.VITE_API_URL || '';
-
-    for (let i = 0; i < photoFiles.length; i++) {
-      const formData = new FormData();
-      formData.append('photo', photoFiles[i]);
-      const uploadUrl = `${apiUrl}/api/maintenance-logs/${logId}/photos`;
-      console.log('📸 Uploading to:', uploadUrl);
-
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-      console.log('📸 Upload response:', response.status, result);
-    }
-
-    setUploadStatus("Photos uploaded!");
-    setPhotoFiles([]);
-    setTimeout(() => setUploadStatus(""), 2000);
-
-    if (selectedSuite) {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
-        .then(res => res.json())
-        .then(data => setMaintenanceLogs(Array.isArray(data) ? data : []))
-        .catch(() => setMaintenanceLogs([]));
-    }
-  };
-
-  const downloadReport = async () => {
-    if (!selectedSuite) return;
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      const res = await fetch(`${apiUrl}/api/maintenance-logs/report?suiteId=${selectedSuite.id}`);
-      if (!res.ok) {
-        alert('Failed to download report');
-        return;
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `maintenance-history-${selectedSuite.name || selectedSuite.unitNumber || selectedSuite.id}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch  {
-      alert('Error downloading report');
-    }
+  const handleChecklistComplete = (savedLog) => {
+    refreshLogs();
   };
 
   const handleAddHVAC = async (e) => {
     e.preventDefault();
-    setAddHVACStatus("Saving...");
+    setAddHVACStatus('Saving...');
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     try {
-      const res = await fetch("/api/hvac-units", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newUnit,
-          suiteId: selectedSuite.id,
-        }),
+      const res = await fetch(`${apiUrl}/api/hvac-units`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newUnit, suiteId: selectedSuite.id }),
       });
       if (res.ok) {
-        setAddHVACStatus("Added!");
-        setShowAddHVAC(false);
-        setNewUnit({ name: "", serialNumber: "", model: "", installDate: "", filterSize: "", notes: "" });
         const added = await res.json();
+        setAddHVACStatus('Added!');
+        setShowAddHVAC(false);
+        setNewUnit({ name: '', serialNumber: '', model: '', installDate: '', filterSize: '', notes: '' });
         setSelectedSuite(suite => ({
           ...suite,
           hvacUnits: suite.hvacUnits ? [...suite.hvacUnits, added] : [added],
         }));
       } else {
-        const errMsg = (await res.json())?.message || "Failed to add unit.";
+        const errMsg = (await res.json())?.message || 'Failed to add unit.';
         setAddHVACStatus(errMsg);
       }
     } catch {
-      setAddHVACStatus("Network error.");
+      setAddHVACStatus('Network error.');
     }
   };
 
   const handleHVACUnitUpdate = (updatedUnit) => {
     setSelectedSuite(suite => ({
       ...suite,
-      hvacUnits: suite.hvacUnits.map(unit =>
-        unit.id === updatedUnit.id ? { ...unit, ...updatedUnit } : unit
-      ),
+      hvacUnits: suite.hvacUnits.map(u => u.id === updatedUnit.id ? { ...u, ...updatedUnit } : u),
     }));
   };
 
-  const handleChecklistComplete = (savedLog) => {
-    setMaintenanceLogs(logs => [savedLog, ...logs]);
-
-    if (selectedSuite) {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      fetch(`${apiUrl}/api/maintenance-logs/suite/${selectedSuite.id}`)
-        .then(res => res.json())
-        .then(data => {
-          const logsWithPhotos = Array.isArray(data)
-            ? data.map(log => ({
-                ...log,
-                photos: Array.isArray(log.photos) ? log.photos : [],
-              }))
-            : [];
-          setMaintenanceLogs(logsWithPhotos);
-        })
-        .catch(() => setMaintenanceLogs([]));
-    }
+  const downloadReport = async () => {
+    if (!selectedSuite) return;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${apiUrl}/api/maintenance-logs/report?suiteId=${selectedSuite.id}`);
+    if (!res.ok) { alert('Failed to download report'); return; }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `maintenance-${selectedSuite.name || selectedSuite.id}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
-  // ✅ NEW: Handle going back to HVAC dashboard
-  const handleBackToHVAC = () => {
-    if (onNavigate) {
-      onNavigate('hvac');
-    }
-  };
+  const handleBackToHVAC = () => onNavigate?.('hvac');
 
-  return (
-    <div className="min-h-screen" style={{background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)'}}>
-      <MaintenanceHeader />
+  // Derived unit data for display
+  const unitData = selectedSuite?.hvacUnits?.find(u => String(u.id) === String(selectedUnit)) || null;
+  const unitLabel = unitData?.label || unitData?.serialNumber || (preselectedUnit ? `Unit ${preselectedUnit}` : '');
+  const propertyName = selectedProperty?.name || selectedProperty?.address || '';
+  const suiteName = selectedSuite?.name || (selectedSuite ? `Suite ${selectedSuite.id}` : '');
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* ✅ NEW: Show context breadcrumb when coming from HVAC dashboard */}
-        {hasPreselectedData && (
-          <div className="mb-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-white/20 shadow-sm">
-              {/* Mobile: Stack vertically */}
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={handleBackToHVAC}
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm self-start"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to HVAC Dashboard
-                </button>
+  // ─────────────────────────────────────────────────────────────
+  // PRESELECTED FLOW — native screen layout
+  // ─────────────────────────────────────────────────────────────
+  if (hasPreselectedData && selectedSuite) {
+    return (
+      <div className="min-h-screen bg-[#F2F2F7]">
 
-                {/* Property/Suite/Unit Info - Stack on mobile */}
-                <div className="flex flex-col gap-2 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Building className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                    <span className="font-medium text-gray-900 truncate">
-                      {selectedProperty?.name || selectedProperty?.address}
-                    </span>
-                  </div>
+        {/* Sticky header: back + unit identity */}
+        <div className="sticky top-0 z-20 bg-white border-b border-gray-100">
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+            <button
+              onClick={handleBackToHVAC}
+              className="flex items-center gap-1.5 text-[15px] font-medium text-blue-500 active:opacity-70 transition-opacity flex-shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              HVAC
+            </button>
 
-                  <div className="flex items-center gap-2 min-w-0">
-                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                    <span className="text-gray-600 truncate">
-                      {selectedSuite?.name || `Suite ${selectedSuite?.id}`}
-                    </span>
-                  </div>
-
-                  {preselectedUnit && (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Wrench className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
-                      <span className="text-gray-600 truncate">
-                        {selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.label ||
-                         selectedSuite?.hvacUnits?.find(u => u.id == preselectedUnit)?.serialNumber ||
-                         `Unit ${preselectedUnit}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-[17px] font-bold text-gray-900 truncate leading-tight">
+                {unitLabel}
+              </h1>
+              <p className="text-[13px] text-gray-400 truncate">
+                {propertyName}{suiteName ? ` · ${suiteName}` : ''}
+              </p>
             </div>
+
+            {/* History toggle */}
+            {maintenanceLogs.length > 0 && (
+              <button
+                onClick={() => setShowHistory(h => !h)}
+                className="flex items-center gap-1 text-[13px] text-gray-500 flex-shrink-0"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+                <span>{maintenanceLogs.length}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Mode toggle */}
+          <div className="px-4 pb-3">
+            <MaintenanceModeToggle mode={mode} setMode={setMode} />
+          </div>
+        </div>
+
+        {/* Form area */}
+        <div className="px-4 pt-5 pb-10 max-w-2xl mx-auto">
+          {mode === 'quick' ? (
+            <MaintenanceRecordForm
+              selectedSuite={selectedSuite}
+              selectedUnit={selectedUnit}
+              setSelectedUnit={setSelectedUnit}
+              maintenanceType={maintenanceType}
+              setMaintenanceType={setMaintenanceType}
+              serviceDate={serviceDate}
+              setServiceDate={setServiceDate}
+              maintenanceNote={maintenanceNote}
+              setMaintenanceNote={setMaintenanceNote}
+              photoFiles={photoFiles}
+              setPhotoFiles={setPhotoFiles}
+              uploadStatus={uploadStatus}
+              formError={formError}
+              submitStatus={submitStatus}
+              submitError={submitError}
+              handleSubmit={handleMaintenanceSubmit}
+              setShowAddHVAC={setShowAddHVAC}
+              openPhotoSection={openPhotoSection}
+              unitData={unitData}
+            />
+          ) : (
+            <Card variant="glass" padding="md">
+              <MaintenanceChecklist
+                selectedSuite={selectedSuite}
+                selectedUnit={selectedUnit}
+                setSelectedUnit={setSelectedUnit}
+                onChecklistComplete={handleChecklistComplete}
+                setShowAddHVAC={setShowAddHVAC}
+                submitStatus={submitStatus}
+                setSubmitStatus={setSubmitStatus}
+              />
+            </Card>
+          )}
+        </div>
+
+        {/* History — collapsible, shown on demand */}
+        {maintenanceLogs.length > 0 && (
+          <div className="px-4 pb-10 max-w-2xl mx-auto">
+            <button
+              onClick={() => setShowHistory(h => !h)}
+              className="w-full flex items-center justify-between px-4 py-3.5 bg-white rounded-2xl shadow-sm border border-gray-100 text-[14px] font-semibold text-gray-700"
+            >
+              <span>
+                {maintenanceLogs.length} previous log{maintenanceLogs.length !== 1 ? 's' : ''}
+              </span>
+              {showHistory ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+            </button>
+
+            {showHistory && (
+              <div className="mt-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <MaintenanceHistory
+                  maintenanceLogs={maintenanceLogs}
+                  selectedUnit={selectedUnit}
+                  onDownloadReport={downloadReport}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* ✅ UPDATED: Only show steps if not coming from HVAC dashboard */}
-        {!hasPreselectedData && (
-          <MaintenanceSteps 
-            selectedProperty={selectedProperty}
-            selectedSuite={selectedSuite}
-          />
-        )}
+        <AddHVACModal
+          showAddHVAC={showAddHVAC}
+          setShowAddHVAC={setShowAddHVAC}
+          handleAddHVAC={handleAddHVAC}
+          newUnit={newUnit}
+          setNewUnit={setNewUnit}
+          addHVACStatus={addHVACStatus}
+        />
+      </div>
+    );
+  }
 
-        {/* ✅ UPDATED: Skip property/suite selection if pre-selected from HVAC dashboard */}
-        {!selectedProperty && !hasPreselectedData ? (
-          <PropertySearchStep
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            filteredProperties={filteredProperties}
-            handlePropertySelect={handlePropertySelect}
-            properties={properties}
-            setProperties={setProperties}
-          />
-        ) : (!selectedSuite && !hasPreselectedData) ? (
-          <Card variant="glass" padding="md" className="max-w-4xl mx-auto">
-            <SuiteSelectionStep
-              selectedProperty={selectedProperty}
-              setSelectedProperty={setSelectedProperty}
-              handleSuiteSelect={handleSuiteSelect}
+  // ─────────────────────────────────────────────────────────────
+  // WIZARD FLOW — property → suite → form
+  // ─────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-[#F2F2F7]">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+
+        {!selectedProperty ? (
+          <>
+            <MaintenanceSteps selectedProperty={null} selectedSuite={null} />
+            <PropertySearchStep
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filteredProperties={filteredProperties}
+              handlePropertySelect={handlePropertySelect}
+              properties={properties}
+              setProperties={setProperties}
             />
-          </Card>
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* ✅ UPDATED: Only show breadcrumb if not coming from HVAC dashboard */}
-            {!hasPreselectedData && (
-              <PropertyBreadcrumb 
+          </>
+        ) : !selectedSuite ? (
+          <>
+            <MaintenanceSteps selectedProperty={selectedProperty} selectedSuite={null} />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <SuiteSelectionStep
                 selectedProperty={selectedProperty}
-                selectedSuite={selectedSuite}
-                onBackToSuites={() => setSelectedSuite(null)}
-                onChangeProperty={() => setSelectedProperty(null)}
+                setSelectedProperty={setSelectedProperty}
+                handleSuiteSelect={handleSuiteSelect}
               />
-            )}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <PropertyBreadcrumb
+              selectedProperty={selectedProperty}
+              selectedSuite={selectedSuite}
+              onBackToSuites={() => setSelectedSuite(null)}
+              onChangeProperty={() => setSelectedProperty(null)}
+            />
 
-            <Card variant="glass" padding="sm">
-              <MaintenanceModeToggle mode={mode} setMode={setMode} />
-            </Card>
+            <MaintenanceModeToggle mode={mode} setMode={setMode} />
 
             {mode === 'quick' ? (
-              <Card variant="glass" padding="md">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <MaintenanceRecordForm
                   selectedSuite={selectedSuite}
                   selectedUnit={selectedUnit}
                   setSelectedUnit={setSelectedUnit}
-                  maintenanceNote={maintenanceNote}
-                  setMaintenanceNote={setMaintenanceNote}
                   maintenanceType={maintenanceType}
                   setMaintenanceType={setMaintenanceType}
                   serviceDate={serviceDate}
                   setServiceDate={setServiceDate}
-                  handleMaintenanceSubmit={handleMaintenanceSubmit}
-                  submitStatus={submitStatus}
-                  submitError={submitError}
-                  formError={formError}
-                  setShowAddHVAC={setShowAddHVAC}
+                  maintenanceNote={maintenanceNote}
+                  setMaintenanceNote={setMaintenanceNote}
                   photoFiles={photoFiles}
                   setPhotoFiles={setPhotoFiles}
                   uploadStatus={uploadStatus}
+                  formError={formError}
+                  submitStatus={submitStatus}
+                  submitError={submitError}
                   handleSubmit={handleMaintenanceSubmit}
+                  setShowAddHVAC={setShowAddHVAC}
                   openPhotoSection={openPhotoSection}
+                  unitData={unitData}
                 />
-              </Card>
+              </div>
             ) : (
-              <Card variant="glass" padding="md">
-                <MaintenanceChecklist 
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <MaintenanceChecklist
                   selectedSuite={selectedSuite}
                   selectedUnit={selectedUnit}
                   setSelectedUnit={setSelectedUnit}
@@ -479,23 +464,25 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
                   submitStatus={submitStatus}
                   setSubmitStatus={setSubmitStatus}
                 />
-              </Card>
+              </div>
             )}
 
-            <Card variant="glass" padding="md">
-              <MaintenanceHistory 
+            {/* History */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <MaintenanceHistory
                 maintenanceLogs={maintenanceLogs}
                 selectedUnit={selectedUnit}
                 onDownloadReport={downloadReport}
               />
-            </Card>
+            </div>
 
-            <Card variant="glass" padding="md">
+            {/* HVAC unit management */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <ManageHVACUnitsSection
                 hvacUnits={selectedSuite?.hvacUnits || []}
                 onUnitUpdate={handleHVACUnitUpdate}
               />
-            </Card>
+            </div>
           </div>
         )}
       </div>

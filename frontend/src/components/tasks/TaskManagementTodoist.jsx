@@ -24,6 +24,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [focusQuickAdd, setFocusQuickAdd] = useState(false);
 
   // API Helper
   const apiCall = async (endpoint, options = {}) => {
@@ -253,7 +254,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
       <div className="w-64 bg-white border-r border-gray-200/60 flex flex-col shadow-sm">
         <div className="p-4 border-b border-gray-200/60">
           <button
-            onClick={() => {}}
+            onClick={() => setFocusQuickAdd(true)}
             className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white bg-dc-blue-500 rounded-xl hover:bg-dc-blue-600 font-medium shadow-sm hover:shadow-md transition-all duration-200"
           >
             <Plus className="w-4 h-4" />
@@ -317,7 +318,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
         </nav>
 
         {/* Search at bottom */}
-        <div className="p-4 border-t border-gray-200/60">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={() => {
               setShowSearch(true);
@@ -326,7 +327,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                 if (searchInput) searchInput.focus();
               }, 100);
             }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
           >
             <Search className="w-4 h-4" />
             <span className="flex-1 text-left">Search</span>
@@ -337,8 +338,8 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200/60 px-8 py-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <h1 className="text-2xl font-bold text-gray-900">
             {activeView === 'inbox' && 'Inbox'}
             {activeView === 'today' && 'Today'}
             {activeView === 'upcoming' && 'Upcoming'}
@@ -348,27 +349,27 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
           {/* Search - hidden by default, shown when sidebar search is clicked */}
           {showSearch && (
             <div className="relative mt-4">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onBlur={() => {
                   if (!searchQuery) setShowSearch(false);
                 }}
-                className="w-full pl-11 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-dc-blue-500 focus:border-dc-blue-500 focus:bg-white transition-all duration-200"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
               />
             </div>
           )}
         </div>
 
         {/* Task List */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
-          <div className="max-w-4xl">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="max-w-3xl">
             {/* Quick Add */}
             <div className="mb-4">
-              <QuickAddTask onTaskCreated={handleTaskCreated} apiCall={apiCall} />
+              <QuickAddTask onTaskCreated={handleTaskCreated} apiCall={apiCall} autoFocus={focusQuickAdd} onFocused={() => setFocusQuickAdd(false)} />
             </div>
 
             {loading ? (
@@ -381,7 +382,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
               <>
                 {/* Inbox and My Tasks: Simple list, no grouping */}
                 {(activeView === 'inbox' || activeView === 'my-tasks') ? (
-                  <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <div className="bg-white rounded-lg border border-gray-200">
                     {filteredTasks.map((task) => (
                       <TaskItem
                         key={task.id}
@@ -409,10 +410,10 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                         {/* Overdue Section */}
                         {hasOverdue && (
                           <div>
-                            <h3 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-3 px-2">
+                            <h3 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2 px-1">
                               Overdue
                             </h3>
-                            <div className="bg-white rounded-2xl border border-red-200/60 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div className="bg-white rounded-lg border border-gray-200">
                               {grouped.overdue.map((task) => (
                                 <TaskItem
                                   key={task.id}
@@ -432,10 +433,10 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                         {/* Today Section */}
                         {hasToday && (
                           <div>
-                            <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 px-2">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2 px-1">
                               {getDateLabel(new Date())}
                             </h3>
-                            <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div className="bg-white rounded-lg border border-gray-200">
                               {grouped.today.map((task) => (
                                 <TaskItem
                                   key={task.id}
@@ -455,10 +456,10 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                         {/* Tomorrow Section */}
                         {hasTomorrow && (
                           <div>
-                            <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 px-2">
+                            <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2 px-1">
                               Tomorrow
                             </h3>
-                            <div className="bg-white rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div className="bg-white rounded-lg border border-gray-200">
                               {grouped.tomorrow.map((task) => (
                                 <TaskItem
                                   key={task.id}

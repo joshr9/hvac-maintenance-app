@@ -34,6 +34,23 @@ exports.getLogById = async (req, res) => {
   }
 }
 
+exports.getLogsByUnit = async (req, res) => {
+  const { unitId } = req.params;
+  try {
+    const logs = await prisma.maintenanceLog.findMany({
+      where: { hvacUnitId: Number(unitId) },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        technician: { select: { id: true, name: true } },
+        photos: true,
+      },
+    });
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getLogsBySuite = async (req, res) => {
   const { suiteId } = req.params;
   try {
@@ -129,7 +146,40 @@ exports.createLog = async (req, res) => {
       }
     });
 
-    console.log('✅ Maintenance log created successfully:', newLog.id);
+    // Auto-close any scheduled maintenance for this unit on or before today
+    try {
+      const logDate = newLog.createdAt;
+      const endOfDay = new Date(logDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const pending = await prisma.scheduledMaintenance.findMany({
+        where: {
+          hvacUnitId: parseInt(hvacUnitId),
+          status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+          date: { lte: endOfDay },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      if (pending.length > 0) {
+        // Link the earliest scheduled record to this log
+        await prisma.scheduledMaintenance.update({
+          where: { id: pending[0].id },
+          data: { status: 'COMPLETED', completedLogId: newLog.id },
+        });
+        // Mark any additional overdue records completed (no log link — completedLogId is unique)
+        if (pending.length > 1) {
+          await prisma.scheduledMaintenance.updateMany({
+            where: { id: { in: pending.slice(1).map(s => s.id) } },
+            data: { status: 'COMPLETED' },
+          });
+        }
+      }
+    } catch (scheduleErr) {
+      // Non-fatal: log was saved, just couldn't auto-close schedule
+      console.error('Warning: could not auto-close scheduled maintenance:', scheduleErr.message);
+    }
+
     res.json(newLog);
 
   } catch (error) {

@@ -23,6 +23,9 @@ router.get('/report', controller.downloadReport)
 // Get logs by suite ID
 router.get('/suite/:suiteId', controller.getLogsBySuite)
 
+// Get logs by HVAC unit ID
+router.get('/unit/:unitId', controller.getLogsByUnit)
+
 // Photo upload route (must be before /:id route to avoid conflict)
 router.post('/:logId/photos', upload.single('photo'), async (req, res) => {
   try {

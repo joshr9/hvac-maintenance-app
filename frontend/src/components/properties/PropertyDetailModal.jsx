@@ -1,657 +1,337 @@
-// components/properties/PropertyDetailModal.jsx
+// PropertyDetailModal.jsx — mobile-first redesign, matches app design system
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Building, 
-  MapPin, 
-  Users, 
-  Zap, 
-  Calendar,
-  Settings,
-  Edit3,
-  Trash2,
-  Plus,
-  Home,
-  Activity,
-  Loader
+import {
+  X, MapPin, Users, Zap, Edit3, Trash2, Plus, ChevronRight, Loader,
 } from 'lucide-react';
 
+// ─── Main Modal ──────────────────────────────────────────────────────────────
+
 const PropertyDetailModal = ({ isOpen, onClose, property, onEdit, onDelete, onNavigate }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [propertyJobs, setPropertyJobs] = useState([]);
-  const [loadingJobs, setLoadingJobs] = useState(false);
-  const [showAddSuite, setShowAddSuite] = useState(false);
-  const [showEditSuite, setShowEditSuite] = useState(false);
-  const [selectedSuite, setSelectedSuite] = useState(null);
-  const [showAddHvacUnit, setShowAddHvacUnit] = useState(false);
-  const [selectedSuiteForHvac, setSelectedSuiteForHvac] = useState(null);
-  const [localProperty, setLocalProperty] = useState(property);
+  const [showAddSuite, setShowAddSuite]         = useState(false);
+  const [showEditSuite, setShowEditSuite]       = useState(false);
+  const [selectedSuite, setSelectedSuite]       = useState(null);
+  const [showAddHvacUnit, setShowAddHvacUnit]   = useState(false);
+  const [suiteForHvac, setSuiteForHvac]         = useState(null);
+  const [localProperty, setLocalProperty]       = useState(property);
+  const [expandedSuites, setExpandedSuites]     = useState({});
 
-  // Update local property when prop changes
-  useEffect(() => {
-    if (property) {
-      setLocalProperty(property);
-    }
-  }, [property]);
-
-  // Load jobs for this property when modal opens
-  useEffect(() => {
-    if (isOpen && localProperty) {
-      loadPropertyJobs();
-    }
-  }, [isOpen, localProperty]);
-
-  const loadPropertyJobs = async () => {
-    if (!property?.id) return;
-    
-    try {
-      setLoadingJobs(true);
-      const response = await fetch(`/api/jobs?propertyId=${property.id}&limit=10`);
-      if (response.ok) {
-        const data = await response.json();
-        // Handle both paginated and direct array responses
-        const jobs = Array.isArray(data) ? data : data.jobs || [];
-        setPropertyJobs(jobs);
-      }
-    } catch (error) {
-      console.error('Error loading property jobs:', error);
-      setPropertyJobs([]);
-    } finally {
-      setLoadingJobs(false);
-    }
-  };
+  useEffect(() => { if (property) setLocalProperty(property); }, [property]);
 
   const refreshProperty = async () => {
     if (!localProperty?.id) return;
-
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/properties/${localProperty.id}`);
-      if (response.ok) {
-        const updatedProperty = await response.json();
-        setLocalProperty(updatedProperty);
-      }
-    } catch (error) {
-      console.error('Error refreshing property:', error);
-    }
+      const res = await fetch(`${apiUrl}/api/properties/${localProperty.id}`);
+      if (res.ok) setLocalProperty(await res.json());
+    } catch (e) { console.error(e); }
   };
 
   if (!isOpen || !localProperty) return null;
 
-  // Calculate property metrics
   const suiteCount = localProperty.suites?.length || 0;
-  const unitCount = localProperty.suites?.reduce((sum, suite) => sum + (suite.hvacUnits?.length || 0), 0) || 0;
-  const jobCount = propertyJobs.length;
-  
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const unitCount  = localProperty.suites?.reduce((s, suite) => s + (suite.hvacUnits?.length || 0), 0) || 0;
 
-  const handleAction = (action) => {
-    onClose();
-    action(localProperty);
-  };
-
-  const handleNavigateToJobs = () => {
-    onClose();
-    onNavigate('jobs', { propertyFilter: localProperty.id });
-  };
-
-  const handleScheduleMaintenance = () => {
-    onClose();
-    onNavigate('maintenance', { selectedProperty: localProperty });
-  };
-
-  const handleEditProperty = () => {
-    onClose();
-    onEdit(localProperty);
-  };
-
-  const handleAddSuite = () => {
-    setShowAddSuite(true);
-  };
-
-  const handleEditSuite = (suite) => {
-    setSelectedSuite(suite);
-    setShowEditSuite(true);
-  };
+  const toggleSuite = (id) =>
+    setExpandedSuites(prev => ({ ...prev, [id]: !prev[id] }));
 
   const handleDeleteSuite = async (suite) => {
-    if (window.confirm(`Are you sure you want to delete "${suite.name}"?`)) {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || '';
-        const response = await fetch(`${apiUrl}/api/properties/${localProperty.id}/suites/${suite.id}`, {
-          method: 'DELETE'
-        });
-
-        if (response.ok) {
-          await refreshProperty();
-        }
-      } catch (error) {
-        console.error('Error deleting suite:', error);
-      }
-    }
-  };
-
-  const handleAddHvacUnit = (suite) => {
-    setSelectedSuiteForHvac(suite);
-    setShowAddHvacUnit(true);
+    if (!window.confirm(`Delete "${suite.name}"? This cannot be undone.`)) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/properties/${localProperty.id}/suites/${suite.id}`, { method: 'DELETE' });
+      if (res.ok) await refreshProperty();
+    } catch (e) { console.error(e); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-blue-100">
-              <Building className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {localProperty.name || `Property ${localProperty.id}`}
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+
+      {/* Sheet */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-[#F2F2F7] rounded-t-3xl"
+        style={{ maxHeight: '92vh' }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0">
+          <div className="w-9 h-1 rounded-full bg-gray-300" />
+        </div>
+
+        {/* Header card */}
+        <div className="flex-shrink-0 mx-4 mb-3 bg-white rounded-2xl px-4 py-4" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-[18px] font-bold text-gray-900 leading-tight truncate">
+                {localProperty.name || localProperty.address}
               </h2>
-              <div className="flex items-center gap-2 text-gray-600 mt-1">
-                <MapPin className="w-4 h-4" />
-                <span>{localProperty.address}</span>
+              {localProperty.name && localProperty.address && (
+                <p className="text-[13px] text-gray-400 mt-0.5 flex items-center gap-1 truncate">
+                  <MapPin className="w-3 h-3 flex-shrink-0" />
+                  {localProperty.address}
+                </p>
+              )}
+              <div className="flex gap-2 mt-2.5">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                  <Users className="w-3 h-3" />{suiteCount} suites
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                  <Zap className="w-3 h-3" />{unitCount} units
+                </span>
               </div>
             </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-200 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-6 p-6 bg-white border-b border-gray-200">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Users className="w-5 h-5 text-green-600" />
-              <span className="text-2xl font-bold text-gray-900">{suiteCount}</span>
-            </div>
-            <p className="text-sm text-gray-600">{suiteCount === 1 ? 'Suite' : 'Suites'}</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Zap className="w-5 h-5 text-purple-600" />
-              <span className="text-2xl font-bold text-gray-900">{unitCount}</span>
-            </div>
-            <p className="text-sm text-gray-600">HVAC {unitCount === 1 ? 'Unit' : 'Units'}</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">{jobCount}</span>
-            </div>
-            <p className="text-sm text-gray-600">{jobCount === 1 ? 'Job' : 'Jobs'}</p>
+            <button onClick={onClose} className="p-1 -mr-0.5 text-gray-400 active:opacity-60 flex-shrink-0">
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="flex px-6">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'overview'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('suites')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'suites'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Suites & Units
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('activity');
-                if (propertyJobs.length === 0) {
-                  loadPropertyJobs();
-                }
-              }}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'activity'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Recent Activity
-            </button>
-          </nav>
-        </div>
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-4 pb-8 space-y-3">
 
-        {/* Tab Content */}
-        <div className="p-6 max-h-96 overflow-y-auto">
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Property Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
-                    <p className="text-gray-900">{localProperty.address}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Nickname</label>
-                    <p className="text-gray-900">{localProperty.name || 'No nickname set'}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Created</label>
-                    <p className="text-gray-900">{formatDate(localProperty.createdAt)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
-                    <p className="text-gray-900">{formatDate(localProperty.updatedAt)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={handleNavigateToJobs}
-                    className="flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                  >
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                    <div className="text-left">
-                      <p className="font-medium text-blue-900">View Jobs</p>
-                      <p className="text-sm text-blue-700">See all jobs for this property</p>
-                    </div>
-                  </button>
-                  
-                  <button
-                    onClick={handleScheduleMaintenance}
-                    className="flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                  >
-                    <Settings className="w-5 h-5 text-green-600" />
-                    <div className="text-left">
-                      <p className="font-medium text-green-900">Schedule Maintenance</p>
-                      <p className="text-sm text-green-700">Create maintenance task</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
+          {/* Suites & Units */}
+          <div>
+            <div className="flex items-center justify-between mb-2 px-0.5">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em]">
+                Suites & HVAC Units
+              </p>
+              <button
+                onClick={() => setShowAddSuite(true)}
+                className="flex items-center gap-1 text-[12px] font-semibold active:opacity-60"
+                style={{ color: '#101d40' }}
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Suite
+              </button>
             </div>
-          )}
 
-          {activeTab === 'suites' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Suites & HVAC Units</h3>
-                <button 
-                  onClick={handleAddSuite}
-                  className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            {suiteCount === 0 ? (
+              <div className="bg-white rounded-2xl px-4 py-6 text-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                <Users className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-400">No suites yet</p>
+                <button
+                  onClick={() => setShowAddSuite(true)}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2.5 text-white text-sm font-semibold rounded-xl active:scale-95 transition-transform"
+                  style={{ backgroundColor: '#101d40' }}
                 >
-                  <Plus className="w-4 h-4" />
-                  Add Suite
+                  <Plus className="w-4 h-4" /> Add Suite
                 </button>
               </div>
-              
-              {suiteCount === 0 ? (
-                <div className="text-center py-8">
-                  <Home className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No suites yet</h4>
-                  <p className="text-gray-600 mb-4">Add suites to organize HVAC units and jobs</p>
-                  <button 
-                    onClick={handleAddSuite}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add First Suite
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {localProperty.suites?.map((suite) => (
-                    <div key={suite.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">
-                          {suite.name || `Suite ${suite.id}`}
-                        </h4>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">
-                            {suite.hvacUnits?.length || 0} HVAC {(suite.hvacUnits?.length || 0) === 1 ? 'unit' : 'units'}
-                          </span>
-                          <button
-                            onClick={() => handleEditSuite(suite)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSuite(suite)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+            ) : (
+              <div className="space-y-2">
+                {localProperty.suites.map(suite => {
+                  const isExpanded = !!expandedSuites[suite.id];
+                  const hvacCount  = suite.hvacUnits?.length || 0;
+                  return (
+                    <div key={suite.id} className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                      <button
+                        className="w-full flex items-center justify-between px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
+                        onClick={() => toggleSuite(suite.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-semibold text-gray-900 truncate">
+                            {suite.name || `Suite ${suite.id}`}
+                          </p>
+                          <p className="text-[12px] text-gray-400 mt-0.5">
+                            {hvacCount} HVAC {hvacCount === 1 ? 'unit' : 'units'}
+                          </p>
                         </div>
-                      </div>
+                        <ChevronRight className={`w-4 h-4 text-gray-300 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      </button>
 
-                      {suite.hvacUnits?.length > 0 ? (
-                        <div className="space-y-2">
-                          {suite.hvacUnits.map((unit) => (
-                            <div key={unit.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div className="flex items-center gap-3">
-                                <Zap className="w-4 h-4 text-purple-600" />
-                                <span className="text-sm text-gray-700">
-                                  {unit.label || unit.serialNumber || `Unit ${unit.id}`}
-                                </span>
-                              </div>
+                      {isExpanded && (
+                        <div className="border-t border-gray-100">
+                          {suite.hvacUnits?.length > 0 && (
+                            <div className="px-4 py-2 space-y-0.5">
+                              {suite.hvacUnits.map(unit => (
+                                <div key={unit.id} className="flex items-center gap-3 py-2">
+                                  <Zap className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                                  <span className="text-[14px] text-gray-700 flex-1 truncate">
+                                    {unit.label || unit.serialNumber || `Unit ${unit.id}`}
+                                  </span>
+                                  {unit.model && (
+                                    <span className="text-[12px] text-gray-400 truncate max-w-[100px]">{unit.model}</span>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                          <button
-                            onClick={() => handleAddHvacUnit(suite)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors w-full justify-center"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add HVAC Unit
-                          </button>
+                          )}
+
+                          <div className="flex border-t border-gray-100 divide-x divide-gray-100">
+                            <button
+                              onClick={() => { setSuiteForHvac(suite); setShowAddHvacUnit(true); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold active:bg-gray-50 transition-colors"
+                              style={{ color: '#101d40' }}
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Add Unit
+                            </button>
+                            <button
+                              onClick={() => { setSelectedSuite(suite); setShowEditSuite(true); }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-gray-500 active:bg-gray-50 transition-colors"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSuite(suite)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-red-500 active:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                          </div>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => handleAddHvacUnit(suite)}
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors w-full justify-center"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add First HVAC Unit
-                        </button>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'activity' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Jobs</h3>
-                {jobCount > 0 && (
-                  <button
-                    onClick={handleNavigateToJobs}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    View All Jobs →
-                  </button>
-                )}
+                  );
+                })}
               </div>
-              
-              {loadingJobs ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader className="w-6 h-6 animate-spin text-blue-600" />
-                  <span className="ml-2 text-gray-600">Loading jobs...</span>
-                </div>
-              ) : propertyJobs.length === 0 ? (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No jobs yet</h4>
-                  <p className="text-gray-600 mb-4">Job history and maintenance records will appear here</p>
-                  <button
-                    onClick={handleScheduleMaintenance}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create First Job
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {propertyJobs.slice(0, 5).map((job) => (
-                    <div key={job.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{job.title}</h4>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          job.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                          job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
-                          job.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {job.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>{job.workType}</span>
-                        {job.scheduledDate && (
-                          <span>{formatDate(job.scheduledDate)}</span>
-                        )}
-                        {job.assignedTechnician && (
-                          <span>• {job.assignedTechnician}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {propertyJobs.length > 5 && (
-                    <button
-                      onClick={handleNavigateToJobs}
-                      className="w-full py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors font-medium"
-                    >
-                      View {propertyJobs.length - 5} More Jobs →
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-          <div className="flex gap-3">
+          {/* Property-level actions */}
+          <div className="space-y-2">
             <button
-              onClick={handleEditProperty}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={() => { onClose(); onEdit(localProperty); }}
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-white rounded-2xl text-[15px] font-semibold text-gray-700 active:scale-[0.98] transition-transform"
+              style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}
             >
-              <Edit3 className="w-4 h-4" />
-              Edit Property
+              <Edit3 className="w-4 h-4" /> Edit Property
             </button>
             <button
-              onClick={() => handleAction(onDelete)}
-              className="flex items-center gap-2 px-4 py-2 text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+              onClick={() => { onClose(); onDelete(localProperty); }}
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-white rounded-2xl text-[15px] font-semibold text-red-500 active:scale-[0.98] transition-transform"
+              style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}
             >
-              <Trash2 className="w-4 h-4" />
-              Delete Property
+              <Trash2 className="w-4 h-4" /> Delete Property
             </button>
           </div>
-          
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Close
-          </button>
         </div>
       </div>
 
-      {/* Add Suite Modal */}
+      {/* Sub-sheets */}
       {showAddSuite && (
         <AddSuiteModal
           isOpen={showAddSuite}
           onClose={() => setShowAddSuite(false)}
           property={localProperty}
-          onSuiteAdded={async (newSuite) => {
-            setShowAddSuite(false);
-            await refreshProperty();
-          }}
+          onSuiteAdded={async () => { setShowAddSuite(false); await refreshProperty(); }}
         />
       )}
-
-      {/* Edit Suite Modal */}
       {showEditSuite && selectedSuite && (
         <EditSuiteModal
           isOpen={showEditSuite}
-          onClose={() => {
-            setShowEditSuite(false);
-            setSelectedSuite(null);
-          }}
+          onClose={() => { setShowEditSuite(false); setSelectedSuite(null); }}
           property={localProperty}
           suite={selectedSuite}
-          onSuiteUpdated={async () => {
-            setShowEditSuite(false);
-            setSelectedSuite(null);
-            await refreshProperty();
-          }}
+          onSuiteUpdated={async () => { setShowEditSuite(false); setSelectedSuite(null); await refreshProperty(); }}
         />
       )}
-
-      {/* Add HVAC Unit Modal */}
-      {showAddHvacUnit && selectedSuiteForHvac && (
+      {showAddHvacUnit && suiteForHvac && (
         <AddHvacUnitModal
           isOpen={showAddHvacUnit}
-          onClose={() => {
-            setShowAddHvacUnit(false);
-            setSelectedSuiteForHvac(null);
-          }}
-          suite={selectedSuiteForHvac}
-          onHvacUnitAdded={async () => {
-            setShowAddHvacUnit(false);
-            setSelectedSuiteForHvac(null);
-            await refreshProperty();
-          }}
+          onClose={() => { setShowAddHvacUnit(false); setSuiteForHvac(null); }}
+          suite={suiteForHvac}
+          onHvacUnitAdded={async () => { setShowAddHvacUnit(false); setSuiteForHvac(null); await refreshProperty(); }}
         />
       )}
-    </div>
+    </>
   );
 };
 
-// Quick Add Suite Modal Component
+// ─── Shared sub-sheet shell ───────────────────────────────────────────────────
+
+const SubSheet = ({ title, onClose, children }) => (
+  <>
+    <div className="fixed inset-0 z-[60] bg-black/40" onClick={onClose} />
+    <div
+      className="fixed inset-x-0 bottom-0 z-[60] bg-[#F2F2F7] rounded-t-3xl flex flex-col"
+      style={{ maxHeight: '80vh' }}
+    >
+      <div className="flex justify-center pt-2.5 pb-1">
+        <div className="w-9 h-1 rounded-full bg-gray-300" />
+      </div>
+      <div className="flex items-center justify-between px-5 pb-4">
+        <h3 className="text-[17px] font-bold text-gray-900">{title}</h3>
+        <button onClick={onClose} className="p-1 text-gray-400 active:opacity-60">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 pb-8">
+        {children}
+      </div>
+    </div>
+  </>
+);
+
+// ─── Add Suite ────────────────────────────────────────────────────────────────
+
 const AddSuiteModal = ({ isOpen, onClose, property, onSuiteAdded }) => {
-  const [suiteData, setSuiteData] = useState({
-    name: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [name, setName]           = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!suiteData.name.trim()) {
-      setError('Suite name is required');
-      return;
-    }
-
-    setIsSubmitting(true);
+    if (!name.trim()) { setError('Suite name is required'); return; }
+    setSubmitting(true);
     setError('');
-
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/properties/${property.id}/suites`, {
+      const res = await fetch(`${apiUrl}/api/properties/${property.id}/suites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: suiteData.name.trim()
-        })
+        body: JSON.stringify({ name: name.trim() }),
       });
-
-      if (response.ok) {
-        const newSuite = await response.json();
-        onSuiteAdded(newSuite);
-        setSuiteData({ name: '' });
-      } else {
-        throw new Error('Failed to add suite');
-      }
-    } catch (error) {
-      setError('Failed to add suite. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (res.ok) { onSuiteAdded(await res.json()); setName(''); }
+      else throw new Error('Failed to add suite');
+    } catch { setError('Failed to add suite. Please try again.'); }
+    finally { setSubmitting(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Add Suite</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
+    <SubSheet title="Add Suite" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-2">Suite Name</p>
+          <input
+            type="text"
+            autoFocus
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g., Suite 101, Unit A"
+            disabled={submitting}
+            className="w-full px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 placeholder-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Suite Name *
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Suite 101, RTU #1, etc."
-              value={suiteData.name}
-              onChange={(e) => setSuiteData(prev => ({ ...prev, name: e.target.value }))}
-              disabled={isSubmitting}
-            />
+        {error && (
+          <div className="px-4 py-3 bg-red-50 rounded-xl border border-red-100">
+            <p className="text-[14px] text-red-600">{error}</p>
           </div>
-
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {isSubmitting ? 'Adding...' : 'Add Suite'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        )}
+        <button
+          type="submit"
+          disabled={submitting || !name.trim()}
+          className="w-full py-3.5 rounded-2xl text-[15px] font-bold text-white active:scale-[0.98] transition-transform disabled:opacity-40"
+          style={{ backgroundColor: '#101d40' }}
+        >
+          {submitting ? 'Adding...' : 'Add Suite'}
+        </button>
+      </form>
+    </SubSheet>
   );
 };
 
-// Edit Suite Modal Component
-const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) => {
-  const [suiteData, setSuiteData] = useState({
-    name: suite?.name || ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [showAddHvacUnit, setShowAddHvacUnit] = useState(false);
-  const [localSuite, setLocalSuite] = useState(suite);
+// ─── Edit Suite ───────────────────────────────────────────────────────────────
 
-  // Update local suite when prop changes
+const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) => {
+  const [name, setName]           = useState(suite?.name || '');
+  const [localSuite, setLocalSuite] = useState(suite);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
+  const [showAddHvac, setShowAddHvac] = useState(false);
+
   useEffect(() => {
-    if (suite) {
-      setLocalSuite(suite);
-      setSuiteData({ name: suite.name || '' });
-    }
+    if (suite) { setLocalSuite(suite); setName(suite.name || ''); }
   }, [suite]);
 
   if (!isOpen || !localSuite) return null;
@@ -659,375 +339,225 @@ const EditSuiteModal = ({ isOpen, onClose, property, suite, onSuiteUpdated }) =>
   const refreshSuite = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/properties/${property.id}`);
-      if (response.ok) {
-        const updatedProperty = await response.json();
-        const updatedSuite = updatedProperty.suites?.find(s => s.id === localSuite.id);
-        if (updatedSuite) {
-          setLocalSuite(updatedSuite);
-        }
+      const res = await fetch(`${apiUrl}/api/properties/${property.id}`);
+      if (res.ok) {
+        const p = await res.json();
+        const updated = p.suites?.find(s => s.id === localSuite.id);
+        if (updated) setLocalSuite(updated);
       }
-    } catch (error) {
-      console.error('Error refreshing suite:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!suiteData.name.trim()) {
-      setError('Suite name is required');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError('');
-
+    if (!name.trim()) { setError('Suite name is required'); return; }
+    setSubmitting(true); setError('');
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/properties/${property.id}/suites/${localSuite.id}`, {
+      const res = await fetch(`${apiUrl}/api/properties/${property.id}/suites/${localSuite.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: suiteData.name.trim()
-        })
+        body: JSON.stringify({ name: name.trim() }),
       });
-
-      if (response.ok) {
-        await refreshSuite();
-        setError('');
-      } else {
-        throw new Error('Failed to update suite');
-      }
-    } catch (error) {
-      setError('Failed to update suite. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (!res.ok) throw new Error();
+    } catch { setError('Failed to update suite.'); }
+    finally { setSubmitting(false); }
   };
 
-  const handleDeleteHvacUnit = async (unit) => {
-    if (window.confirm(`Are you sure you want to delete "${unit.label || unit.serialNumber}"?`)) {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || '';
-        const response = await fetch(`${apiUrl}/api/hvac-units/${unit.id}`, {
-          method: 'DELETE'
-        });
-
-        if (response.ok) {
-          await refreshSuite();
-        }
-      } catch (error) {
-        console.error('Error deleting HVAC unit:', error);
-      }
-    }
+  const handleDeleteUnit = async (unit) => {
+    if (!window.confirm(`Delete "${unit.label || unit.serialNumber}"?`)) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/hvac-units/${unit.id}`, { method: 'DELETE' });
+      if (res.ok) await refreshSuite();
+    } catch (e) { console.error(e); }
   };
 
   return (
     <>
-      <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Edit Suite</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-5 h-5" />
-            </button>
+      <SubSheet title="Edit Suite" onClose={() => { onSuiteUpdated(); onClose(); }}>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-2">Suite Name</p>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              disabled={submitting}
+              className="w-full px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 placeholder-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Suite Name *
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Suite 101, RTU #1, etc."
-                value={suiteData.name}
-                onChange={(e) => setSuiteData(prev => ({ ...prev, name: e.target.value }))}
-                disabled={isSubmitting}
-              />
+          <button
+            type="submit"
+            disabled={submitting || !name.trim()}
+            className="w-full py-3 rounded-2xl text-[14px] font-semibold text-white active:scale-[0.98] transition-transform disabled:opacity-40"
+            style={{ backgroundColor: '#101d40' }}
+          >
+            {submitting ? 'Saving...' : 'Save Name'}
+          </button>
+
+          {error && (
+            <div className="px-4 py-3 bg-red-50 rounded-xl border border-red-100">
+              <p className="text-[14px] text-red-600">{error}</p>
             </div>
+          )}
 
-            {/* HVAC Units Section */}
-            <div className="border-t border-gray-200 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-900">HVAC Units</h4>
-                <button
-                  type="button"
-                  onClick={() => setShowAddHvacUnit(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Unit
-                </button>
-              </div>
-
-              {localSuite.hvacUnits?.length > 0 ? (
-                <div className="space-y-2">
-                  {localSuite.hvacUnits.map((unit) => (
-                    <div key={unit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Zap className="w-4 h-4 text-purple-600" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {unit.label || unit.serialNumber}
-                          </p>
-                          <p className="text-xs text-gray-500">{unit.model}</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteHvacUnit(unit)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 italic py-2">No HVAC units yet</p>
-              )}
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </button>
+          {/* HVAC Units */}
+          <div>
+            <div className="flex items-center justify-between mb-2 px-0.5">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em]">HVAC Units</p>
               <button
                 type="button"
-                onClick={() => {
-                  onSuiteUpdated();
-                  onClose();
-                }}
-                disabled={isSubmitting}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                onClick={() => setShowAddHvac(true)}
+                className="flex items-center gap-1 text-[12px] font-semibold active:opacity-60"
+                style={{ color: '#101d40' }}
               >
-                Done
+                <Plus className="w-3.5 h-3.5" /> Add Unit
               </button>
             </div>
-          </form>
-        </div>
-      </div>
 
-      {/* Add HVAC Unit Modal within Edit Suite Modal */}
-      {showAddHvacUnit && (
+            {localSuite.hvacUnits?.length > 0 ? (
+              <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
+                {localSuite.hvacUnits.map(unit => (
+                  <div key={unit.id} className="flex items-center gap-3 px-4 py-3">
+                    <Zap className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-medium text-gray-900 truncate">
+                        {unit.label || unit.serialNumber || `Unit ${unit.id}`}
+                      </p>
+                      {unit.model && <p className="text-[12px] text-gray-400">{unit.model}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUnit(unit)}
+                      className="p-1.5 text-red-400 active:opacity-60"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[14px] text-gray-400 px-0.5">No HVAC units yet.</p>
+            )}
+          </div>
+        </form>
+      </SubSheet>
+
+      {showAddHvac && (
         <AddHvacUnitModal
-          isOpen={showAddHvacUnit}
-          onClose={() => setShowAddHvacUnit(false)}
+          isOpen={showAddHvac}
+          onClose={() => setShowAddHvac(false)}
           suite={localSuite}
-          onHvacUnitAdded={async () => {
-            setShowAddHvacUnit(false);
-            await refreshSuite();
-          }}
+          onHvacUnitAdded={async () => { setShowAddHvac(false); await refreshSuite(); }}
         />
       )}
     </>
   );
 };
 
-// Add HVAC Unit Modal Component
+// ─── Add HVAC Unit ────────────────────────────────────────────────────────────
+
 const AddHvacUnitModal = ({ isOpen, onClose, suite, onHvacUnitAdded }) => {
-  const [hvacData, setHvacData] = useState({
-    label: '',
-    serialNumber: '',
-    model: '',
-    installDate: '',
-    filterSize: '',
-    notes: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [data, setData] = useState({ label: '', serialNumber: '', model: '', installDate: '', filterSize: '', notes: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]           = useState('');
 
   if (!isOpen || !suite) return null;
 
+  const set = (k, v) => setData(prev => ({ ...prev, [k]: v }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!hvacData.serialNumber.trim() || !hvacData.model.trim() || !hvacData.installDate) {
+    if (!data.serialNumber.trim() || !data.model.trim() || !data.installDate) {
       setError('Serial number, model, and install date are required');
       return;
     }
-
-    setIsSubmitting(true);
-    setError('');
-
+    setSubmitting(true); setError('');
     try {
       const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/hvac-units`, {
+      const res = await fetch(`${apiUrl}/api/hvac-units`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          label: hvacData.label.trim() || null,
-          serialNumber: hvacData.serialNumber.trim(),
-          model: hvacData.model.trim(),
-          installDate: hvacData.installDate,
-          filterSize: hvacData.filterSize.trim() || null,
-          notes: hvacData.notes.trim() || null,
-          suiteId: suite.id
-        })
+          label: data.label.trim() || null,
+          serialNumber: data.serialNumber.trim(),
+          model: data.model.trim(),
+          installDate: data.installDate,
+          filterSize: data.filterSize.trim() || null,
+          notes: data.notes.trim() || null,
+          suiteId: suite.id,
+        }),
       });
-
-      if (response.ok) {
-        onHvacUnitAdded();
-        setHvacData({
-          label: '',
-          serialNumber: '',
-          model: '',
-          installDate: '',
-          filterSize: '',
-          notes: ''
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add HVAC unit');
-      }
-    } catch (error) {
-      setError(error.message || 'Failed to add HVAC unit. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      if (res.ok) { onHvacUnitAdded(); }
+      else { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+    } catch (e) { setError(e.message || 'Failed to add unit.'); }
+    finally { setSubmitting(false); }
   };
 
-  return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Add HVAC Unit</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="mb-4 p-3 bg-purple-50 rounded-lg">
-          <p className="text-sm text-purple-700">
-            Adding HVAC unit to: <span className="font-semibold">{suite.name}</span>
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Label (Optional)
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="e.g., RTU #1, Main AC"
-              value={hvacData.label}
-              onChange={(e) => setHvacData(prev => ({ ...prev, label: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Serial Number *
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="e.g., ABC123456"
-              value={hvacData.serialNumber}
-              onChange={(e) => setHvacData(prev => ({ ...prev, serialNumber: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Model *
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="e.g., Carrier 58MVC080"
-              value={hvacData.model}
-              onChange={(e) => setHvacData(prev => ({ ...prev, model: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Install Date *
-            </label>
-            <input
-              type="date"
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              value={hvacData.installDate}
-              onChange={(e) => setHvacData(prev => ({ ...prev, installDate: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter Size (Optional)
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="e.g., 20x25x1"
-              value={hvacData.filterSize}
-              onChange={(e) => setHvacData(prev => ({ ...prev, filterSize: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Additional notes about this unit..."
-              rows="3"
-              value={hvacData.notes}
-              onChange={(e) => setHvacData(prev => ({ ...prev, notes: e.target.value }))}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-            >
-              {isSubmitting ? 'Adding...' : 'Add HVAC Unit'}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
+  const Field = ({ label, required, ...props }) => (
+    <div>
+      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-2">
+        {label}{required && ' *'}
+      </p>
+      <input
+        {...props}
+        disabled={submitting}
+        className="w-full px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 placeholder-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+      />
     </div>
+  );
+
+  return (
+    <SubSheet title={`Add Unit — ${suite.name}`} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field label="Label" placeholder="e.g., RTU #1, Main AC" value={data.label} onChange={e => set('label', e.target.value)} />
+        <Field label="Serial Number" required placeholder="e.g., ABC123456" value={data.serialNumber} onChange={e => set('serialNumber', e.target.value)} />
+        <Field label="Model" required placeholder="e.g., Carrier 58MVC080" value={data.model} onChange={e => set('model', e.target.value)} />
+
+        <div>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-2">Install Date *</p>
+          <input
+            type="date"
+            required
+            value={data.installDate}
+            onChange={e => set('installDate', e.target.value)}
+            disabled={submitting}
+            className="w-full px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          />
+        </div>
+
+        <Field label="Filter Size" placeholder="e.g., 20×25×1" value={data.filterSize} onChange={e => set('filterSize', e.target.value)} />
+
+        <div>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-2">Notes</p>
+          <textarea
+            value={data.notes}
+            onChange={e => set('notes', e.target.value)}
+            rows={2}
+            placeholder="Optional notes..."
+            disabled={submitting}
+            className="w-full px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 placeholder-gray-300 shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+          />
+        </div>
+
+        {error && (
+          <div className="px-4 py-3 bg-red-50 rounded-xl border border-red-100">
+            <p className="text-[14px] text-red-600">{error}</p>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full py-3.5 rounded-2xl text-[15px] font-bold text-white active:scale-[0.98] transition-transform disabled:opacity-40"
+          style={{ backgroundColor: '#101d40' }}
+        >
+          {submitting ? 'Adding...' : 'Add HVAC Unit'}
+        </button>
+      </form>
+    </SubSheet>
   );
 };
 

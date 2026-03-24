@@ -49,9 +49,10 @@ const MaintenanceChecklist = ({
   setSubmitStatus
 }) => {
   const { user: clerkUser } = useUser();
+  const techName = clerkUser?.fullName || clerkUser?.firstName || '';
   const [checklistData, setChecklistData] = useState({
     serviceDate: new Date().toISOString().split('T')[0],
-    serviceTechnician: '',
+    serviceTechnician: techName,
     specialNotes: '',
     
     fans: {
@@ -176,20 +177,21 @@ const MaintenanceChecklist = ({
 
   const uploadSectionPhotos = async (logId) => {
     setPhotoUploadStatus("Uploading photos...");
-    
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+
     try {
       const allPhotos = [
-        ...sectionPhotos.fans, 
-        ...sectionPhotos.coolingSeason, 
-        ...sectionPhotos.heatingSeason, 
+        ...sectionPhotos.fans,
+        ...sectionPhotos.coolingSeason,
+        ...sectionPhotos.heatingSeason,
         ...sectionPhotos.general
       ];
-      
+
       for (let photo of allPhotos) {
         const formData = new FormData();
         formData.append('photo', photo.file);
-        
-        await fetch(`/api/maintenance/${logId}/photos`, {
+
+        await fetch(`${apiUrl}/api/maintenance-logs/${logId}/photos`, {
           method: "POST",
           body: formData,
         });
@@ -356,22 +358,22 @@ const MaintenanceChecklist = ({
     );
   };
 
-  // ✅ MOBILE CHECKBOX COMPONENT - 44px Touch Target
   const MobileCheckbox = ({ section, field, label, checked }) => (
-    <label className="flex items-start gap-4 p-4 hover:bg-blue-50 rounded-xl transition-colors active:bg-blue-100 cursor-pointer">
-      <div className="relative flex-shrink-0 mt-0.5">
+    <label className={`flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-colors active:scale-[0.98] ${
+      checked ? 'bg-blue-50' : 'hover:bg-gray-50'
+    }`}>
+      <div className={`w-6 h-6 rounded-lg border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+        checked ? 'bg-\[#101d40\] border-\[#101d40\]' : 'border-gray-300 bg-white'
+      }`}>
         <input
           type="checkbox"
-          className="w-7 h-7 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-          style={{accentColor: '#2a3a91'}}
+          className="sr-only"
           checked={checked}
           onChange={(e) => handleCheckboxChange(section, field, e.target.checked)}
         />
-        {checked && (
-          <Check className="absolute inset-0 w-5 h-5 m-1 text-white pointer-events-none" />
-        )}
+        {checked && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
       </div>
-      <span className="text-base font-medium text-gray-700 leading-relaxed select-none flex-1">
+      <span className={`text-sm leading-snug select-none flex-1 ${checked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
         {label}
       </span>
     </label>
@@ -442,30 +444,22 @@ const MaintenanceChecklist = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* ✅ MOBILE HEADER - Sticky */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-5 mb-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-3">
-          <FileText className="w-7 h-7 text-blue-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">HVAC Maintenance Checklist</h2>
-            <p className="text-gray-600 mt-1">Complete inspection and maintenance tasks</p>
-          </div>
+    <div className="max-w-2xl mx-auto">
+      {/* Sticky progress header */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 mb-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-semibold text-gray-700">Full Inspection Checklist</span>
+          <span className="text-sm font-semibold text-gray-900">{calculateCompletionPercentage()}%</span>
         </div>
-        
-        {/* Progress Bar */}
-        <div className="bg-gray-200 rounded-full h-3 mt-4">
-          <div 
-            className="bg-green-500 rounded-full h-3 transition-all duration-500"
+        <div className="bg-gray-100 rounded-full h-1.5">
+          <div
+            className="bg-green-500 rounded-full h-1.5 transition-all duration-500"
             style={{ width: `${calculateCompletionPercentage()}%` }}
           />
         </div>
-        <p className="text-sm text-gray-600 text-center mt-2">
-          {calculateCompletionPercentage()}% Complete
-        </p>
       </div>
 
-      <div className="space-y-8 p-4 pb-32">
+      <div className="space-y-4 px-4 pb-32">
         {/* ✅ ERROR DISPLAY */}
         {formError && (
           <div className="p-5 bg-red-50 border-l-4 border-red-400 rounded-xl">
@@ -486,81 +480,67 @@ const MaintenanceChecklist = ({
           </div>
         )}
 
-        {/* ✅ HVAC UNIT SELECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-5">HVAC Unit Selection</h3>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-base font-semibold text-gray-700">
-                Select HVAC Unit <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full p-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 min-h-[56px]"
-                value={selectedUnit}
-                onChange={(e) => setSelectedUnit(e.target.value)}
-                required
-              >
-                <option value="">Select HVAC Unit...</option>
-                {selectedSuite?.hvacUnits?.length > 0 ? (
-                  selectedSuite.hvacUnits.map(unit => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.label || unit.serialNumber || unit.filterSize || `Unit ${unit.id}`}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>No HVAC units found. Please add one.</option>
-                )}
-              </select>
-            </div>
-            
-            <button
-              type="button"
-              onClick={() => setShowAddHVAC(true)}
-              className="w-full py-4 px-6 bg-gray-600 text-white font-semibold rounded-xl hover:bg-gray-700 active:bg-gray-800 transition-colors min-h-[56px]"
+        {/* Unit selection — only shown when not pre-selected */}
+        {!selectedUnit && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">HVAC Unit</h3>
+            <select
+              className="w-full p-3 text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              value={selectedUnit}
+              onChange={(e) => setSelectedUnit(e.target.value)}
+              required
             >
-              Add New HVAC Unit
-            </button>
+              <option value="">Select unit…</option>
+              {selectedSuite?.hvacUnits?.map(unit => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.label || unit.serialNumber || `Unit ${unit.id}`}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
+        )}
 
-        {/* ✅ SERVICE INFORMATION */}
-        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Service Information</h3>
-          
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <MobileInput
-                label="Service Date"
+        {/* Service info */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Service Info</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Date</label>
+              <input
                 type="date"
+                className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                 value={checklistData.serviceDate}
-                onChange={(val) => handleTopLevelChange('serviceDate', val)}
-                required
-              />
-              
-              <MobileInput
-                label="Service Technician"
-                value={checklistData.serviceTechnician}
-                onChange={(val) => handleTopLevelChange('serviceTechnician', val)}
-                placeholder="Enter technician name"
-                required
+                onChange={e => handleTopLevelChange('serviceDate', e.target.value)}
               />
             </div>
-            
-            <MobileInput
-              label="Special Notes"
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Technician</label>
+              <input
+                type="text"
+                className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                value={checklistData.serviceTechnician}
+                onChange={e => handleTopLevelChange('serviceTechnician', e.target.value)}
+                placeholder="Name"
+              />
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs text-gray-500 mb-1">Special Notes</label>
+            <textarea
+              className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 resize-none"
               value={checklistData.specialNotes}
-              onChange={(val) => handleTopLevelChange('specialNotes', val)}
-              placeholder="Any special observations or instructions"
+              onChange={e => handleTopLevelChange('specialNotes', e.target.value)}
+              placeholder="Any special observations…"
+              rows={2}
             />
           </div>
         </div>
 
-        {/* ✅ FANS SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-blue-600"></div>
-            FANS
+        {/* FANS SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+            Fans
           </h3>
           
           <div className="space-y-2">
@@ -596,11 +576,13 @@ const MaintenanceChecklist = ({
             />
           </div>
 
-          <div className="mt-6 pt-6 border-t-2 border-gray-100">
-            <MobileInput
-              label="Belt Size (if applicable)"
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <label className="block text-xs text-gray-500 mb-1">Belt Size (if applicable)</label>
+            <input
+              type="text"
+              className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400"
               value={checklistData.fans.beltSize}
-              onChange={(val) => handleInputChange('fans', 'beltSize', val)}
+              onChange={e => handleInputChange('fans', 'beltSize', e.target.value)}
               placeholder="e.g., A-42 or 4L420"
             />
           </div>
@@ -612,11 +594,11 @@ const MaintenanceChecklist = ({
           />
         </div>
 
-        {/* ✅ COOLING SEASON SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-blue-400"></div>
-            COOLING SEASON
+        {/* COOLING SEASON */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-sky-400"></div>
+            Cooling Season
           </h3>
           
           <div className="space-y-2">
@@ -652,20 +634,20 @@ const MaintenanceChecklist = ({
             />
           </div>
 
-          <div className="mt-6 pt-6 border-t-2 border-gray-100 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <MobileInput
-                label="Discharge Pressure"
+          <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Discharge Pressure</label>
+              <input type="text" className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400"
                 value={checklistData.coolingSeason.dischargePress}
-                onChange={(val) => handleInputChange('coolingSeason', 'dischargePress', val)}
-                placeholder="PSI"
-              />
-              <MobileInput
-                label="Suction Pressure"
+                onChange={e => handleInputChange('coolingSeason', 'dischargePress', e.target.value)}
+                placeholder="PSI" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Suction Pressure</label>
+              <input type="text" className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400"
                 value={checklistData.coolingSeason.suctionPress}
-                onChange={(val) => handleInputChange('coolingSeason', 'suctionPress', val)}
-                placeholder="PSI"
-              />
+                onChange={e => handleInputChange('coolingSeason', 'suctionPress', e.target.value)}
+                placeholder="PSI" />
             </div>
           </div>
 
@@ -676,11 +658,11 @@ const MaintenanceChecklist = ({
           />
         </div>
 
-        {/* ✅ HEATING SEASON SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-            <div className="w-4 h-4 rounded-full bg-orange-500"></div>
-            HEATING SEASON
+        {/* HEATING SEASON */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div>
+            Heating Season
           </h3>
           
           <div className="space-y-2">
@@ -735,49 +717,49 @@ const MaintenanceChecklist = ({
           />
         </div>
 
-        {/* ✅ FILTER AND PROBLEMS */}
-        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Additional Information</h3>
-          
-          <div className="space-y-6">
-            <MobileInput
-              label="Filter List"
+        {/* Additional Info */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700">Additional Info</h3>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Filter List</label>
+            <input type="text" className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400"
               value={checklistData.filterList}
-              onChange={(val) => handleTopLevelChange('filterList', val)}
-              placeholder="e.g., (2) 16x25x2"
-            />
-            
-            <MobileTextarea
-              label="Problems Found / Additional Notes"
+              onChange={e => handleTopLevelChange('filterList', e.target.value)}
+              placeholder="e.g., (2) 16x25x2" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Problems Found / Notes</label>
+            <textarea className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 resize-none"
               value={checklistData.problemsFound}
-              onChange={(val) => handleTopLevelChange('problemsFound', val)}
-              placeholder="Describe any issues discovered, parts needed, or recommendations..."
-            />
+              onChange={e => handleTopLevelChange('problemsFound', e.target.value)}
+              placeholder="Issues found, parts needed, recommendations…"
+              rows={3} />
           </div>
         </div>
       </div>
 
-      {/* ✅ SUBMIT BUTTON - Fixed at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 shadow-2xl">
+      {/* Fixed submit button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
         <button
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className={`w-full py-5 px-6 font-bold text-lg rounded-2xl transition-all min-h-[64px] flex items-center justify-center gap-3 shadow-xl ${
-            isSubmitting 
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800 active:scale-98'
+          className={`w-full py-4 font-semibold text-base rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.97] ${
+            isSubmitting
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-[#101d40] text-white'
           }`}
         >
           {isSubmitting ? (
             <>
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-              Saving Checklist...
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent" />
+              Saving…
             </>
           ) : (
             <>
-              <CheckCircle className="w-6 h-6" />
-              Save Complete Checklist ({calculateCompletionPercentage()}% Complete)
+              <CheckCircle className="w-4 h-4" />
+              Save Checklist · {calculateCompletionPercentage()}% complete
             </>
           )}
         </button>

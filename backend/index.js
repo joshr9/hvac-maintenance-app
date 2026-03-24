@@ -4,6 +4,8 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path"); // for photos
 
+const PORT = process.env.PORT || 3000;
+
 // Middleware
 const app = express();
 
@@ -155,8 +157,6 @@ app.post("/api/test-post", (req, res) => {
   console.log('🧪 Test POST received!', req.body);
   res.json({ success: true, message: "POST works!", received: req.body });
 });
-
-const PORT = process.env.PORT || 3000;
 
 // ✅ NEW: Optional scheduler startup
 if (process.env.ENABLE_SCHEDULER === 'true') {

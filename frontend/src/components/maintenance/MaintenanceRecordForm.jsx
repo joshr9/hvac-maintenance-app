@@ -1,15 +1,35 @@
-// MaintenanceRecordForm.jsx - Mobile-Optimized Quick Maintenance Form
+// MaintenanceRecordForm.jsx — iPhone-first quick log, 2026 redesign
+// Single screen, no scrolling needed, 3 taps to submit
 
-import React, { useRef } from 'react';
-import { Plus, Calendar, FileText, Camera, Upload, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import {
+  Wind, Droplets, ClipboardCheck, Wrench, Zap, Snowflake, MoreHorizontal,
+  Camera, ImageIcon, X, ChevronDown,
+} from 'lucide-react';
 
-const MAINTENANCE_TYPES = [
-  { value: 'INSPECTION', label: 'Inspection' },
-  { value: 'FILTER_CHANGE', label: 'Filter Change' },
-  { value: 'FULL_SERVICE', label: 'Full Service' },
-  { value: 'REPAIR', label: 'Repair' },
-  { value: 'OTHER', label: 'Other' },
+const WORK_TYPES = [
+  { value: 'FILTER_CHANGE',  label: 'Filter Change', Icon: Wind },
+  { value: 'COIL_CLEANING',  label: 'Coil Clean',    Icon: Droplets },
+  { value: 'INSPECTION',     label: 'Inspection',    Icon: ClipboardCheck },
+  { value: 'REPAIR',         label: 'Repair',        Icon: Wrench },
+  { value: 'FULL_SERVICE',   label: 'Full Service',  Icon: Zap },
+  { value: 'REFRIGERANT',    label: 'Refrigerant',   Icon: Snowflake },
+  { value: 'OTHER',          label: 'Other',         Icon: MoreHorizontal },
 ];
+
+const formatDateLabel = (dateStr) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr + 'T00:00:00');
+  if (d.getTime() === today.getTime()) return 'Today';
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 const MaintenanceRecordForm = ({
   selectedSuite,
@@ -29,13 +49,14 @@ const MaintenanceRecordForm = ({
   submitError,
   handleSubmit,
   setShowAddHVAC,
-  openPhotoSection
+  openPhotoSection,
+  unitData,
 }) => {
-  const fileInputRef = useRef(null);
+  const [submitting, setSubmitting] = useState(false);
+  const dateInputRef = useRef(null);
   const photoSectionRef = useRef(null);
 
-  // Scroll to photo section if openPhotoSection is true
-  React.useEffect(() => {
+  useEffect(() => {
     if (openPhotoSection && photoSectionRef.current) {
       setTimeout(() => {
         photoSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -43,261 +64,236 @@ const MaintenanceRecordForm = ({
     }
   }, [openPhotoSection]);
 
-  // ✅ FIXED: Add null check for selectedSuite
   if (!selectedSuite) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-        <div className="flex items-center justify-center h-32">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-gray-600">Loading suite data...</p>
-          </div>
+      <div className="flex items-center justify-center h-48">
+        <div className="text-center space-y-3">
+          <div className="w-7 h-7 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-gray-400">Loading...</p>
         </div>
       </div>
     );
   }
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setPhotoFiles(prev => [...prev, ...files]);
-  };
-
-  const handleCameraCapture = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  const onSubmit = async (e) => {
+    setSubmitting(true);
+    try {
+      await handleSubmit(e);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const removePhoto = (index) => {
-    setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+  const addPhotoFromCamera = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.multiple = true;
+    input.onchange = (e) => setPhotoFiles(prev => [...prev, ...Array.from(e.target.files)]);
+    input.click();
   };
 
+  const addPhotoFromGallery = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = (e) => setPhotoFiles(prev => [...prev, ...Array.from(e.target.files)]);
+    input.click();
+  };
+
+  const hasError = formError || submitError;
+  const isSuccess = !!submitStatus && !submitting;
+  const canSubmit = !!maintenanceType && !submitting;
+
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-      {/* Header - Mobile Optimized */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 sm:p-3 rounded-lg bg-blue-50">
-          <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+
+      {/* ── Work Type chips ── */}
+      <div>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-3 px-0.5">
+          What did you do?
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {WORK_TYPES.map(({ value, label, Icon }) => {
+            const selected = maintenanceType === value;
+            const isOther = value === 'OTHER';
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMaintenanceType(value)}
+                style={selected ? { backgroundColor: '#101d40' } : {}}
+                className={[
+                  'flex items-center gap-3 px-4 rounded-2xl text-left transition-all duration-100 active:scale-[0.96]',
+                  isOther ? 'col-span-2 py-3.5 justify-center' : 'py-4',
+                  selected
+                    ? 'text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-100 shadow-sm',
+                ].join(' ')}
+              >
+                <Icon
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${selected ? 'text-white' : 'text-gray-400'}`}
+                />
+                <span className="text-[15px] font-semibold leading-tight">{label}</span>
+              </button>
+            );
+          })}
         </div>
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900">Quick Maintenance</h3>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-        {/* Maintenance Type & Service Date - Mobile: Stacked, Desktop: Side by Side */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div>
-            <label className="block text-base sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
-              Maintenance Type
-            </label>
-            <select
-              className="w-full p-4 sm:p-3 text-base border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
-              value={maintenanceType}
-              onChange={e => setMaintenanceType(e.target.value)}
-              required
-            >
-              <option value="">Select type...</option>
-              {MAINTENANCE_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-base sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
-              Service Date
-            </label>
-            <input
-              type="date"
-              className="w-full px-3 py-3 text-xs sm:text-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
-              value={serviceDate}
-              onChange={e => setServiceDate(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        {/* HVAC Unit Selection - Mobile Optimized */}
+      {/* ── Unit selector (only when not pre-selected) ── */}
+      {!unitData && selectedSuite?.hvacUnits?.length > 0 && (
         <div>
-          <label className="block text-base sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-3 px-0.5">
             HVAC Unit
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
+          </p>
+          <div className="flex gap-2.5">
             <select
-              className="flex-1 p-4 sm:p-3 text-base border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all min-h-[48px]"
               value={selectedUnit}
               onChange={e => setSelectedUnit(e.target.value)}
               required
+              className="flex-1 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 appearance-none"
             >
-              <option value="">Select HVAC unit...</option>
-              {selectedSuite?.hvacUnits && selectedSuite.hvacUnits.length > 0 ? (
-                selectedSuite.hvacUnits.map(unit => (
-                  <option key={unit.id} value={unit.id}>
-                    {unit.label || unit.name || unit.serialNumber || unit.filterSize || `Unit ${unit.id}`}
-                  </option>
-                ))
-              ) : (
-                <option value="" disabled>No HVAC units found</option>
-              )}
+              <option value="">Select unit...</option>
+              {selectedSuite.hvacUnits.map(unit => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.label || unit.serialNumber || `Unit ${unit.id}`}
+                </option>
+              ))}
             </select>
             <button
-              className="px-6 py-4 sm:py-3 bg-blue-600 text-white text-base font-semibold rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors whitespace-nowrap min-h-[48px] shadow-lg"
-              onClick={() => setShowAddHVAC(true)}
               type="button"
+              onClick={() => setShowAddHVAC(true)}
+              className="px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] font-semibold text-gray-700 shadow-sm active:scale-[0.97] transition-transform whitespace-nowrap"
             >
-              Add Unit
+              + Add
             </button>
           </div>
         </div>
+      )}
 
-        {/* Maintenance Notes - Mobile Optimized */}
-        <div>
-          <label className="block text-base sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
-            Maintenance Notes
-          </label>
-          <textarea
-            className="w-full p-4 sm:p-3 text-base border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all resize-none"
-            rows="6"
-            value={maintenanceNote}
-            onChange={e => setMaintenanceNote(e.target.value)}
-            placeholder="Describe the work performed, parts used, issues found, and any recommendations..."
-            required
-          />
-        </div>
+      {/* ── Notes ── */}
+      <div>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-3 px-0.5">
+          Notes{' '}
+          <span className="normal-case font-normal tracking-normal text-gray-300">— optional</span>
+        </p>
+        <textarea
+          value={maintenanceNote}
+          onChange={e => setMaintenanceNote(e.target.value)}
+          placeholder="Parts replaced, issues found, next steps..."
+          rows={3}
+          className="w-full px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] text-gray-900 placeholder-gray-300 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10 leading-relaxed"
+        />
+      </div>
 
-        {/* Photo Upload Section - Mobile Optimized with Camera Support */}
-        <div ref={photoSectionRef}>
-          <label className="block text-base sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
-            Attach Photos {openPhotoSection && <span className="text-blue-600">(Tap to capture)</span>}
-          </label>
-
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 sm:p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              id="photo-upload"
-            />
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-center">
-              {/* Take Photo Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.capture = 'environment';
-                  input.multiple = true;
-                  input.onchange = (e) => {
-                    const files = Array.from(e.target.files);
-                    setPhotoFiles(prev => [...prev, ...files]);
-                  };
-                  input.click();
-                }}
-                className="flex-1 sm:flex-none flex flex-col items-center gap-2 p-4 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors w-full sm:w-auto"
-              >
-                <Camera className="w-8 h-8 text-blue-600" />
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-gray-900">Take Photo</p>
-                  <p className="text-xs text-gray-600">Use camera</p>
-                </div>
-              </button>
-
-              {/* Upload from Gallery Button */}
-              <button
-                type="button"
-                onClick={handleCameraCapture}
-                className="flex-1 sm:flex-none flex flex-col items-center gap-2 p-4 bg-green-100 hover:bg-green-200 rounded-xl transition-colors w-full sm:w-auto"
-              >
-                <Upload className="w-8 h-8 text-green-600" />
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-gray-900">Upload Photos</p>
-                  <p className="text-xs text-gray-600">From gallery</p>
-                </div>
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-3">
-              PNG, JPG up to 10MB each
-            </p>
-          </div>
-
-          {/* Photo Preview - Mobile Optimized Grid */}
-          {photoFiles && photoFiles.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-base sm:text-sm font-semibold text-gray-700 mb-3">
-                Selected Photos ({photoFiles.length})
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                {photoFiles.map((file, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-24 sm:h-28 object-cover rounded-xl border-2 border-gray-200 shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 active:bg-red-700 transition-colors shadow-lg min-h-[32px] min-w-[32px] flex items-center justify-center"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {uploadStatus && (
-            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm sm:text-base font-medium text-blue-700">
-                {uploadStatus}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Error Messages - Mobile Optimized */}
-        {formError && (
-          <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-            <p className="text-sm sm:text-base text-red-600 font-medium">{formError}</p>
-          </div>
-        )}
-
-        {/* Submit Error Messages - Mobile Optimized */}
-        {submitError && (
-          <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-            <p className="text-sm sm:text-base text-red-600 font-medium">{submitError}</p>
-          </div>
-        )}
-
-        {/* Success Messages - Mobile Optimized */}
-        {submitStatus && (
-          <div className="p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-            <p className="text-sm sm:text-base text-green-600 font-medium">{submitStatus}</p>
-          </div>
-        )}
-
-        {/* Submit Button - Mobile: Full Width, Large Touch Target */}
-        <div className="pt-4">
+      {/* ── Photos ── */}
+      <div ref={photoSectionRef}>
+        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-3 px-0.5">
+          Photos{' '}
+          <span className="normal-case font-normal tracking-normal text-gray-300">— optional</span>
+        </p>
+        <div className="flex gap-2.5">
           <button
-            type="submit"
-            className="w-full inline-flex items-center justify-center gap-3 px-6 py-5 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-lg sm:text-base font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 active:scale-98 transition-all shadow-xl min-h-[56px]"
+            type="button"
+            onClick={addPhotoFromCamera}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] font-semibold text-gray-700 shadow-sm active:scale-[0.97] transition-transform"
           >
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
-            Save Maintenance Record
+            <Camera className="w-4 h-4 text-gray-400" />
+            Camera
+          </button>
+          <button
+            type="button"
+            onClick={addPhotoFromGallery}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] font-semibold text-gray-700 shadow-sm active:scale-[0.97] transition-transform"
+          >
+            <ImageIcon className="w-4 h-4 text-gray-400" />
+            Gallery
           </button>
         </div>
-      </form>
 
-      <style jsx>{`
-        .active\\:scale-98:active {
-          transform: scale(0.98);
-        }
-      `}</style>
-    </div>
+        {photoFiles?.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mt-2.5">
+            {photoFiles.map((file, i) => (
+              <div key={i} className="relative aspect-square">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt=""
+                  className="w-full h-full object-cover rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPhotoFiles(prev => prev.filter((_, idx) => idx !== i))}
+                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center"
+                >
+                  <X className="w-2.5 h-2.5 text-white" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {uploadStatus && (
+          <p className="text-xs text-gray-400 mt-2 ml-0.5">{uploadStatus}</p>
+        )}
+      </div>
+
+      {/* ── Error ── */}
+      {hasError && (
+        <div className="px-4 py-3 bg-red-50 rounded-xl border border-red-100">
+          <p className="text-[14px] text-red-600">{hasError}</p>
+        </div>
+      )}
+
+      {/* ── Success ── */}
+      {isSuccess && !hasError && (
+        <div className="px-4 py-3 bg-green-50 rounded-xl border border-green-100 flex items-center gap-2.5">
+          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+              <path d="M1.5 4L3.5 6L8.5 1.5" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <p className="text-[14px] font-medium text-green-700">{submitStatus}</p>
+        </div>
+      )}
+
+      {/* ── Date pill + Submit ── */}
+      <div
+        className="flex items-center gap-3"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+      >
+        {/* Date picker — label wraps input so entire pill is tappable */}
+        <label className="relative flex-shrink-0 flex items-center gap-1.5 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-[15px] font-semibold text-gray-700 shadow-sm whitespace-nowrap cursor-pointer select-none">
+          {formatDateLabel(serviceDate)}
+          <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-0.5" />
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={serviceDate}
+            onChange={e => setServiceDate(e.target.value)}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+          />
+        </label>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className={[
+            'flex-1 py-3.5 rounded-2xl text-[15px] font-bold tracking-wide transition-all duration-150 active:scale-[0.98]',
+            canSubmit
+              ? 'text-white shadow-lg'
+              : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+          ].join(' ')}
+          style={canSubmit ? { backgroundColor: '#101d40' } : {}}
+        >
+          {submitting ? 'Saving...' : 'Log Work'}
+        </button>
+      </div>
+
+    </form>
   );
 };
 

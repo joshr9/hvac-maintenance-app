@@ -2,20 +2,19 @@ const express = require('express')
 const router = express.Router()
 const controller = require('../controllers/maintenanceLogsController')
 const multer = require('multer')
-const path = require('path')
+const { v2: cloudinary } = require('cloudinary')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
-// Set up multer storage for photos
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, '../uploads'))
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${req.params.logId}-${Date.now()}-${file.originalname}`)
-  }
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 })
-const upload = multer({ storage })
+
+// Store upload in memory so we can pipe to Cloudinary
+const upload = multer({ storage: multer.memoryStorage() })
 
 // Download report route (must be before /:id route)
 router.get('/report', controller.downloadReport)
@@ -31,15 +30,25 @@ router.post('/:logId/photos', upload.single('photo'), async (req, res) => {
   try {
     const logId = parseInt(req.params.logId, 10)
     if (!req.file) return res.status(400).json({ error: "No file uploaded." })
-    const url = `/uploads/${req.file.filename}`
+
+    // Upload buffer to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'hvac-maintenance', resource_type: 'image' },
+        (error, result) => error ? reject(error) : resolve(result)
+      )
+      stream.end(req.file.buffer)
+    })
+
     const photo = await prisma.maintenancePhoto.create({
       data: {
-        url,
+        url: result.secure_url,
         maintenanceLogId: logId
       }
     })
     res.status(201).json(photo)
   } catch (err) {
+    console.error('Photo upload error:', err)
     res.status(500).json({ error: err.message })
   }
 })

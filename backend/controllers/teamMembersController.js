@@ -21,47 +21,25 @@ exports.getTeamMembers = async (req, res) => {
       }
     });
 
-    // Get job statistics for each team member
+    // Get job statistics for each team member (graceful — job table may not exist yet)
     const teamMembersWithStats = await Promise.all(
       teamMembers.map(async (member) => {
-        const [totalJobs, activeJobs, completedJobs, todaysJobs] = await Promise.all([
-          prisma.job.count({
-            where: { assignedTechnician: member.name }
-          }),
-          prisma.job.count({
-            where: { 
-              assignedTechnician: member.name,
-              status: { in: ['SCHEDULED', 'IN_PROGRESS', 'DISPATCHED'] }
-            }
-          }),
-          prisma.job.count({
-            where: { 
-              assignedTechnician: member.name,
-              status: 'COMPLETED'
-            }
-          }),
-          prisma.job.count({
-            where: { 
-              assignedTechnician: member.name,
-              scheduledDate: {
-                gte: new Date(new Date().toDateString()), // Today start
-                lt: new Date(new Date().getTime() + 24 * 60 * 60 * 1000) // Tomorrow start
-              }
-            }
-          })
-        ]);
+        let totalJobs = 0, activeJobs = 0, completedJobs = 0, todaysJobs = 0;
+        try {
+          [totalJobs, activeJobs, completedJobs, todaysJobs] = await Promise.all([
+            prisma.job.count({ where: { assignedTechnician: member.name } }),
+            prisma.job.count({ where: { assignedTechnician: member.name, status: { in: ['SCHEDULED', 'IN_PROGRESS', 'DISPATCHED'] } } }),
+            prisma.job.count({ where: { assignedTechnician: member.name, status: 'COMPLETED' } }),
+            prisma.job.count({ where: { assignedTechnician: member.name, scheduledDate: { gte: new Date(new Date().toDateString()), lt: new Date(Date.now() + 86400000) } } }),
+          ]);
+        } catch { /* job table not yet available */ }
 
         return {
           id: member.id,
           name: member.name,
           email: member.email,
           role: member.role,
-          initials: member.name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2),
+          initials: member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
           totalJobs,
           activeJobs,
           completedJobs,

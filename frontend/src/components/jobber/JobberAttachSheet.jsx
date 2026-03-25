@@ -3,9 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, CheckCircle, ChevronRight, Loader } from 'lucide-react';
 
-const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDate, onClose }) => {
+const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDate, propertyAddress, onClose }) => {
   const [jobs, setJobs]         = useState([]);
-  const [query, setQuery]       = useState('');
+  const [query, setQuery]       = useState(propertyAddress || '');
   const [loading, setLoading]   = useState(true);
   const [attaching, setAttaching] = useState(false);
   const [attached, setAttached]  = useState(false);

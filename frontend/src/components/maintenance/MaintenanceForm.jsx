@@ -204,6 +204,7 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
           notes: maintenanceNote,
           techName: clerkUser?.fullName || clerkUser?.firstName || '',
           serviceDate,
+          propertyAddress: selectedProperty?.address || '',
         });
 
         setTimeout(() => setSubmitStatus(''), 4000);
@@ -225,6 +226,7 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
       notes: savedLog.notes || '',
       techName: clerkUser?.fullName || clerkUser?.firstName || '',
       serviceDate: savedLog.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+      propertyAddress: selectedProperty?.address || '',
     });
   };
 
@@ -412,6 +414,7 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
             notes={jobberLog.notes}
             techName={jobberLog.techName}
             serviceDate={jobberLog.serviceDate}
+            propertyAddress={jobberLog.propertyAddress}
             onClose={() => setJobberLog(null)}
           />
         )}
@@ -524,6 +527,7 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
             notes={jobberLog.notes}
             techName={jobberLog.techName}
             serviceDate={jobberLog.serviceDate}
+            propertyAddress={jobberLog.propertyAddress}
             onClose={() => setJobberLog(null)}
           />
         )}

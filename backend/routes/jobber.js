@@ -84,6 +84,7 @@ async function jobberGql(query, variables = {}) {
     body: JSON.stringify({ query, variables }),
   });
   const json = await res.json();
+  console.log('Jobber GQL raw response:', JSON.stringify(json).slice(0, 500));
   if (json.errors) throw new Error(json.errors[0].message);
   return json.data;
 }

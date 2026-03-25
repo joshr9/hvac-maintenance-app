@@ -190,9 +190,11 @@ const MaintenanceHistory = ({ maintenanceLogs, selectedUnit }) => {
                           {log.photos
                             .filter(photo => photo.url || photo.fileName)
                             .map(photo => {
-                              const photoUrl = photo.url
-                                ? `${apiUrl}${photo.url}`
-                                : `${apiUrl}/uploads/${photo.fileName}`;
+                              const photoUrl = photo.url?.startsWith('http')
+                                ? photo.url
+                                : photo.url
+                                  ? `${apiUrl}${photo.url}`
+                                  : `${apiUrl}/uploads/${photo.fileName}`;
 
                               return (
                                 <button

@@ -29,13 +29,18 @@ router.get('/unit/:unitId', controller.getLogsByUnit)
 router.post('/:logId/photos', upload.single('photo'), async (req, res) => {
   try {
     const logId = parseInt(req.params.logId, 10)
+    console.log('Photo upload: logId', logId, 'file', req.file ? `${req.file.originalname} ${req.file.size}b` : 'MISSING')
+    console.log('Cloudinary config:', { cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: !!process.env.CLOUDINARY_API_KEY, api_secret: !!process.env.CLOUDINARY_API_SECRET })
     if (!req.file) return res.status(400).json({ error: "No file uploaded." })
 
     // Upload buffer to Cloudinary
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: 'hvac-maintenance', resource_type: 'image' },
-        (error, result) => error ? reject(error) : resolve(result)
+        (error, result) => {
+          if (error) { console.error('Cloudinary upload_stream error:', error); reject(error); }
+          else { console.log('Cloudinary upload success:', result.secure_url); resolve(result); }
+        }
       )
       stream.end(req.file.buffer)
     })

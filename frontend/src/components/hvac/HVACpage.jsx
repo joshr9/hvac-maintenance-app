@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import AddPropertyScreen from '../properties/AddPropertyScreen';
 import {
   Wrench, Search, Building, Zap, Clock, ChevronDown, ChevronUp,
   Filter, Camera, ClipboardList, AlertCircle, Plus, X, Check,
-  ChevronRight, ArrowLeft
+  ChevronRight, ArrowLeft, MoreHorizontal, Pencil, Trash2
 } from 'lucide-react';
 
 const MAINTENANCE_TYPE_LABELS = {
@@ -114,11 +115,11 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
         next.delete(unitId);
       } else {
         next.add(unitId);
-        if (!historyState[unitId]) fetchHistory(unitId);
+        fetchHistory(unitId); // always re-fetch on expand to get latest photos/edits
       }
       return next;
     });
-  }, [historyState, fetchHistory]);
+  }, [fetchHistory]);
 
   const handleLogWork = (unit) => {
     if (!onNavigate) return;
@@ -238,6 +239,7 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
                             onToggleHistory={() => toggleHistory(unit.id)}
                             historyStatus={historyState[unit.id]}
                             history={historyData[unit.id] || []}
+                            onRefreshHistory={() => fetchHistory(unit.id)}
                           />
                         ))}
                       </div>
@@ -582,7 +584,7 @@ const AddUnitSheet = ({ properties, onClose, onUnitAdded }) => {
 
 /* ─── Unit Card ─── */
 
-const UnitCard = ({ unit, onLogWork, isExpanded, onToggleHistory, historyStatus, history }) => {
+const UnitCard = ({ unit, onLogWork, isExpanded, onToggleHistory, historyStatus, history, onRefreshHistory }) => {
   const lastLog = history[0];
 
   return (
@@ -638,7 +640,7 @@ const UnitCard = ({ unit, onLogWork, isExpanded, onToggleHistory, historyStatus,
 
       {isExpanded && (
         <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
-          <HistoryPanel status={historyStatus} logs={history} />
+          <HistoryPanel status={historyStatus} logs={history} onRefresh={onRefreshHistory} />
         </div>
       )}
     </div>
@@ -647,7 +649,7 @@ const UnitCard = ({ unit, onLogWork, isExpanded, onToggleHistory, historyStatus,
 
 /* ─── History Panel ─── */
 
-const HistoryPanel = ({ status, logs }) => {
+const HistoryPanel = ({ status, logs, onRefresh }) => {
   if (status === 'loading') {
     return (
       <div className="flex items-center gap-2 py-3 text-sm text-gray-400">
@@ -668,7 +670,7 @@ const HistoryPanel = ({ status, logs }) => {
   }
   return (
     <div className="space-y-2">
-      {logs.map(log => <LogRow key={log.id} log={log} />)}
+      {logs.map(log => <LogRow key={log.id} log={log} onRefresh={onRefresh} />)}
     </div>
   );
 };
@@ -679,39 +681,173 @@ const MAINTENANCE_LABELS = {
   REFRIGERANT: 'Refrigerant', FULL_INSPECTION_CHECKLIST: 'Full Checklist', OTHER: 'Other',
 };
 
-const LogRow = ({ log }) => {
-  const [open, setOpen] = useState(false);
+const HVAC_LOG_TYPES = [
+  { value: 'FILTER_CHANGE',          label: 'Filter Change' },
+  { value: 'PREVENTIVE_MAINTENANCE', label: 'Preventative PM' },
+  { value: 'COIL_CLEANING',          label: 'Coil Cleaning' },
+  { value: 'INSPECTION',             label: 'Inspection' },
+  { value: 'REPAIR',                 label: 'Repair' },
+  { value: 'FULL_SERVICE',           label: 'Full Service' },
+  { value: 'REFRIGERANT',            label: 'Refrigerant' },
+  { value: 'OTHER',                  label: 'Other' },
+];
+
+const LogRow = ({ log, onRefresh }) => {
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+  const [open, setOpen]         = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editLog, setEditLog]   = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [saving, setSaving]     = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [menuOpen]);
+
+  const openEdit = () => {
+    setMenuOpen(false);
+    setEditData({
+      maintenanceType: log.maintenanceType || '',
+      notes:           log.notes || '',
+      serviceDate:     log.createdAt?.split('T')[0] || '',
+    });
+    setEditLog(log);
+  };
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/maintenance-logs/${log.id}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ maintenanceType: editData.maintenanceType, notes: editData.notes, createdAt: editData.serviceDate }),
+      });
+      if (res.ok) { setEditLog(null); onRefresh?.(); }
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    await fetch(`${apiUrl}/api/maintenance-logs/${deleteId}`, { method: 'DELETE' });
+    setDeleteId(null);
+    onRefresh?.();
+  };
+
+  const photoUrl = (p) => p.url?.startsWith('http') ? p.url : p.url ? `${apiUrl}${p.url}` : `${apiUrl}/uploads/${p.fileName || ''}`;
+
   return (
-    <div className="bg-white rounded-xl overflow-hidden" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-      <button className="w-full flex items-center justify-between px-3 py-2.5 text-left" onClick={() => setOpen(o => !o)}>
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-xs font-medium text-gray-500 flex-shrink-0">{formatDate(log.createdAt)}</span>
-          <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />
-          <span className="text-sm font-medium text-gray-800 truncate">{MAINTENANCE_LABELS[log.maintenanceType] || log.maintenanceType}</span>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-          {log.photos?.length > 0 && (
-            <span className="flex items-center gap-0.5 text-xs text-gray-400">
-              <Camera className="w-3 h-3" />{log.photos.length}
-            </span>
-          )}
-          {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
-        </div>
-      </button>
-      {open && (
-        <div className="px-3 pb-3 border-t border-gray-50 pt-2 space-y-2">
-          {log.technician?.name && <p className="text-xs text-gray-500">Tech: {log.technician.name}</p>}
-          {log.notes && <p className="text-sm text-gray-700">{log.notes}</p>}
-          {log.photos?.length > 0 && (
-            <div className="grid grid-cols-3 gap-1.5 mt-2">
-              {log.photos.map(p => (
-                <img key={p.id} src={`${import.meta.env.VITE_API_URL || ''}${p.url}`} alt="" className="w-full h-20 object-cover rounded-lg" />
-              ))}
+    <>
+      <div className="bg-white rounded-xl overflow-hidden" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+        <div className="flex items-center px-3 py-2.5">
+          <button className="flex-1 flex items-center gap-2.5 min-w-0 text-left" onClick={() => setOpen(o => !o)}>
+            <span className="text-xs font-medium text-gray-500 flex-shrink-0">{formatDate(log.createdAt)}</span>
+            <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />
+            <span className="text-sm font-medium text-gray-800 truncate">{MAINTENANCE_LABELS[log.maintenanceType] || log.maintenanceType}</span>
+          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+            {log.photos?.length > 0 && (
+              <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                <Camera className="w-3 h-3" />{log.photos.length}
+              </span>
+            )}
+            {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-400 mr-1" onClick={() => setOpen(false)} /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400 mr-1" onClick={() => setOpen(true)} />}
+            <div ref={menuRef} className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(o => !o); }}
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5 text-gray-400" />
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-7 z-50 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden min-w-[120px]">
+                  <button onClick={openEdit} className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
+                    <Pencil className="w-3.5 h-3.5 text-gray-400" />Edit
+                  </button>
+                  <div className="h-px bg-gray-100 mx-2" />
+                  <button onClick={() => { setMenuOpen(false); setDeleteId(log.id); }} className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50">
+                    <Trash2 className="w-3.5 h-3.5" />Delete
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
+        {open && (
+          <div className="px-3 pb-3 border-t border-gray-50 pt-2 space-y-2">
+            {log.technician?.name && <p className="text-xs text-gray-500">Tech: {log.technician.name}</p>}
+            {log.notes && <p className="text-sm text-gray-700">{log.notes}</p>}
+            {log.photos?.length > 0 && (
+              <div className="grid grid-cols-3 gap-1.5 mt-2">
+                {log.photos.map(p => (
+                  <img key={p.id} src={photoUrl(p)} alt="" className="w-full h-20 object-cover rounded-lg" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Edit modal */}
+      {editLog && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEditLog(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+              <h2 className="text-[17px] font-semibold text-gray-900">Edit Log</h2>
+              <button onClick={() => setEditLog(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100">
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <div>
+                <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Type</label>
+                <select value={editData.maintenanceType} onChange={e => setEditData(d => ({ ...d, maintenanceType: e.target.value }))}
+                  className="w-full px-3 py-2.5 text-[14px] bg-[#F2F2F7] rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
+                  {HVAC_LOG_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Date</label>
+                <input type="date" value={editData.serviceDate} onChange={e => setEditData(d => ({ ...d, serviceDate: e.target.value }))}
+                  className="w-full px-3 py-2.5 text-[14px] bg-[#F2F2F7] rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-gray-900/10" />
+              </div>
+              <div>
+                <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Notes</label>
+                <textarea value={editData.notes} onChange={e => setEditData(d => ({ ...d, notes: e.target.value }))} rows={4}
+                  className="w-full px-3 py-2.5 text-[14px] bg-[#F2F2F7] rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-gray-900/10 resize-none" placeholder="Add notes…" />
+              </div>
+            </div>
+            <div className="flex gap-2 px-5 pb-5">
+              <button onClick={() => setEditLog(null)} className="flex-1 py-3 rounded-xl text-[15px] font-medium text-gray-600 bg-gray-100">Cancel</button>
+              <button onClick={handleSaveEdit} disabled={saving} className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white disabled:opacity-50" style={{ backgroundColor: '#101d40' }}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
-    </div>
+
+      {/* Delete confirm */}
+      {deleteId && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
+            <h2 className="text-[17px] font-semibold text-gray-900">Delete log?</h2>
+            <p className="text-[14px] text-gray-500">This can't be undone.</p>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-3 rounded-xl text-[15px] font-medium text-gray-600 bg-gray-100">Cancel</button>
+              <button onClick={handleDelete} className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white bg-red-500">Delete</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 };
 

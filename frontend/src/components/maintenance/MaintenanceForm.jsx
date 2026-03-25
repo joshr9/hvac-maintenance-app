@@ -391,6 +391,7 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
                 <MaintenanceHistory
                   maintenanceLogs={maintenanceLogs}
                   selectedUnit={selectedUnit}
+                  onRefresh={refreshLogs}
                   onDownloadReport={downloadReport}
                 />
               </div>

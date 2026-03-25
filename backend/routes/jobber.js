@@ -193,12 +193,12 @@ router.get('/jobs', async (req, res) => {
   try {
     const data = await jobberGql(`
       query SearchJobs {
-        jobs(filter: { status: [ACTIVE] }, first: 50) {
+        jobs(first: 50) {
           nodes {
             id
             jobNumber
             title
-            status
+            jobStatus
             client {
               id
               name
@@ -216,7 +216,9 @@ router.get('/jobs', async (req, res) => {
       }
     `);
 
-    let jobs = data.jobs?.nodes || [];
+    let jobs = (data?.jobs?.nodes || []).filter(j =>
+      !j.jobStatus || !['COMPLETED', 'ARCHIVED', 'CANCELLED'].includes(j.jobStatus)
+    );
 
     // Client-side filter by search query
     if (q) {

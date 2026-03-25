@@ -108,6 +108,9 @@ app.use('/api/clerk', clerkRoutes);
 const recurringJobTemplateRoutes = require('./routes/recurringJobTemplate');
 app.use('/api/recurring-job-templates', recurringJobTemplateRoutes);
 
+const jobberRoutes = require('./routes/jobber');
+app.use('/api/jobber', jobberRoutes);
+
 // ✅ NEW: Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 

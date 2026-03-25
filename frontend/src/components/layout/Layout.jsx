@@ -302,6 +302,13 @@ const Layout = ({
           icon: Building,
           description: 'Manage properties & suites',
           badge: null
+        },
+        {
+          id: 'settings',
+          label: 'Settings',
+          icon: Settings,
+          description: 'Integrations & account',
+          badge: null
         }
       ]
     }

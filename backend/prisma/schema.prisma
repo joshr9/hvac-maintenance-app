@@ -28,6 +28,7 @@ model Property {
   name               String
   address            String                 @unique
   qrCode             String? // optional: could be linked to a unique ID
+  jobberClientId     String? // Jobber client record ID for syncing work orders
   suites             Suite[]
   jobs               Job[] // NEW: Add jobs relation
   jobTemplates       JobTemplate[] // ADD: Missing relation for JobTemplate
@@ -569,6 +570,9 @@ enum MaintenanceType {
   REPAIR
   OTHER
   FULL_INSPECTION_CHECKLIST
+  PREVENTIVE_MAINTENANCE
+  COIL_CLEANING
+  REFRIGERANT
 }
 
 enum MaintenanceStatus {
@@ -645,4 +649,16 @@ enum TaskPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+// Jobber OAuth token storage (singleton — one row)
+model JobberToken {
+  id           Int      @id @default(autoincrement())
+  accessToken  String   @db.Text
+  refreshToken String   @db.Text
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("jobber_tokens")
 }

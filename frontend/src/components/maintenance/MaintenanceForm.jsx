@@ -16,6 +16,7 @@ import AddHVACModal from '../hvac/AddHVACModal';
 import MaintenanceModeToggle from './MaintenanceModeToggle';
 import Card from '../common/Card';
 import PropertyBreadcrumb from './PropertyBreadcrumb';
+import JobberAttachSheet from '../jobber/JobberAttachSheet';
 
 const MaintenanceForm = ({ onNavigate, navigationData }) => {
   const { user: clerkUser } = useUser();
@@ -43,6 +44,9 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
 
   const [photoFiles, setPhotoFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState('');
+
+  // Jobber attach sheet
+  const [jobberLog, setJobberLog] = useState(null); // { id, maintenanceType, notes, techName, serviceDate }
 
   // Pre-selection from HVAC dashboard
   const skipWizard = navigationData?.skipPropertySelection === true;
@@ -193,6 +197,15 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
 
         refreshLogs();
 
+        // Show Jobber attach sheet
+        setJobberLog({
+          id: newLog.id,
+          maintenanceType: maintenanceType,
+          notes: maintenanceNote,
+          techName: clerkUser?.fullName || clerkUser?.firstName || '',
+          serviceDate,
+        });
+
         setTimeout(() => setSubmitStatus(''), 4000);
       } else {
         const err = await response.json();
@@ -206,6 +219,13 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
 
   const handleChecklistComplete = (savedLog) => {
     refreshLogs();
+    setJobberLog({
+      id: savedLog.id,
+      maintenanceType: 'PREVENTIVE_MAINTENANCE',
+      notes: savedLog.notes || '',
+      techName: clerkUser?.fullName || clerkUser?.firstName || '',
+      serviceDate: savedLog.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+    });
   };
 
   const handleAddHVAC = async (e) => {
@@ -495,6 +515,17 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
         setNewUnit={setNewUnit}
         addHVACStatus={addHVACStatus}
       />
+
+      {jobberLog && (
+        <JobberAttachSheet
+          logId={jobberLog.id}
+          maintenanceType={jobberLog.maintenanceType}
+          notes={jobberLog.notes}
+          techName={jobberLog.techName}
+          serviceDate={jobberLog.serviceDate}
+          onClose={() => setJobberLog(null)}
+        />
+      )}
     </div>
   );
 };

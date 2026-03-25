@@ -28,6 +28,7 @@ import PropertiesPage from './components/properties/PropertiesPage';
 import RoleBasedCalendar from './components/calendar/RoleBasedCalendar';
 import TeamChat from './components/messaging/TeamChat';
 import HVACPage from './components/hvac/HVACpage';
+import JobberConnect from './components/jobber/JobberConnect';
 import TaskManagementTodoist from './components/tasks/TaskManagementTodoist';
 import ReportsPage from './components/reports/ReportsPage';
 
@@ -54,7 +55,12 @@ const authEnabled = !!clerkPubKey
 
 function App() {
   // ✅ EXISTING: ALL your current state (100% PRESERVED)
-  const [currentView, setCurrentView] = useState('hvac');
+  const [currentView, setCurrentView] = useState(() => {
+    // Handle Jobber OAuth redirect back to app
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('jobber')) return 'settings';
+    return 'hvac';
+  });
   const [activeModal, setActiveModal] = useState(null);
   const [properties, setProperties] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -205,6 +211,18 @@ const renderCurrentView = () => {
         <PropertiesPage
           onNavigate={handleNavigate}
         />
+      );
+
+    case 'settings':
+      return (
+        <div className="min-h-screen bg-[#F2F2F7] px-4 pt-6 pb-32 space-y-6 max-w-2xl mx-auto">
+          <div>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-[0.08em] mb-3 px-0.5">
+              Integrations
+            </p>
+            <JobberConnect />
+          </div>
+        </div>
       );
 
     case 'maintenance':

@@ -404,6 +404,17 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
           setNewUnit={setNewUnit}
           addHVACStatus={addHVACStatus}
         />
+
+        {jobberLog && (
+          <JobberAttachSheet
+            logId={jobberLog.id}
+            maintenanceType={jobberLog.maintenanceType}
+            notes={jobberLog.notes}
+            techName={jobberLog.techName}
+            serviceDate={jobberLog.serviceDate}
+            onClose={() => setJobberLog(null)}
+          />
+        )}
       </div>
     );
   }
@@ -527,16 +538,6 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
         addHVACStatus={addHVACStatus}
       />
 
-      {jobberLog && (
-        <JobberAttachSheet
-          logId={jobberLog.id}
-          maintenanceType={jobberLog.maintenanceType}
-          notes={jobberLog.notes}
-          techName={jobberLog.techName}
-          serviceDate={jobberLog.serviceDate}
-          onClose={() => setJobberLog(null)}
-        />
-      )}
     </div>
   );
 };

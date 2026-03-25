@@ -334,7 +334,7 @@ const MaintenanceChecklist = ({
               suffix="°F"
             />
             <GoodBadToggle
-              label="Blower Belt"
+              label="Blower Belt (D.D. Only)"
               value={blowerBeltCooling}
               onChange={setBlowerBeltCooling}
               both
@@ -396,7 +396,7 @@ const MaintenanceChecklist = ({
               both
             />
             <GoodBadToggle
-              label="Blower Belt"
+              label="Blower Belt (D.D. Only)"
               value={blowerBeltHeating}
               onChange={setBlowerBeltHeating}
               both

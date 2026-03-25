@@ -15,28 +15,43 @@ const MAINTENANCE_TYPES = [
 
 const TYPE_LABEL = Object.fromEntries(MAINTENANCE_TYPES.map(t => [t.value, t.label]));
 
-// ── Dropdown menu anchored to ••• button ──────────────────────────────────────
+// ── Dropdown menu anchored to ••• button (portal so it's never clipped) ───────
 const LogMenu = ({ log, onEdit, onDelete }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [pos, setPos]   = useState({ top: 0, right: 0 });
+  const btnRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const close = (e) => { if (!e.target.closest('[data-log-menu]')) setOpen(false); };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (!open) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen(o => !o);
+  };
+
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div className="flex-shrink-0">
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+        ref={btnRef}
+        onClick={toggle}
         className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
       >
         <MoreHorizontal className="w-4 h-4 text-gray-400" />
       </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden min-w-[130px]">
+      {open && createPortal(
+        <div
+          data-log-menu
+          className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden min-w-[130px]"
+          style={{ top: pos.top, right: pos.right }}
+        >
           <button
             onClick={() => { setOpen(false); onEdit(log); }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[14px] text-gray-700 hover:bg-gray-50 transition-colors"
@@ -52,7 +67,8 @@ const LogMenu = ({ log, onEdit, onDelete }) => {
             <Trash2 className="w-4 h-4" />
             Delete
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

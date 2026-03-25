@@ -21,18 +21,19 @@ const MAINTENANCE_TYPE_LABELS = {
 const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [localProperties, setLocalProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [expandedProperties, setExpandedProperties] = useState(new Set());
   const [historyState, setHistoryState] = useState({});
   const [historyData, setHistoryData] = useState({});
   const [expandedUnits, setExpandedUnits] = useState(new Set());
   const [showAddUnit, setShowAddUnit] = useState(false);
 
-  // Sync localProperties when prop changes + pre-fetch last log for every unit
-  useEffect(() => {
-    setLocalProperties(properties);
-    const apiUrl = import.meta.env.VITE_API_URL || '';
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  const loadAndSetProperties = useCallback(async (list) => {
+    setLocalProperties(list);
     const allUnits = [];
-    properties.forEach(p =>
+    list.forEach(p =>
       (p.suites || []).forEach(s =>
         (s.hvacUnits || []).forEach(u => allUnits.push(u.id))
       )
@@ -46,7 +47,22 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
         })
         .catch(() => {});
     });
-  }, [properties]);
+  }, [apiUrl]);
+
+  // Sync from prop, or self-fetch if prop comes in empty
+  useEffect(() => {
+    if (properties.length > 0) {
+      loadAndSetProperties(properties);
+      return;
+    }
+    // Prop is empty — fetch directly so the page works even if App.jsx fetch failed
+    setLoading(true);
+    fetch(`${apiUrl}/api/properties`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => loadAndSetProperties(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [properties, loadAndSetProperties, apiUrl]);
 
   const groupedProperties = useMemo(() => {
     return localProperties.map(property => {
@@ -159,7 +175,7 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
     <div className="min-h-screen" style={{ background: '#F2F2F7' }}>
       {/* Search */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="relative">
+        <div className="max-w-4xl mx-auto relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -173,9 +189,14 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
       </div>
 
       {/* Property accordion list */}
-      <div className="px-4 py-4 space-y-2.5">
-        {filteredGroups.length === 0 ? (
-          <div className="text-center py-20">
+      <div className="px-4 py-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+        {loading ? (
+          <div className="text-center py-20 lg:col-span-2">
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin mx-auto" />
+          </div>
+        ) : filteredGroups.length === 0 ? (
+          <div className="text-center py-20 lg:col-span-2">
             <Zap className="w-14 h-14 text-gray-200 mx-auto mb-3" />
             <p className="font-semibold text-gray-500">No properties found</p>
             <p className="text-sm text-gray-400 mt-1">
@@ -250,6 +271,7 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
             );
           })
         )}
+        </div>
         <div className="h-28" />
       </div>
 

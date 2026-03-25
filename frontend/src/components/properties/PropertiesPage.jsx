@@ -74,7 +74,7 @@ const PropertiesPage = ({ onNavigate }) => {
     <div className="min-h-screen" style={{ background: '#F2F2F7' }}>
       {/* Search */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="relative">
+        <div className="max-w-4xl mx-auto relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -87,9 +87,10 @@ const PropertiesPage = ({ onNavigate }) => {
       </div>
 
       {/* List */}
-      <div className="px-4 py-4 space-y-2.5">
+      <div className="px-4 py-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
         {filtered.length === 0 ? (
-          <div className="text-center py-20">
+          <div className="text-center py-20 lg:col-span-2">
             <Building className="w-14 h-14 text-gray-200 mx-auto mb-3" />
             <p className="font-semibold text-gray-500">
               {searchQuery ? 'No properties found' : 'No properties yet'}
@@ -163,6 +164,7 @@ const PropertiesPage = ({ onNavigate }) => {
             );
           })
         )}
+        </div>
         <div className="h-20" />
       </div>
 

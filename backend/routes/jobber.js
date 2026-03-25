@@ -198,7 +198,6 @@ router.get('/jobs', async (req, res) => {
             id
             jobNumber
             title
-            jobStatus
             client {
               id
               name
@@ -216,9 +215,8 @@ router.get('/jobs', async (req, res) => {
       }
     `);
 
-    let jobs = (data?.jobs?.nodes || []).filter(j =>
-      !j.jobStatus || !['COMPLETED', 'ARCHIVED', 'CANCELLED'].includes(j.jobStatus)
-    );
+    console.log('Jobber jobs raw data:', JSON.stringify(data));
+    let jobs = data?.jobs?.nodes || [];
 
     // Client-side filter by search query
     if (q) {

@@ -12,7 +12,7 @@ const FRONTEND_URL  = process.env.FRONTEND_URL || 'https://app.deancallanpm.com'
 const JOBBER_AUTH_URL  = 'https://api.getjobber.com/api/oauth/authorize';
 const JOBBER_TOKEN_URL = 'https://api.getjobber.com/api/oauth/token';
 const JOBBER_GQL_URL   = 'https://api.getjobber.com/api/graphql';
-const JOBBER_API_VER   = '2024-09-26';
+const JOBBER_API_VER   = '2025-01-20';
 
 // ── Token helpers ────────────────────────────────────────────────────────────
 

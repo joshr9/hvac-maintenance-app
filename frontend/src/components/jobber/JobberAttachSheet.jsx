@@ -24,7 +24,7 @@ const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDat
         return fetch(`${apiUrl}/api/jobber/jobs`);
       })
       .then(r => r?.json())
-      .then(data => { if (data) setJobs(data); })
+      .then(data => { if (Array.isArray(data)) setJobs(data); else if (data?.error) setError(data.error); })
       .catch(() => setError('Failed to load Jobber jobs.'))
       .finally(() => setLoading(false));
   }, []);

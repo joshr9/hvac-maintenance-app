@@ -193,7 +193,7 @@ router.get('/jobs', async (req, res) => {
   try {
     const data = await jobberGql(`
       query SearchJobs {
-        jobs(filter: { status: [active] }, first: 50) {
+        jobs(filter: { status: [ACTIVE] }, first: 50) {
           nodes {
             id
             jobNumber

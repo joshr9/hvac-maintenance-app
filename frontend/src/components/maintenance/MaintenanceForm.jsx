@@ -505,6 +505,17 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
             </div>
           </div>
         )}
+
+        {jobberLog && (
+          <JobberAttachSheet
+            logId={jobberLog.id}
+            maintenanceType={jobberLog.maintenanceType}
+            notes={jobberLog.notes}
+            techName={jobberLog.techName}
+            serviceDate={jobberLog.serviceDate}
+            onClose={() => setJobberLog(null)}
+          />
+        )}
       </div>
 
       <AddHVACModal

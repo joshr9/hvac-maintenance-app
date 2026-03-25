@@ -49,6 +49,9 @@ import UniversalSearchBar from '../common/UniversalSearchBar';
 const UserMenu = ({ user, onSignOut }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [jobberConnected, setJobberConnected] = useState(null);
+  const [jobberWorking, setJobberWorking] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL || '';
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -67,10 +70,30 @@ const UserMenu = ({ user, onSignOut }) => {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  // Load Jobber status when menu opens
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch(`${apiUrl}/api/jobber/status`)
+      .then(r => r.json())
+      .then(s => setJobberConnected(s.connected))
+      .catch(() => setJobberConnected(false));
+  }, [isOpen]);
+
+  const handleJobberConnect = () => {
+    setIsOpen(false);
+    window.location.href = `${apiUrl}/api/jobber/auth`;
+  };
+
+  const handleJobberDisconnect = async () => {
+    setJobberWorking(true);
+    await fetch(`${apiUrl}/api/jobber/disconnect`, { method: 'DELETE' });
+    setJobberConnected(false);
+    setJobberWorking(false);
+  };
 
   return (
     <div className="relative user-menu">
@@ -175,6 +198,37 @@ const UserMenu = ({ user, onSignOut }) => {
               <HelpCircle className="w-4 h-4" />
               Help & Support
             </button>
+          </div>
+
+          {/* Jobber Integration */}
+          <div className="border-t border-gray-200 py-2">
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ backgroundColor: '#F4A01C' }}>J</div>
+                <span className="text-sm text-gray-700">Jobber</span>
+                {jobberConnected && (
+                  <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Connected</span>
+                )}
+              </div>
+              {jobberConnected === null ? (
+                <span className="text-xs text-gray-400">…</span>
+              ) : jobberConnected ? (
+                <button
+                  onClick={handleJobberDisconnect}
+                  disabled={jobberWorking}
+                  className="text-xs text-red-500 hover:text-red-600 disabled:opacity-40"
+                >
+                  Disconnect
+                </button>
+              ) : (
+                <button
+                  onClick={handleJobberConnect}
+                  className="text-xs font-semibold text-[#101d40] hover:opacity-70"
+                >
+                  Connect
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Sign Out Section */}
@@ -303,13 +357,6 @@ const Layout = ({
           description: 'Manage properties & suites',
           badge: null
         },
-        {
-          id: 'settings',
-          label: 'Settings',
-          icon: Settings,
-          description: 'Integrations & account',
-          badge: null
-        }
       ]
     }
   ];

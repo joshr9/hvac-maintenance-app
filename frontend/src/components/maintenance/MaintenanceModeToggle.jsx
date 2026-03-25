@@ -28,7 +28,7 @@ const MaintenanceModeToggle = ({ mode, setMode }) => (
       ].join(' ')}
     >
       <ClipboardList className="w-4 h-4" />
-      Full Checklist
+      Preventative PM
     </button>
   </div>
 );

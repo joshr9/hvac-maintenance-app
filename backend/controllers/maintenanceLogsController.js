@@ -231,6 +231,8 @@ exports.updateLog = async (req, res) => {
 exports.deleteLog = async (req, res) => {
   const id = parseInt(req.params.id)
   try {
+    // Delete related photos first to satisfy foreign key constraints
+    await prisma.maintenancePhoto.deleteMany({ where: { maintenanceLogId: id } })
     await prisma.maintenanceLog.delete({ where: { id } })
     res.json({ message: 'Maintenance log deleted' })
   } catch (err) {

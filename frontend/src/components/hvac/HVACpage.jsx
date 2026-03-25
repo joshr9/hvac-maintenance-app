@@ -52,6 +52,7 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
   // Sync from prop, or self-fetch if prop comes in empty
   useEffect(() => {
     if (properties.length > 0) {
+      setLoading(false);
       loadAndSetProperties(properties);
       return;
     }

@@ -34,7 +34,7 @@ const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDat
         j.title?.toLowerCase().includes(query.toLowerCase()) ||
         j.client?.name?.toLowerCase().includes(query.toLowerCase()) ||
         j.property?.address?.street?.toLowerCase().includes(query.toLowerCase()) ||
-        j.jobNumber?.toLowerCase().includes(query.toLowerCase())
+        String(j.jobNumber ?? '').toLowerCase().includes(query.toLowerCase())
       )
     : jobs;
 

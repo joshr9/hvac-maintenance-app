@@ -226,7 +226,7 @@ router.get('/jobs', async (req, res) => {
         j.title?.toLowerCase().includes(search) ||
         j.client?.name?.toLowerCase().includes(search) ||
         j.property?.address?.street?.toLowerCase().includes(search) ||
-        j.jobNumber?.toLowerCase().includes(search)
+        String(j.jobNumber ?? '').toLowerCase().includes(search)
       );
     }
 

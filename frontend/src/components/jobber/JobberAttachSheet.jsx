@@ -1,5 +1,6 @@
 // JobberAttachSheet.jsx — optional bottom sheet to attach a saved log to a Jobber job
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, CheckCircle, ChevronRight, Loader } from 'lucide-react';
 
 const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDate, onClose }) => {
@@ -66,8 +67,8 @@ const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDat
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[70] flex flex-col justify-end">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex flex-col justify-end">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
@@ -200,7 +201,8 @@ const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDat
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

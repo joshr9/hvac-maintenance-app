@@ -3,8 +3,9 @@
 // When navigated manually: 3-step wizard (property → suite → form)
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useUser } from '@clerk/clerk-react';
-import { ArrowLeft, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Wrench, ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
 import MaintenanceSteps from './MaintenanceSteps';
 import PropertySearchStep from '../properties/PropertySearchStep';
 import SuiteSelectionStep from '../properties/SuiteSelectionStep';
@@ -289,6 +290,43 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
   const propertyName = selectedProperty?.name || selectedProperty?.address || '';
   const suiteName = selectedSuite?.name || (selectedSuite ? `Suite ${selectedSuite.id}` : '');
 
+  // ── Edit unit name ────────────────────────────────────────────
+  const [editUnitOpen, setEditUnitOpen]   = useState(false);
+  const [editUnitData, setEditUnitData]   = useState({});
+  const [editUnitSaving, setEditUnitSaving] = useState(false);
+
+  const openEditUnit = () => {
+    setEditUnitData({ label: unitData?.label || '', serialNumber: unitData?.serialNumber || '' });
+    setEditUnitOpen(true);
+  };
+
+  const handleSaveUnit = async () => {
+    if (!unitData?.id) return;
+    setEditUnitSaving(true);
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    try {
+      const res = await fetch(`${apiUrl}/api/hvac-units/${unitData.id}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ label: editUnitData.label, serialNumber: editUnitData.serialNumber }),
+      });
+      if (res.ok) {
+        // Update local suite state so header re-derives immediately
+        setSelectedSuite(prev => ({
+          ...prev,
+          hvacUnits: (prev.hvacUnits || []).map(u =>
+            String(u.id) === String(unitData.id)
+              ? { ...u, label: editUnitData.label, serialNumber: editUnitData.serialNumber }
+              : u
+          ),
+        }));
+        setEditUnitOpen(false);
+      }
+    } finally {
+      setEditUnitSaving(false);
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────
   // PRESELECTED FLOW — native screen layout
   // ─────────────────────────────────────────────────────────────
@@ -308,9 +346,17 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
             </button>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-[17px] font-bold text-gray-900 truncate leading-tight">
-                {unitLabel}
-              </h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-[17px] font-bold text-gray-900 truncate leading-tight">
+                  {unitLabel}
+                </h1>
+                <button
+                  onClick={openEditUnit}
+                  className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+              </div>
               <p className="text-[13px] text-gray-400 truncate">
                 {propertyName}{suiteName ? ` · ${suiteName}` : ''}
               </p>
@@ -418,6 +464,49 @@ const MaintenanceForm = ({ onNavigate, navigationData }) => {
             propertyAddress={jobberLog.propertyAddress}
             onClose={() => setJobberLog(null)}
           />
+        )}
+
+        {editUnitOpen && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEditUnitOpen(false)} />
+            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-gray-100">
+                <h2 className="text-[17px] font-semibold text-gray-900">Edit Unit</h2>
+                <button onClick={() => setEditUnitOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100">
+                  <X className="w-4 h-4 text-gray-600" />
+                </button>
+              </div>
+              <div className="px-5 py-4 space-y-4">
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Label / Make</label>
+                  <input
+                    type="text"
+                    value={editUnitData.label}
+                    onChange={e => setEditUnitData(d => ({ ...d, label: e.target.value }))}
+                    placeholder="e.g. YORK"
+                    className="w-full px-3 py-2.5 text-[14px] bg-[#F2F2F7] rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Unit #</label>
+                  <input
+                    type="text"
+                    value={editUnitData.serialNumber}
+                    onChange={e => setEditUnitData(d => ({ ...d, serialNumber: e.target.value }))}
+                    placeholder="e.g. RTU #1"
+                    className="w-full px-3 py-2.5 text-[14px] bg-[#F2F2F7] rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 px-5 pb-5">
+                <button onClick={() => setEditUnitOpen(false)} className="flex-1 py-3 rounded-xl text-[15px] font-medium text-gray-600 bg-gray-100">Cancel</button>
+                <button onClick={handleSaveUnit} disabled={editUnitSaving} className="flex-1 py-3 rounded-xl text-[15px] font-semibold text-white disabled:opacity-50" style={{ backgroundColor: '#101d40' }}>
+                  {editUnitSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
       </div>
     );

@@ -103,8 +103,11 @@ router.get('/auth', (req, res) => {
 // Step 2: Jobber redirects here with ?code=
 router.get('/callback', async (req, res) => {
   const { code, error } = req.query;
+  console.log('Jobber callback received:', { code: !!code, error });
+
   if (error || !code) {
-    return res.redirect(`${FRONTEND_URL}?jobber=error`);
+    console.error('Jobber OAuth denied:', error);
+    return res.redirect(`${FRONTEND_URL}?jobber=error&reason=${error || 'no_code'}`);
   }
 
   try {
@@ -115,13 +118,29 @@ router.get('/callback', async (req, res) => {
       redirect_uri:  REDIRECT_URI,
       grant_type:    'authorization_code',
     });
+
+    console.log('Exchanging code for token, redirect_uri:', REDIRECT_URI);
+
     const tokenRes = await fetch(JOBBER_TOKEN_URL, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    params.toString(),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept':        'application/json',
+      },
+      body: params.toString(),
     });
-    const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) throw new Error('No access token in response');
+
+    const rawText = await tokenRes.text();
+    console.log('Jobber token response status:', tokenRes.status);
+    console.log('Jobber token response body:', rawText);
+
+    let tokenData;
+    try { tokenData = JSON.parse(rawText); }
+    catch { throw new Error(`Non-JSON response: ${rawText}`); }
+
+    if (!tokenData.access_token) {
+      throw new Error(`No access_token. Response: ${JSON.stringify(tokenData)}`);
+    }
 
     await saveToken({
       accessToken:  tokenData.access_token,
@@ -129,11 +148,22 @@ router.get('/callback', async (req, res) => {
       expiresIn:    tokenData.expires_in || 3600,
     });
 
+    console.log('Jobber token saved successfully');
     res.redirect(`${FRONTEND_URL}?jobber=connected`);
   } catch (err) {
-    console.error('Jobber callback error:', err);
+    console.error('Jobber callback error:', err.message);
     res.redirect(`${FRONTEND_URL}?jobber=error`);
   }
+});
+
+// Debug: check env vars are loaded (no secrets exposed)
+router.get('/debug', (req, res) => {
+  res.json({
+    clientIdSet:     !!CLIENT_ID,
+    clientSecretSet: !!CLIENT_SECRET,
+    redirectUri:     REDIRECT_URI,
+    frontendUrl:     FRONTEND_URL,
+  });
 });
 
 // Check connection status

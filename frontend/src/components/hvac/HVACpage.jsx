@@ -26,9 +26,25 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
   const [expandedUnits, setExpandedUnits] = useState(new Set());
   const [showAddUnit, setShowAddUnit] = useState(false);
 
-  // Sync localProperties when prop changes
+  // Sync localProperties when prop changes + pre-fetch last log for every unit
   useEffect(() => {
     setLocalProperties(properties);
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const allUnits = [];
+    properties.forEach(p =>
+      (p.suites || []).forEach(s =>
+        (s.hvacUnits || []).forEach(u => allUnits.push(u.id))
+      )
+    );
+    allUnits.forEach(unitId => {
+      fetch(`${apiUrl}/api/maintenance-logs/unit/${unitId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(logs => {
+          setHistoryData(prev => ({ ...prev, [unitId]: logs }));
+          setHistoryState(prev => ({ ...prev, [unitId]: 'loaded' }));
+        })
+        .catch(() => {});
+    });
   }, [properties]);
 
   const groupedProperties = useMemo(() => {

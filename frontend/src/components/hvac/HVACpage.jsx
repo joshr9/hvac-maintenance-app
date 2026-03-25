@@ -27,25 +27,35 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
   const [expandedUnits, setExpandedUnits] = useState(new Set());
   const [showAddUnit, setShowAddUnit] = useState(false);
 
-  // Sync localProperties when prop changes + pre-fetch last log for every unit
+  // Load properties: use prop if available, otherwise fetch directly
   useEffect(() => {
-    setLocalProperties(properties);
     const apiUrl = import.meta.env.VITE_API_URL || '';
-    const allUnits = [];
-    properties.forEach(p =>
-      (p.suites || []).forEach(s =>
-        (s.hvacUnits || []).forEach(u => allUnits.push(u.id))
-      )
-    );
-    allUnits.forEach(unitId => {
-      fetch(`${apiUrl}/api/maintenance-logs/unit/${unitId}`)
+
+    const applyProperties = (list) => {
+      setLocalProperties(list);
+      list.forEach(p =>
+        (p.suites || []).forEach(s =>
+          (s.hvacUnits || []).forEach(u => {
+            fetch(`${apiUrl}/api/maintenance-logs/unit/${u.id}`)
+              .then(r => r.ok ? r.json() : [])
+              .then(logs => {
+                setHistoryData(prev => ({ ...prev, [u.id]: logs }));
+                setHistoryState(prev => ({ ...prev, [u.id]: 'loaded' }));
+              })
+              .catch(() => {});
+          })
+        )
+      );
+    };
+
+    if (properties.length > 0) {
+      applyProperties(properties);
+    } else {
+      fetch(`${apiUrl}/api/properties`)
         .then(r => r.ok ? r.json() : [])
-        .then(logs => {
-          setHistoryData(prev => ({ ...prev, [unitId]: logs }));
-          setHistoryState(prev => ({ ...prev, [unitId]: 'loaded' }));
-        })
+        .then(data => applyProperties(Array.isArray(data) ? data : []))
         .catch(() => {});
-    });
+    }
   }, [properties]);
 
   const groupedProperties = useMemo(() => {

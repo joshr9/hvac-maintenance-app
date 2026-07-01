@@ -165,7 +165,7 @@ const JobberAttachSheet = ({ logId, maintenanceType, notes, techName, serviceDat
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-semibold text-gray-900 truncate">
-                        {job.title || `Job #${job.jobNumber}`}
+                        {job.client?.name || `Job #${job.jobNumber}`}
                       </p>
                       <p className="text-[12px] text-gray-400 mt-0.5 truncate">
                         {job.client?.name}

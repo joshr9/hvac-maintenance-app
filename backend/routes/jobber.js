@@ -198,7 +198,6 @@ router.get('/jobs', async (req, res) => {
           nodes {
             id
             jobNumber
-            title
             client {
               id
               name
@@ -223,7 +222,6 @@ router.get('/jobs', async (req, res) => {
     if (q) {
       const search = q.toLowerCase();
       jobs = jobs.filter(j =>
-        j.title?.toLowerCase().includes(search) ||
         j.client?.name?.toLowerCase().includes(search) ||
         j.property?.address?.street?.toLowerCase().includes(search) ||
         String(j.jobNumber ?? '').toLowerCase().includes(search)
@@ -249,7 +247,7 @@ router.post('/note', async (req, res) => {
       mutation CreateNote($jobId: EncodedId!, $content: String!) {
         noteCreate(input: {
           body: $content
-          noteable: { id: $jobId, type: Job }
+          noteable: { id: $jobId, type: JOB }
         }) {
           note {
             id

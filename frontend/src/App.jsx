@@ -233,29 +233,58 @@ const renderCurrentView = () => {
         />
       );
 
-    default:
+    case 'dashboard':
       return (
-        <HVACPage
+        <Homepage
           onNavigate={handleNavigate}
           onOpenModal={handleOpenModal}
-          properties={properties}
-          navigationData={navigationData}
+        />
+      );
+
+    case 'jobs':
+      return (
+        <JobsList
+          onJobCreated={handleJobCreated}
+          globalJobsData={globalJobsData}
           onDataRefresh={handleDataRefresh}
         />
       );
-  }
 
-  /* Hidden views — restore by adding case above
-  case 'jobs': <JobsList />
-  case 'services': <ServiceCatalog />
-  case 'reports': <ReportsPage />
-  case 'calendar': <RoleBasedCalendar />
-  case 'messaging': <TeamChat />
-  case 'tasks': <TaskManagementTodoist />
-  case 'admin': <AdminDashboard />
-  case 'timeHistory': <TimeHistoryPage />
-  case 'dashboard': <Homepage />
-  */
+    case 'messaging':
+      return <TeamChat />;
+
+    case 'tasks':
+      return (
+        <TaskManagementTodoist
+          allProperties={properties}
+          globalJobsData={globalJobsData}
+        />
+      );
+
+    case 'reports':
+      return <ReportsPage />;
+
+    case 'timeHistory':
+      return <TimeHistoryPage onNavigate={handleNavigate} />;
+
+    case 'admin':
+      return (
+        <AdminDashboard
+          globalJobsData={globalJobsData}
+          onJobsGenerated={handleJobCreated}
+          onDataRefresh={handleDataRefresh}
+          properties={properties}
+        />
+      );
+
+    default:
+      return (
+        <Homepage
+          onNavigate={handleNavigate}
+          onOpenModal={handleOpenModal}
+        />
+      );
+  }
 };
 
   // ✅ EXISTING: Your complete app structure (100% PRESERVED with optional auth enhancement)

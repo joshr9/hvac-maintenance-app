@@ -99,7 +99,7 @@ const JobFilters = ({
           <Filter className="w-5 h-5 text-gray-500" />
           <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
           {hasActiveFilters && (
-            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+            <span className="bg-[#101d40]/10 text-[#101d40] text-xs px-2 py-1 rounded-full">
               Active
             </span>
           )}
@@ -108,7 +108,7 @@ const JobFilters = ({
         {hasActiveFilters && (
           <button
             onClick={clearAllFilters}
-            className="text-sm text-blue-600 hover:text-blue-800 underline"
+            className="text-sm text-[#101d40] hover:opacity-70 underline"
           >
             Clear All
           </button>
@@ -123,7 +123,7 @@ const JobFilters = ({
           placeholder="Search jobs by title, number, property, or technician..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          className="w-full pl-10 pr-4 py-3 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#101d40]/20 focus:border-gray-300 transition-all"
         />
       </div>
 
@@ -137,7 +137,7 @@ const JobFilters = ({
           <select
             value={statusFilter}
             onChange={(e) => onStatusChange(e.target.value)}
-            className={`w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+            className={`w-full p-3 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#101d40]/20 focus:border-gray-300 transition-all ${
               statusFilter === 'late' ? 'border-red-300 bg-red-50 text-red-800' : ''
             }`}
           >
@@ -164,7 +164,7 @@ const JobFilters = ({
           <select
             value={priorityFilter}
             onChange={(e) => onPriorityChange(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-3 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#101d40]/20 focus:border-gray-300 transition-all"
           >
             {priorityOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -183,7 +183,7 @@ const JobFilters = ({
           <select
             value={technicianFilter}
             onChange={(e) => onTechnicianChange(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-3 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#101d40]/20 focus:border-gray-300 transition-all"
           >
             {technicianOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -202,7 +202,7 @@ const JobFilters = ({
           <select
             value={propertyFilter}
             onChange={(e) => onPropertyChange(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-3 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#101d40]/20 focus:border-gray-300 transition-all"
           >
             {propertyOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -215,15 +215,15 @@ const JobFilters = ({
 
       {/* Active Filters Summary */}
       {hasActiveFilters && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-[#101d40]/5 border border-[#101d40]/10 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-blue-600" />
+              <Filter className="w-4 h-4 text-[#101d40]" />
               <span className="text-sm font-medium text-blue-900">Active Filters:</span>
             </div>
             <button
               onClick={clearAllFilters}
-              className="text-xs text-blue-600 hover:text-blue-800 underline"
+              className="text-xs text-[#101d40] hover:opacity-70 underline"
             >
               Clear
             </button>
@@ -233,7 +233,7 @@ const JobFilters = ({
               <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
                 statusFilter === 'late' 
                   ? 'bg-red-100 text-red-800' 
-                  : 'bg-blue-100 text-blue-800'
+                  : 'bg-[#101d40]/10 text-[#101d40]'
               }`}>
                 Status: {statusOptions.find(o => o.value === statusFilter)?.label}
                 {statusFilter === 'late' && <AlertTriangle className="w-3 h-3" />}

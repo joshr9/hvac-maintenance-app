@@ -327,53 +327,54 @@ const JobsList = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center min-h-96 bg-[#F2F2F7]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading jobs...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#101d40] border-t-transparent mx-auto mb-3"></div>
+          <p className="text-gray-500 text-sm">Loading jobs...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Header - Mobile & Desktop optimized */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
+    <div className="h-full flex flex-col bg-[#F2F2F7]">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Jobs</h1>
           <button
             onClick={handleCreateJobClick}
-            className="px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="px-3 py-2.5 sm:px-4 text-white rounded-xl transition-colors flex items-center gap-2 text-sm font-medium"
+            style={{ backgroundColor: '#101d40' }}
           >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Create Job</span>
           </button>
         </div>
 
-        {/* Simplified Stats - Mobile friendly */}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs sm:text-sm text-blue-600 font-medium">Today</p>
-            <p className="text-lg sm:text-2xl font-bold text-blue-900">{stats.scheduledJobs || 0}</p>
+        {/* Stats */}
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="bg-[#101d40]/5 rounded-2xl p-3">
+            <p className="text-xs text-[#101d40]/60 font-medium">Scheduled</p>
+            <p className="text-xl font-bold text-[#101d40]">{stats.scheduledJobs || 0}</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-3">
-            <p className="text-xs sm:text-sm text-green-600 font-medium">Active</p>
-            <p className="text-lg sm:text-2xl font-bold text-green-900">{stats.totalJobs || 0}</p>
+          <div className="bg-green-50 rounded-2xl p-3">
+            <p className="text-xs text-green-600 font-medium">Active</p>
+            <p className="text-xl font-bold text-green-900">{stats.totalJobs || 0}</p>
           </div>
-          <div className="bg-red-50 rounded-lg p-3">
-            <p className="text-xs sm:text-sm text-red-600 font-medium">Overdue</p>
-            <p className="text-lg sm:text-2xl font-bold text-red-900">{stats.lateJobs || 0}</p>
+          <div className="bg-red-50 rounded-2xl p-3">
+            <p className="text-xs text-red-500 font-medium">Overdue</p>
+            <p className="text-xl font-bold text-red-700">{stats.lateJobs || 0}</p>
           </div>
-          <div className="bg-purple-50 rounded-lg p-3">
-            <p className="text-xs sm:text-sm text-purple-600 font-medium">Completed</p>
-            <p className="text-lg sm:text-2xl font-bold text-purple-900">{stats.completedJobs || 0}</p>
+          <div className="bg-gray-50 rounded-2xl p-3">
+            <p className="text-xs text-gray-500 font-medium">Completed</p>
+            <p className="text-xl font-bold text-gray-700">{stats.completedJobs || 0}</p>
           </div>
         </div>
       </div>
 
-      {/* Filters - Collapsible on mobile */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6">
+      {/* Filters */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3 sm:px-6">
         <JobFilters
           statusFilter={statusFilter}
           priorityFilter={priorityFilter}

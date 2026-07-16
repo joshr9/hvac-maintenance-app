@@ -195,7 +195,7 @@ const ReportsPage = () => {
   };
 
   return (
-    <div className="p-6 space-y-6" style={{background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)', minHeight: '100vh'}}>
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-[#F2F2F7]" style={{ minHeight: '100vh' }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -204,10 +204,10 @@ const ReportsPage = () => {
         </div>
 
         {/* Filters Card */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-              <Filter className="w-6 h-6 text-blue-600" />
+              <Filter className="w-6 h-6 text-[#101d40]" />
               Filter Data
             </h2>
             <button
@@ -229,7 +229,7 @@ const ReportsPage = () => {
               <select
                 value={filters.propertyId}
                 onChange={(e) => setFilters({ ...filters, propertyId: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#101d40]/20"
               >
                 <option value="">All Properties</option>
                 {properties.map(property => (
@@ -250,7 +250,7 @@ const ReportsPage = () => {
                 type="date"
                 value={filters.startDate}
                 onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#101d40]/20"
               />
             </div>
 
@@ -264,7 +264,7 @@ const ReportsPage = () => {
                 type="date"
                 value={filters.endDate}
                 onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#101d40]/20"
               />
             </div>
 
@@ -279,14 +279,14 @@ const ReportsPage = () => {
                 value={filters.searchQuery}
                 onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
                 placeholder="Search notes, units..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#101d40]/20"
               />
             </div>
           </div>
         </div>
 
         {/* Export Summary Card */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 mb-6">
+        <div className="rounded-2xl border border-gray-100 p-6 mb-6" style={{ background: '#101d40' }}>
           <div className="flex items-center justify-between text-white">
             <div>
               <h3 className="text-2xl font-bold mb-2">
@@ -301,10 +301,10 @@ const ReportsPage = () => {
             <button
               onClick={exportToCSV}
               disabled={exporting || filteredLogs.length === 0}
-              className={`flex items-center gap-3 px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all ${
                 exporting || filteredLogs.length === 0
                   ? 'bg-white/20 cursor-not-allowed'
-                  : 'bg-white text-blue-600 hover:bg-blue-50 shadow-lg'
+                  : 'bg-white text-[#101d40] hover:bg-gray-50 shadow-sm'
               }`}
             >
               {exporting ? (
@@ -323,17 +323,17 @@ const ReportsPage = () => {
         </div>
 
         {/* Preview Table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-              <FileText className="w-6 h-6 text-blue-600" />
+              <FileText className="w-6 h-6 text-[#101d40]" />
               Preview ({filteredLogs.length} records)
             </h2>
           </div>
 
           {loading ? (
             <div className="p-12 text-center">
-              <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+              <Loader className="w-12 h-12 text-[#101d40] animate-spin mx-auto mb-4" />
               <p className="text-gray-600">Loading maintenance logs...</p>
             </div>
           ) : filteredLogs.length === 0 ? (
@@ -342,7 +342,7 @@ const ReportsPage = () => {
               <p className="text-gray-600">No records found with current filters</p>
               <button
                 onClick={clearFilters}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="mt-4 px-4 py-2 text-white rounded-xl" style={{ backgroundColor: '#101d40' }}
               >
                 Clear Filters
               </button>

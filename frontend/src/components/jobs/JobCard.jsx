@@ -50,7 +50,7 @@ const JobCard = ({
   const WorkIcon = Wrench;
 
   return (
-    <div className="job-card bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-visible relative">
+    <div className="job-card bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-visible relative">
       {/* Header Section */}
       <div className="p-6">
         {/* Top Row - Status badges and Actions */}
@@ -183,7 +183,7 @@ const JobCard = ({
       </div>
 
       {/* ✅ NEW: Timer Section */}
-      <div className="px-6 py-3 bg-blue-50 border-t border-blue-100">
+      <div className="px-6 py-3 bg-[#101d40]/5 border-t border-gray-100">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-700">Time Tracking</span>
           <div className="flex-1 ml-4">
@@ -209,7 +209,7 @@ const JobCard = ({
               e.stopPropagation();
               onView?.(job);
             }}
-            className="px-3 py-2 border border-blue-300 text-blue-700 bg-blue-50 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors flex items-center gap-1"
+            className="px-3 py-2 border border-gray-200 text-gray-700 bg-white rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-1"
           >
             <Eye className="w-4 h-4" />
             View
@@ -219,7 +219,7 @@ const JobCard = ({
           {job.status !== 'IN_PROGRESS' && job.status !== 'COMPLETED' && (
             <button 
               onClick={() => onStatusUpdate?.(job.id, { status: 'IN_PROGRESS' })}
-              className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 text-white py-2 px-4 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2" style={{ backgroundColor: '#101d40' }}
             >
               <Package className="w-4 h-4" />
               Start Job
@@ -229,7 +229,7 @@ const JobCard = ({
           {job.status === 'IN_PROGRESS' && (
             <button 
               onClick={() => onStatusUpdate?.(job.id, { status: 'COMPLETED' })}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 text-white py-2 px-4 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2" style={{ backgroundColor: '#101d40' }}
             >
               <Package className="w-4 h-4" />
               Complete Job
@@ -245,7 +245,7 @@ const JobCard = ({
           {/* Edit Button */}
           <button 
             onClick={() => onEdit?.(job)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             Edit
           </button>

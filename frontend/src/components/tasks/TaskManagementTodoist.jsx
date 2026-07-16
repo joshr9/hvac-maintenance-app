@@ -249,10 +249,10 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[#F2F2F7]">
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200/60 flex flex-col shadow-sm">
-        <div className="p-4 border-b border-gray-200/60">
+      <div className="w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm">
+        <div className="p-4 border-b border-gray-100/60">
           <button
             onClick={() => setFocusQuickAdd(true)}
             className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white bg-dc-blue-500 rounded-xl hover:bg-dc-blue-600 font-medium shadow-sm hover:shadow-md transition-all duration-200"
@@ -338,7 +338,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white border-b border-gray-100 px-6 py-4">
           <h1 className="text-2xl font-bold text-gray-900">
             {activeView === 'inbox' && 'Inbox'}
             {activeView === 'today' && 'Today'}
@@ -358,7 +358,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                 onBlur={() => {
                   if (!searchQuery) setShowSearch(false);
                 }}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#101d40]/20 focus:border-gray-300"
               />
             </div>
           )}
@@ -382,7 +382,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
               <>
                 {/* Inbox and My Tasks: Simple list, no grouping */}
                 {(activeView === 'inbox' || activeView === 'my-tasks') ? (
-                  <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="bg-white rounded-2xl border border-gray-100">
                     {filteredTasks.map((task) => (
                       <TaskItem
                         key={task.id}
@@ -413,7 +413,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                             <h3 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2 px-1">
                               Overdue
                             </h3>
-                            <div className="bg-white rounded-lg border border-gray-200">
+                            <div className="bg-white rounded-2xl border border-gray-100">
                               {grouped.overdue.map((task) => (
                                 <TaskItem
                                   key={task.id}
@@ -436,7 +436,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                             <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2 px-1">
                               {getDateLabel(new Date())}
                             </h3>
-                            <div className="bg-white rounded-lg border border-gray-200">
+                            <div className="bg-white rounded-2xl border border-gray-100">
                               {grouped.today.map((task) => (
                                 <TaskItem
                                   key={task.id}
@@ -459,7 +459,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                             <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2 px-1">
                               Tomorrow
                             </h3>
-                            <div className="bg-white rounded-lg border border-gray-200">
+                            <div className="bg-white rounded-2xl border border-gray-100">
                               {grouped.tomorrow.map((task) => (
                                 <TaskItem
                                   key={task.id}
@@ -484,7 +484,7 @@ const TaskManagementTodoist = ({ allProperties = [], globalJobsData = {} }) => {
                               <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-2 px-1">
                                 {getDateLabel(dateKey)}
                               </h3>
-                              <div className="bg-white rounded-lg border border-gray-200">
+                              <div className="bg-white rounded-2xl border border-gray-100">
                                 {dateTasks.map((task) => (
                                   <TaskItem
                                     key={task.id}

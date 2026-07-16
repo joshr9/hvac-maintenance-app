@@ -100,7 +100,7 @@ const AdminDashboard = ({
   }
 
   return (
-    <div className="p-6 space-y-8" style={{background: 'linear-gradient(135deg, #fafbff 0%, #e8eafc 100%)', minHeight: '100vh'}}>
+    <div className="p-4 sm:p-6 space-y-6 bg-[#F2F2F7]" style={{ minHeight: '100vh' }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -116,7 +116,7 @@ const AdminDashboard = ({
           
           <button
             onClick={onDataRefresh}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-xl transition-colors" style={{ backgroundColor: '#101d40' }}
           >
             <Activity className="w-4 h-4" />
             Refresh Data
@@ -125,7 +125,7 @@ const AdminDashboard = ({
 
         {/* System Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Database className="w-6 h-6 text-blue-600" />
@@ -139,7 +139,7 @@ const AdminDashboard = ({
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-green-100 rounded-lg">
                 <Zap className="w-6 h-6 text-green-600" />
@@ -153,7 +153,7 @@ const AdminDashboard = ({
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-orange-100 rounded-lg">
                 <Building className="w-6 h-6 text-orange-600" />
@@ -167,7 +167,7 @@ const AdminDashboard = ({
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-100 rounded-lg">
                 <TrendingUp className="w-6 h-6 text-purple-600" />
@@ -190,7 +190,7 @@ const AdminDashboard = ({
             <ManualJobGenerator onJobsGenerated={onJobsGenerated} />
 
             {/* Template Status */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
                 Template Status Overview
@@ -244,7 +244,7 @@ const AdminDashboard = ({
           {/* Right Column - System Activity */}
           <div className="space-y-6">
             {/* System Health */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Activity className="w-5 h-5" />
                 System Health
@@ -283,7 +283,7 @@ const AdminDashboard = ({
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Clock className="w-5 h-5" />
                 Recent Activity
@@ -316,7 +316,7 @@ const AdminDashboard = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Wrench className="w-5 h-5" />
                 Quick Actions

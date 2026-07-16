@@ -102,7 +102,7 @@ const UserMenu = ({ user, onSignOut }) => {
         className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
         {/* User Avatar */}
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-[#101d40] flex items-center justify-center">
           {user?.imageUrl ? (
             <img 
               src={user.imageUrl} 
@@ -133,11 +133,11 @@ const UserMenu = ({ user, onSignOut }) => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-lg border border-gray-100 z-50">
           {/* User Info Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-[#101d40] flex items-center justify-center">
                 {user?.imageUrl ? (
                   <img 
                     src={user.imageUrl} 
@@ -157,7 +157,7 @@ const UserMenu = ({ user, onSignOut }) => {
                 <div className="text-sm text-gray-500 truncate">
                   {user?.email || 'user@example.com'}
                 </div>
-                <div className="text-xs text-blue-600 font-medium capitalize">
+                <div className="text-xs text-[#101d40] font-medium capitalize">
                   {user?.role || 'User'} Access
                 </div>
               </div>
@@ -337,50 +337,61 @@ const Layout = ({
     }
   };
 
-  // Focused navigation — Properties & HVAC only
-  // All other sections preserved in code, not shown in UI
+  const isAdmin = currentUser?.role === 'admin' ||
+    currentUser?.organizationRole === 'org:admin' ||
+    currentUser?.organizationRole === 'admin';
+
   const navigationSections = [
     {
-      title: "HVAC",
+      title: "Overview",
       items: [
-        {
-          id: 'hvac',
-          label: 'HVAC Systems',
-          icon: Zap,
-          description: 'Units, properties & maintenance',
-          badge: null
-        },
-        {
-          id: 'properties',
-          label: 'Properties',
-          icon: Building,
-          description: 'Manage properties & suites',
-          badge: null
-        },
+        { id: 'dashboard', label: 'Dashboard', icon: Home, description: 'Stats & quick actions' },
       ]
-    }
+    },
+    {
+      title: "Field Work",
+      items: [
+        { id: 'jobs', label: 'Jobs', icon: Briefcase, description: 'All work orders' },
+        { id: 'hvac', label: 'HVAC Systems', icon: Zap, description: 'Units & maintenance' },
+        { id: 'maintenance', label: 'Quick Entry', icon: Plus, description: 'Log maintenance fast', isAction: true },
+        { id: 'timeHistory', label: 'Timesheets', icon: Clock, description: 'Track your hours' },
+      ]
+    },
+    {
+      title: "Properties",
+      items: [
+        { id: 'properties', label: 'Properties', icon: Building, description: 'Manage locations & suites' },
+      ]
+    },
+    {
+      title: "Team",
+      items: [
+        { id: 'messaging', label: 'Team Chat', icon: MessageSquare, description: 'Messages & channels', badge: hasUnread ? '●' : null, badgeColor: 'bg-blue-500' },
+        { id: 'tasks', label: 'Tasks', icon: CheckSquare, description: 'Assign & track tasks' },
+      ]
+    },
+    ...(isAdmin ? [{
+      title: "Management",
+      items: [
+        { id: 'reports', label: 'Reports', icon: BarChart3, description: 'Export & analytics' },
+        { id: 'admin', label: 'Admin', icon: Shield, description: 'System settings' },
+      ]
+    }] : []),
   ];
 
-  /* Hidden sections — restore when needed
-  const hiddenSections = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'jobs', label: 'Jobs', icon: Briefcase },
-    { id: 'calendar', label: 'Schedule', icon: Calendar },
-    { id: 'messaging', label: 'Team Chat', icon: MessageSquare },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-    { id: 'maintenance', label: 'Quick Entry', icon: Plus, isAction: true },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
-    { id: 'timeHistory', label: 'Timesheets', icon: Clock },
-    { id: 'admin', label: 'Admin', icon: Shield },
-  ];
-  */
-
-  // ✅ PRESERVED: All existing utility functions
   const getPageTitle = () => {
     const viewTitles = {
+      dashboard: 'Dashboard',
       hvac: 'HVAC Systems',
       properties: 'Properties',
-      maintenance: 'Log Work',
+      maintenance: 'Quick Entry',
+      jobs: 'Jobs',
+      messaging: 'Team Chat',
+      tasks: 'Tasks',
+      reports: 'Reports',
+      timeHistory: 'Timesheets',
+      admin: 'Admin',
+      settings: 'Settings',
     };
     return viewTitles[currentView] || 'Dean Callan PM';
   };
@@ -426,7 +437,7 @@ const Layout = ({
           className={`
             w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition-all duration-200
             ${isActive
-              ? 'bg-blue-500 text-white font-semibold shadow-lg shadow-blue-500/30'
+              ? 'bg-white/20 text-white font-semibold'
               : 'text-dc-blue-100/80 hover:bg-white/10 hover:text-white'
             }
             ${item.comingSoon ? 'opacity-50 cursor-not-allowed' : ''}
@@ -550,7 +561,7 @@ const Layout = ({
   );
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <div className="h-screen flex bg-[#F2F2F7]">
       {/* Desktop Sidebar */}
       <div className={`hidden lg:flex flex-col bg-gradient-to-b from-dc-blue-900 to-dc-blue-800 border-r border-dc-blue-700/20 shadow-xl transition-all duration-300 ${
         isDesktopSidebarCollapsed ? 'w-16' : 'w-64'
@@ -582,10 +593,10 @@ const Layout = ({
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
 
-              {/* Mobile Hamburger Menu — hidden on mobile, replaced by bottom tab bar */}
+              {/* Mobile Hamburger Menu */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
@@ -615,7 +626,7 @@ const Layout = ({
 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-lg border border-gray-100 z-50">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="font-semibold text-gray-900">Notifications</h3>
                     </div>
@@ -659,7 +670,7 @@ const Layout = ({
           {children}
         </main>
 
-        {/* iOS 26 Liquid Glass Tab Bar — floating pill, mobile only */}
+        {/* Mobile Tab Bar */}
         <nav
           className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none"
           style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}
@@ -671,34 +682,49 @@ const Layout = ({
               backdropFilter: 'blur(40px) saturate(180%)',
               WebkitBackdropFilter: 'blur(40px) saturate(180%)',
               boxShadow: '0 0 0 0.5px rgba(255,255,255,0.6) inset, 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-              minWidth: 200,
             }}
           >
-            {navigationSections[0].items.map((item, idx) => {
+            {[
+              { id: 'dashboard', label: 'Home', icon: Home },
+              { id: 'jobs', label: 'Jobs', icon: Briefcase },
+              { id: 'hvac', label: 'HVAC', icon: Zap },
+              { id: 'messaging', label: 'Chat', icon: MessageSquare },
+              { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+            ].map((item, idx) => {
               const isActive = currentView === item.id ||
                 (item.id === 'hvac' && currentView === 'maintenance');
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNavigation(item.id)}
-                  className={`relative flex flex-col items-center gap-0.5 px-10 py-2.5 transition-all ${
+                  className={`relative flex flex-col items-center gap-0.5 px-5 py-2.5 transition-all ${
                     idx > 0 ? 'border-l border-white/20' : ''
                   } ${isActive ? '' : 'text-gray-500/80'}`}
                   style={isActive ? { color: '#101d40' } : {}}
                 >
                   {isActive && (
-                    <span
-                      className="absolute inset-0"
-                      style={{ background: 'rgba(16,29,64,0.07)' }}
-                    />
+                    <span className="absolute inset-0" style={{ background: 'rgba(16,29,64,0.07)' }} />
                   )}
-                  <item.icon className={`relative w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                  <span className={`relative text-[10px] tracking-wide ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                  <div className="relative">
+                    <item.icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                    {item.id === 'messaging' && hasUnread && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+                    )}
+                  </div>
+                  <span className={`text-[10px] tracking-wide ${isActive ? 'font-semibold' : 'font-medium'}`}>
                     {item.label}
                   </span>
                 </button>
               );
             })}
+            {/* More — opens sidebar */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="relative flex flex-col items-center gap-0.5 px-5 py-2.5 border-l border-white/20 text-gray-500/80"
+            >
+              <Menu className="w-5 h-5" />
+              <span className="text-[10px] font-medium tracking-wide">More</span>
+            </button>
           </div>
         </nav>
 

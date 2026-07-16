@@ -458,7 +458,7 @@ const TeamChat = () => {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#F2F2F7]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dc-blue-600"></div>
       </div>
     );
@@ -466,7 +466,7 @@ const TeamChat = () => {
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#F2F2F7]">
         <div className="text-center">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Sign In Required</h3>
           <p className="text-gray-600">Please sign in to access team chat.</p>
@@ -476,9 +476,9 @@ const TeamChat = () => {
   }
 
   return (
-    <div className="h-full bg-gray-50 flex overflow-hidden">
+    <div className="h-full bg-[#F2F2F7] flex overflow-hidden">
       {/* Desktop: Two-column layout (sidebar always visible) */}
-      <div className="hidden lg:flex lg:w-80 xl:w-96 border-r border-gray-200">
+      <div className="hidden lg:flex lg:w-80 xl:w-96 border-r border-gray-100">
         <ChatSidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}

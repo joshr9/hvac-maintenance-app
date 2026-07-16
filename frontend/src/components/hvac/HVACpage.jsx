@@ -177,7 +177,7 @@ const HVACPage = ({ onNavigate, properties = [], onDataRefresh }) => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-gray-100 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-[#101d40]/20 placeholder-gray-400"
           />
         </div>
       </div>
